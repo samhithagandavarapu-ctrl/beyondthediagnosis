@@ -47,9 +47,12 @@ export default function Navbar() {
           )}
           {user ? (
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline text-xs text-slate-light max-w-[140px] truncate">
+              <NavLink
+                to="/profile"
+                className="hidden sm:inline text-xs text-slate-light max-w-[140px] truncate hover:text-ink hover:underline"
+              >
                 {user.email || user.phone}
-              </span>
+              </NavLink>
               <button
                 onClick={() => signOut()}
                 className="px-3 py-1.5 rounded-sm text-sm font-medium border border-ink/15 text-slate hover:border-ink/40"

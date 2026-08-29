@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useAuth } from "./AuthContext";
+import { fetchProfile, upsertProfile } from "../lib/profile";
 
 type A11yState = {
   largeText: boolean;
@@ -14,11 +16,16 @@ const AccessibilityContext = createContext<A11yState | undefined>(undefined);
 const STORAGE_KEY = "btd-accessibility-prefs";
 
 export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [largeText, setLargeText] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [easyRead, setEasyRead] = useState(false);
+  // Avoids re-saving to the profile the moment we just loaded it from there.
+  const skipNextSave = useRef(false);
 
+  // Logged out (or not yet loaded): use whatever's in this browser.
   useEffect(() => {
+    if (user) return;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -30,14 +37,47 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     } catch {
       // ignore corrupted prefs
     }
-  }, []);
+  }, [user]);
 
+  // Logged in: pull the saved settings from their profile so it follows them
+  // to any device, instead of starting over.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    fetchProfile(user.id).then((profile) => {
+      if (cancelled || !profile) return;
+      skipNextSave.current = true;
+      setLargeText(!!profile.large_text);
+      setHighContrast(!!profile.high_contrast);
+      setEasyRead(!!profile.easy_read);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // Always mirror to localStorage (works whether logged in or not).
   useEffect(() => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ largeText, highContrast, easyRead })
     );
   }, [largeText, highContrast, easyRead]);
+
+  // If logged in, also save changes back to their profile — except right
+  // after we just loaded them, which isn't a real change.
+  useEffect(() => {
+    if (!user) return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    upsertProfile(user.id, {
+      large_text: largeText,
+      high_contrast: highContrast,
+      easy_read: easyRead,
+    });
+  }, [user, largeText, highContrast, easyRead]);
 
   const value: A11yState = {
     largeText,
