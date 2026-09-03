@@ -70,6 +70,12 @@ export default function Home() {
                 Prep for an appointment
               </Link>
             </div>
+            <Link
+              to="/understanding-overshadowing"
+              className="inline-block mt-4 text-sm font-semibold text-gold-dark hover:underline"
+            >
+              What is diagnostic overshadowing, exactly? →
+            </Link>
           </div>
 
           {/* Spotlight device */}

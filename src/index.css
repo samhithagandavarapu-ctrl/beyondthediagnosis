@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display text-ink;
+  }
+  :focus-visible {
+    outline: 3px solid #B8912B;
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ---- Accessibility mode: large text ---- */
+.a11y-large-text {
+  font-size: 118%;
+}
+.a11y-large-text h1 { font-size: 1.15em; }
+.a11y-large-text h2 { font-size: 1.15em; }
+.a11y-large-text p, .a11y-large-text li, .a11y-large-text label, .a11y-large-text button {
+  font-size: 1.05em;
+  line-height: 1.7;
+}
+
+/* ---- Accessibility mode: high contrast ---- */
+.a11y-high-contrast {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+.a11y-high-contrast .btd-surface {
+  background: #FFFFFF !important;
+  border: 2px solid #000000 !important;
+}
+.a11y-high-contrast a,
+.a11y-high-contrast button {
+  color: #000000 !important;
+}
+.a11y-high-contrast .btd-accent {
+  background: #000000 !important;
+  color: #FFFFFF !important;
+}
+.a11y-high-contrast * {
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* ---- Accessibility mode: Easy Read ---- */
+.a11y-easy-read p {
+  max-width: 60ch;
+  line-height: 1.9;
+  font-size: 1.08em;
+}
+.a11y-easy-read .btd-optional-detail {
+  display: none;
+}
+
+.btd-container {
+  @apply mx-auto max-w-6xl px-5 sm:px-8;
+}
+
+.btd-card {
+  @apply btd-surface rounded-lg bg-white border border-ink/10 shadow-sm;
+}
+
+.btd-surface {
+  background: #FFFFFF;
+}
+
+.btd-input {
+  @apply w-full rounded border border-ink/15 px-3 py-2 text-sm bg-white focus:border-gold focus:outline-none;
+}
+
+.spotlight-bg {
+  background:
+    radial-gradient(60% 55% at 22% 20%, rgba(184, 145, 43, 0.16), transparent 60%),
+    radial-gradient(45% 40% at 85% 10%, rgba(110, 139, 124, 0.14), transparent 60%),
+    #FAF8F3;
+}

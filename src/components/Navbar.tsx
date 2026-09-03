@@ -10,7 +10,7 @@ const links = [
 ];
 
 export default function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
 
   return (
     <header className="border-b border-ink/10 bg-paper/90 backdrop-blur sticky top-0 z-30">
@@ -37,11 +37,22 @@ export default function Navbar() {
               </NavLink>
             ))}
           </nav>
+          {isAdmin && (
+            <NavLink
+              to="/admin/stories"
+              className="px-3 py-1.5 rounded-sm text-sm font-semibold border border-gold text-gold-dark hover:bg-gold/10"
+            >
+              Admin
+            </NavLink>
+          )}
           {user ? (
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline text-xs text-slate-light max-w-[140px] truncate">
+              <NavLink
+                to="/profile"
+                className="hidden sm:inline text-xs text-slate-light max-w-[140px] truncate hover:text-ink hover:underline"
+              >
                 {user.email || user.phone}
-              </span>
+              </NavLink>
               <button
                 onClick={() => signOut()}
                 className="px-3 py-1.5 rounded-sm text-sm font-medium border border-ink/15 text-slate hover:border-ink/40"
