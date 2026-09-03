@@ -6,9 +6,14 @@ export default function Footer() {
           Verity is an education and advocacy tool. It does not diagnose,
           treat, or replace the guidance of a licensed healthcare provider.
         </p>
-        <p className="text-xs">
-          If this is a medical emergency, call 911 (or your local emergency number) now.
-        </p>
+        <div className="flex items-center gap-4 shrink-0">
+          <a href="/privacy" className="hover:text-ink hover:underline">
+            Privacy Policy
+          </a>
+          <p className="text-xs">
+            Emergency? Call 911 now.
+          </p>
+        </div>
       </div>
     </footer>
   );

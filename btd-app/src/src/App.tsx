@@ -14,6 +14,7 @@ import SubmitStory from "./pages/SubmitStory";
 import AdminStories from "./pages/AdminStories";
 import Understanding from "./pages/Understanding";
 import Profile from "./pages/Profile";
+import Privacy from "./pages/Privacy";
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/admin/stories" element={<AdminStories />} />
           <Route path="/understanding-overshadowing" element={<Understanding />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </main>
       <Footer />
