@@ -40,7 +40,7 @@ export default function Navbar() {
           {isAdmin && (
             <NavLink
               to="/admin/stories"
-              className="hidden md:inline px-3 py-1.5 rounded-sm text-sm font-semibold border border-gold text-gold-dark hover:bg-gold/10"
+              className="px-3 py-1.5 rounded-sm text-sm font-semibold border border-gold text-gold-dark hover:bg-gold/10"
             >
               Admin
             </NavLink>
