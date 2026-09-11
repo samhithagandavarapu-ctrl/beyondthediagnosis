@@ -1,11 +1,15 @@
 import { FormEvent, useRef, useState, useEffect } from "react";
 import { sendChatMessage, ChatMessage } from "../lib/api";
 
-const STARTER_PROMPTS = [
+export const STARTER_PROMPTS = [
   "What are my rights at a doctor's appointment?",
   "My doctor said it's just because of Down syndrome, but I don't think that's right.",
   "How do I describe a new symptom clearly to a provider?",
 ];
+
+const bubble = "max-w-[80%] px-[18px] py-4 text-15 leading-[1.65] whitespace-pre-wrap";
+const assistantBubble = `${bubble} justify-self-start bg-sky-tint border border-navy/10 rounded-[18px_18px_18px_4px]`;
+const userBubble = `${bubble} btd-dark justify-self-end rounded-[18px_18px_4px_18px]`;
 
 export default function Assistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -48,40 +52,26 @@ export default function Assistant() {
   }
 
   return (
-    <div className="btd-container py-10 max-w-3xl">
-      <h1 className="text-3xl font-display font-semibold mb-2">AI Advocacy Assistant</h1>
-      <p className="text-slate mb-6">
+    <section className="mx-auto max-w-[900px] px-6 pt-14 pb-20">
+      <span className="btd-eyebrow">Always free</span>
+      <h1 className="mt-3 text-[clamp(2rem,4.5vw,3rem)] font-extrabold leading-[1.1]">
+        AI Advocacy Assistant
+      </h1>
+      <p className="mt-3.5 mb-7 max-w-[40em] text-17 leading-[1.7] text-body">
         Education and advocacy support only. This assistant never diagnoses, never
         recommends medication, and always defers to your provider's care plan.
       </p>
 
-      <div className="btd-card flex flex-col h-[60vh]">
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div className="btd-card rounded-panel overflow-hidden flex flex-col h-[70vh] min-h-[460px]">
+        <div className="flex-1 overflow-y-auto p-6 grid gap-4 content-start">
           {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
-                  m.role === "user"
-                    ? "bg-ink text-paper"
-                    : "bg-sage/10 text-ink border border-sage/30"
-                }`}
-              >
-                {m.content}
-              </div>
+            <div key={i} className={m.role === "user" ? userBubble : assistantBubble}>
+              {m.content}
             </div>
           ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-lg px-4 py-3 text-sm bg-sage/10 border border-sage/30 text-slate">
-                Thinking…
-              </div>
-            </div>
-          )}
+          {loading && <div className={`${assistantBubble} text-body`}>Thinking…</div>}
           {error && (
-            <div className="text-sm text-clay bg-clay/10 border border-clay/30 rounded px-4 py-3">
+            <div className="rounded-tile bg-coral/25 px-4 py-3 text-sm text-coral-ink">
               {error}
             </div>
           )}
@@ -89,13 +79,13 @@ export default function Assistant() {
         </div>
 
         {messages.length <= 1 && (
-          <div className="px-5 pb-3 flex flex-wrap gap-2">
+          <div className="px-6 pb-4 flex flex-wrap gap-2">
             {STARTER_PROMPTS.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setInput(p)}
-                className="text-xs px-3 py-1.5 rounded-full border border-ink/15 text-slate hover:border-gold hover:text-ink transition-colors"
+                className="rounded-full border border-navy/16 bg-mist px-3.5 py-[9px] text-13 text-body transition-colors hover:border-link hover:text-navy"
               >
                 {p}
               </button>
@@ -103,7 +93,7 @@ export default function Assistant() {
           </div>
         )}
 
-        <form onSubmit={handleSend} className="border-t border-ink/10 p-3 flex gap-2">
+        <form onSubmit={handleSend} className="border-t border-navy/10 p-3.5 flex gap-2.5 items-center">
           <label htmlFor="chat-input" className="sr-only">
             Message the AI Advocacy Assistant
           </label>
@@ -112,22 +102,22 @@ export default function Assistant() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about rights, accommodations, or how to raise a concern…"
-            className="flex-1 rounded border border-ink/15 px-3 py-2 text-sm focus:border-gold focus:outline-none"
+            className="flex-1 min-w-0 rounded-full border border-navy/16 bg-white px-[18px] py-[13px] text-15 placeholder:text-[#6C8095] focus:border-link focus:outline-none"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="px-4 py-2 rounded bg-ink text-paper text-sm font-semibold disabled:opacity-40"
+            className="btd-btn-coral min-h-[46px] px-[22px] text-15 disabled:opacity-40"
           >
             Send
           </button>
         </form>
       </div>
 
-      <p className="text-xs text-slate-light mt-4">
+      <p className="mt-4 text-sm text-muted">
         In a medical emergency, call 911 or your local emergency number immediately — do
         not wait on a response here.
       </p>
-    </div>
+    </section>
   );
 }

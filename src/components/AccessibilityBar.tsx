@@ -5,16 +5,14 @@ export default function AccessibilityBar() {
     useAccessibility();
 
   const btnClass = (active: boolean) =>
-    `px-3 py-1.5 rounded-sm text-xs font-semibold tracking-wide uppercase border transition-colors ${
-      active
-        ? "bg-ink text-paper border-ink"
-        : "bg-transparent text-ink/70 border-ink/20 hover:border-ink/50 hover:text-ink"
+    `min-h-[30px] px-3 py-1.5 rounded-full border text-11 font-bold uppercase tracking-[0.08em] transition-colors ${
+      active ? "bg-sky text-navy border-sky" : "border-mist/35 hover:border-sky"
     }`;
 
   return (
-    <div className="w-full bg-ink text-paper/90 text-xs">
-      <div className="btd-container flex flex-wrap items-center gap-2 py-1.5">
-        <span className="mr-1 text-paper/60 hidden sm:inline">Display:</span>
+    <div className="btd-dark w-full text-12">
+      <div className="btd-container flex flex-wrap items-center gap-2 py-2">
+        <span className="mr-1 opacity-70">Display</span>
         <button
           type="button"
           onClick={toggleLargeText}
@@ -39,6 +37,7 @@ export default function AccessibilityBar() {
         >
           Easy read
         </button>
+        <span className="ml-auto opacity-65">Emergency? Call 911.</span>
       </div>
     </div>
   );

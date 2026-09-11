@@ -1,8 +1,11 @@
-import { Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import AccessibilityBar from "./components/AccessibilityBar";
 import Home from "./pages/Home";
+import Tools from "./pages/Tools";
+import Future from "./pages/Future";
 import Assistant from "./pages/Assistant";
 import AppointmentPrep from "./pages/AppointmentPrep";
 import Resources from "./pages/Resources";
@@ -17,13 +20,18 @@ import Profile from "./pages/Profile";
 import Privacy from "./pages/Privacy";
 
 export default function App() {
+  const { pathname } = useLocation();
+  useEffect(() => window.scrollTo({ top: 0, behavior: "instant" }), [pathname]);
+
   return (
-    <div className="min-h-screen flex flex-col spotlight-bg">
+    <div className="min-h-screen flex flex-col">
       <AccessibilityBar />
       <Navbar />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/tools" element={<Tools />} />
+          <Route path="/future" element={<Future />} />
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/appointment-prep" element={<AppointmentPrep />} />
           <Route path="/resources" element={<Resources />} />

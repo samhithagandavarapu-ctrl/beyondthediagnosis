@@ -1,3 +1,6 @@
+import { Link } from "react-router-dom";
+import PageHero from "../components/PageHero";
+
 const modules = [
   {
     title: "Recognizing diagnostic overshadowing",
@@ -18,52 +21,65 @@ const modules = [
     title: "Full certificate track",
     desc: "All modules plus a capstone case-review session, for residency programs and hospital systems.",
     price: "$150 / learner",
+    featured: true,
   },
 ];
 
 export default function ProviderEducation() {
   return (
-    <div className="btd-container py-10 max-w-3xl">
-      <h1 className="text-3xl font-display font-semibold mb-2">Provider Education Hub</h1>
-      <p className="text-slate mb-8">
-        This problem doesn't get solved by families alone — providers need better tools
-        too. Training built specifically on diagnostic overshadowing and inclusive care
-        for patients with Down syndrome, informed directly by specialists and families.
-      </p>
+    <div>
+      <PageHero
+        tone="navy"
+        eyebrow="For providers"
+        title="Provider Education Hub"
+        lede="This problem doesn't get solved by families alone. Training built specifically on diagnostic overshadowing and inclusive care for patients with Down syndrome — informed directly by specialists and families."
+      />
+      <section className="btd-container pt-12 pb-20 grid gap-5">
+        <div className="flex gap-3.5 items-start rounded-card bg-coral px-6 py-5">
+          <span className="flex-none whitespace-nowrap text-base font-extrabold text-coral-ink">
+            Not active yet
+          </span>
+          <p className="text-base leading-[1.6] text-coral-ink">
+            Pricing and enrollment below are planned offerings, not a live purchase system.
+            No payments are being processed on this page.
+          </p>
+        </div>
 
-      <div className="btd-card p-4 mb-8 bg-clay/10 border-clay/40 flex gap-3 items-start">
-        <span className="text-lg leading-none" aria-hidden="true">⚠️</span>
-        <p className="text-sm text-ink">
-          <strong>Not active yet.</strong> Pricing and enrollment shown below are planned
-          offerings, not a live purchase system. No payments are being processed on this
-          page right now.
-        </p>
-      </div>
-
-      <div className="space-y-4">
         {modules.map((m) => (
-          <div key={m.title} className="btd-card p-5 flex items-start justify-between gap-4">
-            <div>
-              <h3 className="font-display font-semibold text-lg mb-1">{m.title}</h3>
-              <p className="text-sm text-slate leading-relaxed">{m.desc}</p>
+          <article
+            key={m.title}
+            className={`rounded-card p-[26px] flex flex-wrap gap-[18px] justify-between items-start ${
+              m.featured ? "bg-sky" : "btd-card"
+            }`}
+          >
+            <div className="max-w-[44em]">
+              <h2 className="mb-2 text-23 font-bold">{m.title}</h2>
+              <p className={`text-15 leading-[1.7] ${m.featured ? "text-sky-ink" : "text-body"}`}>
+                {m.desc}
+              </p>
             </div>
-            <span className="shrink-0 text-sm font-semibold text-gold-dark whitespace-nowrap">
+            <span
+              className={`rounded-full px-3.5 py-[9px] text-17 font-bold whitespace-nowrap ${
+                m.featured ? "bg-white" : "bg-butter"
+              }`}
+            >
               {m.price}
             </span>
-          </div>
+          </article>
         ))}
-      </div>
 
-      <div className="mt-10 btd-card p-6 bg-sage/5 border-sage/30">
-        <h2 className="font-display font-semibold text-lg mb-2">
-          For hospitals and residency programs
-        </h2>
-        <p className="text-sm text-slate leading-relaxed">
-          Interested in licensing the Provider Education Hub for your staff or trainees?
-          This is a direct revenue line alongside nonprofit licensing and grant funding —
-          reach out to discuss a pilot.
-        </p>
-      </div>
+        <div className="btd-dark rounded-card p-[30px]">
+          <h2 className="mb-2 text-26 font-extrabold">For hospitals and residency programs</h2>
+          <p className="mb-[18px] max-w-[44em] text-base leading-[1.7] text-mist/85">
+            Interested in licensing the Provider Education Hub for your staff or trainees?
+            This is a direct revenue line alongside nonprofit licensing and grant funding —
+            reach out to discuss a pilot.
+          </p>
+          <Link to="/future" className="btd-btn-coral min-h-[50px] px-6 py-[15px] text-base">
+            Talk about a pilot →
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

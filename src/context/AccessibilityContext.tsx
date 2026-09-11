@@ -79,6 +79,15 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     });
   }, [user, largeText, highContrast, easyRead]);
 
+  // Modes live on <html> so "Large text" / "Easy read" can scale the root
+  // font-size, which every rem-based size in the app follows.
+  useEffect(() => {
+    const root = document.documentElement.classList;
+    root.toggle("a11y-large-text", largeText);
+    root.toggle("a11y-high-contrast", highContrast);
+    root.toggle("a11y-easy-read", easyRead);
+  }, [largeText, highContrast, easyRead]);
+
   const value: A11yState = {
     largeText,
     highContrast,
@@ -88,18 +97,8 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     toggleEasyRead: () => setEasyRead((v) => !v),
   };
 
-  const classes = [
-    largeText ? "a11y-large-text" : "",
-    highContrast ? "a11y-high-contrast" : "",
-    easyRead ? "a11y-easy-read" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   return (
-    <AccessibilityContext.Provider value={value}>
-      <div className={classes}>{children}</div>
-    </AccessibilityContext.Provider>
+    <AccessibilityContext.Provider value={value}>{children}</AccessibilityContext.Provider>
   );
 }
 

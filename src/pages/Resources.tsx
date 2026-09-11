@@ -1,8 +1,13 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { LIFE_STAGES, RESOURCES, LifeStage } from "../data/resources";
 
 export default function Resources() {
-  const [active, setActive] = useState<LifeStage | "all">("all");
+  // /resources?stage=adult preselects a filter (linked from the Tools page).
+  const [params] = useSearchParams();
+  const [active, setActive] = useState<LifeStage | "all">(
+    LIFE_STAGES.find((s) => s.id === params.get("stage"))?.id ?? "all"
+  );
 
   const filtered =
     active === "all" ? RESOURCES : RESOURCES.filter((r) => r.stage === active);

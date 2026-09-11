@@ -1,84 +1,81 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { CTA_LABEL } from "../data/site";
 
 const links = [
-  { to: "/assistant", label: "AI Assistant" },
-  { to: "/appointment-prep", label: "Appointment Prep" },
-  { to: "/resources", label: "Resources" },
-  { to: "/provider-education", label: "Provider Education" },
-  { to: "/stories", label: "Community Stories" },
+  { to: "/tools", label: "The Tools" },
+  { to: "/understanding-overshadowing", label: "The Problem" },
+  { to: "/future", label: "Future Work" },
+  { to: "/provider-education", label: "For Providers" },
 ];
+
+const linkClass = ({ isActive }: { isActive: boolean }) =>
+  `inline-flex items-center min-h-[40px] px-3 py-[9px] rounded-lg text-sm font-medium transition-colors ${
+    isActive ? "bg-navy text-mist" : "text-body hover:bg-sky/30 hover:text-navy"
+  }`;
 
 export default function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
 
   return (
-    <header className="border-b border-ink/10 bg-paper/90 backdrop-blur sticky top-0 z-30">
-      <div className="btd-container flex items-center justify-between py-3">
-        <NavLink to="/" className="flex items-center gap-2 group">
-          <img src="/logo.svg" alt="" className="h-8 w-8" />
-          <span className="font-display text-xl font-semibold text-ink">Verity</span>
+    <header className="sticky top-0 z-40 border-b border-navy/10 bg-mist/[0.92] backdrop-blur-[10px]">
+      <div className="btd-container flex items-center gap-6 py-3.5">
+        <NavLink to="/" className="flex items-center gap-2.5 shrink-0">
+          <img src="/logo.svg" alt="" className="h-[34px] w-[34px]" />
+          <span className="font-display text-[1.375rem] font-extrabold tracking-[-0.03em]">
+            Verity
+          </span>
         </NavLink>
-        <div className="flex items-center gap-2">
-          <nav className="hidden md:flex items-center gap-1">
+        <nav aria-label="Main" className="ml-auto flex flex-wrap items-center justify-end gap-1">
+          <div className="hidden md:flex items-center gap-1">
             {links.map((l) => (
-              <NavLink
-                key={l.to}
-                to={l.to}
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-sm text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-ink text-paper"
-                      : "text-slate hover:bg-ink/5 hover:text-ink"
-                  }`
-                }
-              >
+              <NavLink key={l.to} to={l.to} className={linkClass}>
                 {l.label}
               </NavLink>
             ))}
-          </nav>
+          </div>
           {isAdmin && (
-            <NavLink
-              to="/admin/stories"
-              className="px-3 py-1.5 rounded-sm text-sm font-semibold border border-gold text-gold-dark hover:bg-gold/10"
-            >
+            <NavLink to="/admin/stories" className={linkClass}>
               Admin
             </NavLink>
           )}
           {user ? (
-            <div className="flex items-center gap-2">
+            <>
               <NavLink
                 to="/profile"
-                className="hidden sm:inline text-xs text-slate-light max-w-[140px] truncate hover:text-ink hover:underline"
+                className="hidden sm:inline px-2 text-xs text-muted max-w-[140px] truncate hover:text-navy hover:underline"
               >
                 {user.email || user.phone}
               </NavLink>
               <button
                 onClick={() => signOut()}
-                className="px-3 py-1.5 rounded-sm text-sm font-medium border border-ink/15 text-slate hover:border-ink/40"
+                className="min-h-[40px] px-3 py-[9px] rounded-lg text-sm font-medium text-body hover:bg-sky/30 hover:text-navy"
               >
                 Sign out
               </button>
-            </div>
+            </>
           ) : (
-            <NavLink
-              to="/login"
-              className="px-3 py-1.5 rounded-sm text-sm font-semibold bg-ink text-paper hover:bg-slate transition-colors"
-            >
+            <NavLink to="/login" className={linkClass}>
               Sign in
             </NavLink>
           )}
-        </div>
+          <Link
+            to="/assistant"
+            className="btd-btn-coral ml-2 px-[18px] py-[11px] text-sm shadow-[0_1px_0_rgba(33,50,68,0.15)]"
+          >
+            {CTA_LABEL}
+          </Link>
+        </nav>
       </div>
       {/* mobile nav */}
-      <nav className="md:hidden btd-container flex flex-wrap gap-2 pb-3">
+      <nav aria-label="Sections" className="md:hidden btd-container flex flex-wrap gap-2 pb-3">
         {links.map((l) => (
           <NavLink
             key={l.to}
             to={l.to}
             className={({ isActive }) =>
-              `px-2.5 py-1 rounded-sm text-xs font-medium border ${
-                isActive ? "bg-ink text-paper border-ink" : "text-slate border-ink/15"
+              `px-3 py-1.5 rounded-full text-xs font-medium border ${
+                isActive ? "bg-navy text-mist border-navy" : "text-body border-navy/15"
               }`
             }
           >

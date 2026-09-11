@@ -1,150 +1,237 @@
 import { Link } from "react-router-dom";
+import { STORIES } from "../data/stories";
+import { CTA_LABEL } from "../data/site";
 
-const features = [
+const tools = [
   {
     to: "/assistant",
     title: "AI Advocacy Assistant",
     desc: "Ask about your rights, accommodations, or how to describe a symptom clearly. It never diagnoses — it helps you advocate.",
-    tag: "Always free",
+    cta: "Open the assistant →",
   },
   {
     to: "/appointment-prep",
     title: "Appointment Prep Tool",
     desc: "Turn symptoms, medications, and questions into a clean one-page summary you can hand straight to a provider.",
-    tag: "Always free",
+    cta: "Build a summary →",
   },
   {
     to: "/resources",
     title: "Resource Navigator",
     desc: "Trusted resources filtered by life stage — prenatal, child, teen, adult, caregiver, or provider.",
-    tag: "Always free",
-  },
-  {
-    to: "/provider-education",
-    title: "Provider Education Hub",
-    desc: "Training for clinics and residency programs on diagnostic overshadowing and inclusive communication.",
-    tag: "For providers",
-  },
-  {
-    to: "/stories",
-    title: "Community Stories",
-    desc: "Real experiences from self-advocates, families, and clinicians — including moments advocacy changed an outcome.",
-    tag: "Searchable",
+    cta: "Browse resources →",
   },
 ];
+
+// Quote accents on the navy "problem" band, in order.
+const accents = [
+  { border: "border-sky", text: "text-sky" },
+  { border: "border-butter", text: "text-butter" },
+  { border: "border-coral", text: "text-coral" },
+];
+
+const roadmap = [
+  {
+    tag: "In design",
+    tagBg: "bg-coral",
+    title: "Billing & insurance navigation",
+    desc: "Plain-language help reading an EOB, appealing a denial, and documenting medical necessity when a claim comes back wrong.",
+  },
+  {
+    tag: "Next up",
+    tagBg: "bg-butter",
+    title: "Provider directory",
+    desc: "Find clinicians with real experience in adult Down syndrome care — starting from the handful of specialty clinics that exist today.",
+  },
+  {
+    tag: "Exploring",
+    tagBg: "bg-sky",
+    title: "Institutional licensing",
+    desc: "Hospital systems and residency programs fund the platform so the family-facing tools never carry a price tag.",
+  },
+];
+
+const cardGrid = "grid gap-5 mt-[34px]";
 
 export default function Home() {
   return (
     <div>
-      {/* Hero: the "spotlight" signature — a symptom sits in shadow, then advocacy brings it into light */}
-      <section className="btd-container pt-16 pb-20">
-        <div className="grid md:grid-cols-[1.2fr,1fr] gap-12 items-center">
+      {/* Hero */}
+      <section className="bg-gradient-to-b from-mist to-sky-tint border-b border-navy/[0.08]">
+        <div className="btd-container pt-[88px] pb-[76px] grid gap-10 items-end md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <div>
-            <p className="uppercase tracking-widest text-xs font-semibold text-gold-dark mb-4">
+            <span className="inline-flex rounded-full bg-butter px-3.5 py-[7px] text-12 font-bold uppercase tracking-[0.12em]">
               Healthcare advocacy for Down syndrome
-            </p>
-            <h1 className="text-4xl sm:text-5xl font-display font-semibold leading-[1.08] mb-4">
+            </span>
+            <h1 className="btd-hero-h1 mt-[22px] max-w-[16em]">
               Every symptom deserves a real look —
-              <br className="hidden sm:block" />
-              <span className="text-slate-light">not a shrug and a label.</span>
+              <span className="text-link"> not a shrug and a label.</span>
             </h1>
-            <p className="text-lg font-display italic text-gold-dark mb-6">
-              "Nothing for me, without me."
-            </p>
-            <p className="text-lg text-slate max-w-xl mb-8 leading-relaxed">
+            <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
               Verity helps people with Down syndrome, their families, and their
               clinicians catch what diagnostic overshadowing hides — when a real,
               treatable symptom gets waved off as "just Down syndrome."
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/assistant"
-                className="btd-accent inline-flex items-center px-5 py-3 rounded bg-ink text-paper font-semibold hover:bg-slate transition-colors"
-              >
-                Talk to the AI Assistant
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/assistant" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
+                {CTA_LABEL}
               </Link>
               <Link
                 to="/appointment-prep"
-                className="inline-flex items-center px-5 py-3 rounded border border-ink/20 text-ink font-semibold hover:border-ink/50 transition-colors"
+                className="btd-btn-outline min-h-[52px] px-[26px] py-3.5 text-17"
               >
                 Prep for an appointment
               </Link>
             </div>
             <Link
               to="/understanding-overshadowing"
-              className="inline-block mt-4 text-sm font-semibold text-gold-dark hover:underline"
+              className="mt-[26px] inline-block text-15 font-bold text-link underline underline-offset-[3px] hover:text-navy"
             >
               What is diagnostic overshadowing, exactly? →
             </Link>
           </div>
 
-          {/* Spotlight device */}
-          <div className="relative aspect-square max-w-sm mx-auto w-full">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-ink/5 to-transparent" />
-            <svg viewBox="0 0 320 320" className="w-full h-full" aria-hidden="true">
-              <circle cx="160" cy="160" r="150" fill="#33454E" opacity="0.06" />
-              <circle cx="160" cy="160" r="105" fill="#33454E" opacity="0.09" />
-              <circle cx="160" cy="160" r="62" fill="#B8912B" opacity="0.16" />
-              <circle cx="160" cy="160" r="30" fill="#B8912B" />
-              <text
-                x="160"
-                y="166"
-                textAnchor="middle"
-                fontFamily="'Public Sans', sans-serif"
-                fontSize="11"
-                fontWeight="700"
-                fill="#FAF8F3"
-                letterSpacing="0.5"
-              >
-                SEEN
-              </text>
-            </svg>
-            <p className="text-center text-sm text-slate-light mt-2">
-              What's overshadowed at the edges gets missed. We work to bring it to the
-              center.
+          <div className="btd-dark rounded-panel p-8 grid gap-[18px]">
+            <p className="font-display text-2xl italic leading-[1.35] text-butter">
+              "Nothing for me, without me."
             </p>
+            <div className="h-px bg-mist/20" />
+            <p className="text-15 leading-[1.65] text-mist/85">
+              Core tools stay free for every family who needs them. Revenue comes from
+              the institutions around families — never from families themselves.
+            </p>
+            <div className="flex flex-wrap gap-2.5">
+              {["Never diagnoses", "Built with self-advocates"].map((t) => (
+                <span key={t} className="rounded-full bg-sky px-3 py-1.5 text-12 font-bold text-navy">
+                  {t}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Feature grid */}
-      <section className="btd-container pb-24">
-        <h2 className="text-2xl font-display font-semibold mb-2">What's inside</h2>
-        <p className="text-slate mb-8 max-w-2xl">
-          Core tools stay free for every family who needs them — that's a mission choice
-          and a business one. Revenue comes from the institutions around families, not
-          from families themselves.
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map((f) => (
-            <Link
-              key={f.to}
-              to={f.to}
-              className="btd-card p-5 flex flex-col gap-2 hover:border-gold/60 hover:shadow-md transition-all"
-            >
-              <span className="text-[11px] uppercase tracking-wide font-semibold text-sage-dark">
-                {f.tag}
-              </span>
-              <h3 className="text-lg font-display font-semibold">{f.title}</h3>
-              <p className="text-sm text-slate leading-relaxed">{f.desc}</p>
+      {/* 01 — The tools */}
+      <section className="btd-container pt-[76px] pb-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span className="btd-eyebrow">01 — The tools</span>
+            <h2 className="btd-section-h2 mt-2.5">
+              Everything you need before, during, and after the visit
+            </h2>
+          </div>
+          <Link to="/tools" className="btd-btn-sky min-h-[46px] px-[22px] py-[13px] text-15">
+            See all tools →
+          </Link>
+        </div>
+        <div className={`${cardGrid} grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))]`}>
+          {tools.map((t) => (
+            <Link key={t.to} to={t.to} className="btd-card btd-card-hover p-[26px] grid gap-2.5 content-start">
+              <span className="btd-tag bg-butter">Always free</span>
+              <h3 className="text-23 font-bold">{t.title}</h3>
+              <p className="text-15 leading-[1.65] text-body">{t.desc}</p>
+              <span className="text-sm font-bold text-link">{t.cta}</span>
             </Link>
+          ))}
+          <Link
+            to="/provider-education"
+            className="btd-dark rounded-card p-[26px] grid gap-2.5 content-start transition-shadow hover:shadow-[0_10px_30px_rgba(33,50,68,0.2)]"
+          >
+            <span className="btd-tag bg-sky">For providers</span>
+            <h3 className="text-23 font-bold">Provider Education Hub</h3>
+            <p className="text-15 leading-[1.65] text-mist/85">
+              Training for clinics and residency programs on diagnostic overshadowing and
+              inclusive communication.
+            </p>
+            <span className="text-sm font-bold text-butter">See the modules →</span>
+          </Link>
+        </div>
+      </section>
+
+      {/* 02 — The problem */}
+      <section className="btd-dark mt-[76px]">
+        <div className="btd-container py-[76px]">
+          <span className="btd-eyebrow text-butter">02 — The problem</span>
+          <div className="mt-3 grid gap-10 items-start md:grid-cols-2">
+            <div>
+              <h2 className="btd-section-h2">
+                A new symptom gets credited to a diagnosis someone already has.
+              </h2>
+              <p className="mt-4 max-w-[34em] text-17 leading-[1.7] text-mist/85">
+                That's diagnostic overshadowing. A provider explains a new or worsening
+                symptom by pointing at Down syndrome instead of investigating it as its own
+                medical issue. Three biases drive it — anchoring, premature closure, and
+                implicit bias — and research shows experience alone doesn't protect against
+                it.
+              </p>
+              <Link
+                to="/understanding-overshadowing"
+                className="btd-btn-coral mt-[26px] min-h-[50px] px-[26px] py-[15px] text-base"
+              >
+                Read the full breakdown →
+              </Link>
+            </div>
+            {/* Placeholder quotes from data/stories.ts — swap for consented real submissions. */}
+            <div className="grid gap-4">
+              {STORIES.map((s, i) => {
+                const a = accents[i % accents.length];
+                return (
+                  <figure
+                    key={s.id}
+                    className={`rounded-r-2xl border-l-[3px] ${a.border} bg-mist/7 px-6 py-[22px]`}
+                  >
+                    <blockquote className="text-17 leading-[1.6]">"{s.excerpt}"</blockquote>
+                    <figcaption
+                      className={`mt-3 text-13 font-bold uppercase tracking-[0.08em] ${a.text}`}
+                    >
+                      {s.audience}
+                    </figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 03 — Future work */}
+      <section className="btd-container py-[76px]">
+        <span className="btd-eyebrow">03 — Future work</span>
+        <div className="mt-2.5 flex flex-wrap items-end justify-between gap-4">
+          <h2 className="btd-section-h2 max-w-[22em]">
+            What we're building next — and how it stays free
+          </h2>
+          <Link to="/future" className="btd-btn-sky min-h-[46px] px-[22px] py-[13px] text-15">
+            See the roadmap →
+          </Link>
+        </div>
+        <div className={`${cardGrid} grid-cols-[repeat(auto-fit,minmax(min(100%,250px),1fr))]`}>
+          {roadmap.map((r) => (
+            <div key={r.title} className="btd-card p-[26px]">
+              <span className={`btd-tag ${r.tagBg}`}>{r.tag}</span>
+              <h3 className="mt-3.5 mb-2 text-21 font-bold">{r.title}</h3>
+              <p className="text-15 leading-[1.65] text-body">{r.desc}</p>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* Philosophy */}
-      <section className="border-t border-ink/10 bg-ink text-paper">
-        <div className="btd-container py-14 max-w-3xl">
-          <p className="text-sm uppercase tracking-widest text-gold-light font-semibold mb-4">
+      {/* Principle band */}
+      <section className="bg-sky">
+        <div className="mx-auto max-w-[900px] px-6 py-[72px] text-center">
+          <p className="text-12 font-bold uppercase tracking-[0.14em] text-sky-ink">
             Our guiding principle
           </p>
-          <blockquote className="text-2xl font-display leading-snug">
+          <blockquote className="mt-[18px] font-display text-[clamp(1.75rem,4vw,2.875rem)] leading-[1.2] tracking-[-0.02em]">
             "Nothing about me without me."
           </blockquote>
-          <p className="text-paper/70 mt-4 text-sm">
+          <p className="mx-auto mt-[18px] max-w-[46em] text-base leading-[1.7] text-sky-ink">
             Built by listening directly to self-advocates and families first — not
             assumptions made on their behalf.
           </p>
+          <Link to="/assistant" className="btd-btn-coral mt-[30px] min-h-[52px] px-[30px] py-4 text-17">
+            {CTA_LABEL}
+          </Link>
         </div>
       </section>
     </div>

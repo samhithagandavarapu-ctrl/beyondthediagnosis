@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import PageHero from "../components/PageHero";
 import { STORIES } from "../data/stories";
 import { fetchApprovedStories, StoryRow } from "../lib/stories";
 
@@ -39,53 +40,59 @@ export default function Stories() {
   }, [allStories, query, audience]);
 
   return (
-    <div className="btd-container py-10 max-w-3xl">
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-2">
-        <h1 className="text-3xl font-display font-semibold">Community Stories</h1>
-        <Link
-          to="/stories/submit"
-          className="px-4 py-2 rounded bg-ink text-paper text-sm font-semibold shrink-0"
-        >
+    <div>
+      <PageHero
+        eyebrow="Community stories"
+        title="The pattern, in people's own words"
+        lede="Every story is published with explicit permission from the person who lived it. Placeholders below stand in until real submissions are consented and reviewed."
+      >
+        <Link to="/stories/submit" className="btd-btn-coral min-h-[50px] px-6 py-[15px] text-base">
           Share your story
         </Link>
-      </div>
-      <p className="text-slate mb-6">
-        Real experiences from self-advocates, families, and clinicians — including
-        moments where the right advocacy changed an outcome.
-      </p>
+      </PageHero>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-8">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search stories…"
-          className="btd-input sm:max-w-xs"
-        />
-        <select
-          value={audience}
-          onChange={(e) => setAudience(e.target.value as any)}
-          className="btd-input sm:max-w-[200px]"
-        >
+      <section className="btd-container pt-12 pb-20">
+        <div className="mb-7 flex flex-wrap items-center gap-2.5">
           {AUDIENCES.map((a) => (
-            <option key={a} value={a}>
+            <button
+              key={a}
+              type="button"
+              onClick={() => setAudience(a)}
+              aria-pressed={audience === a}
+              className={`rounded-full border px-4 py-2.5 text-sm transition-colors ${
+                audience === a
+                  ? "bg-navy text-mist border-navy font-bold"
+                  : "bg-white border-navy/15 font-medium hover:border-navy/40"
+              }`}
+            >
               {a}
-            </option>
+            </button>
           ))}
-        </select>
-      </div>
+          <label htmlFor="story-search" className="sr-only">
+            Search stories
+          </label>
+          <input
+            id="story-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search stories…"
+            className="btd-input sm:ml-auto sm:max-w-xs rounded-full px-4 py-2.5"
+          />
+        </div>
 
-      <div className="space-y-4">
-        {filtered.map((s) => (
-          <article key={s.id} className="btd-card p-5">
-            <span className="text-[11px] uppercase tracking-wide font-semibold text-sage-dark">
-              {s.audience}
-            </span>
-            <h3 className="font-display font-semibold text-lg mt-1 mb-1">{s.title}</h3>
-            <p className="text-sm text-slate leading-relaxed">{s.excerpt}</p>
-          </article>
-        ))}
-        {filtered.length === 0 && <p className="text-slate">No stories match yet.</p>}
-      </div>
+        <div className="grid gap-5 grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))]">
+          {filtered.map((s) => (
+            <article key={s.id} className="btd-card p-[26px]">
+              <span className="text-11 font-bold uppercase tracking-[0.1em] text-link">
+                {s.audience}
+              </span>
+              <h3 className="mt-2.5 mb-2 text-21 font-bold">{s.title}</h3>
+              <p className="text-15 leading-[1.7] text-body">{s.excerpt}</p>
+            </article>
+          ))}
+        </div>
+        {filtered.length === 0 && <p className="text-body">No stories match yet.</p>}
+      </section>
     </div>
   );
 }

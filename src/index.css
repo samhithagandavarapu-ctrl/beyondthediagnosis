@@ -7,14 +7,19 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-paper text-ink font-body antialiased;
+    @apply bg-mist text-navy font-body antialiased;
+    line-height: 1.55;
   }
   h1, h2, h3, h4 {
-    @apply font-display text-ink;
+    @apply font-display;
+    letter-spacing: -0.02em;
+  }
+  p {
+    text-wrap: pretty;
   }
   :focus-visible {
-    outline: 3px solid #B8912B;
-    outline-offset: 2px;
+    outline: 3px solid #1B5C8F;
+    outline-offset: 3px;
   }
   @media (prefers-reduced-motion: reduce) {
     * {
@@ -26,26 +31,86 @@
   }
 }
 
-/* ---- Accessibility mode: large text ---- */
-.a11y-large-text {
-  font-size: 118%;
+@layer components {
+  .btd-container {
+    @apply mx-auto max-w-[1180px] px-6;
+  }
+  .btd-surface {
+    background: #FFFFFF;
+  }
+  .btd-card {
+    @apply btd-surface rounded-card border border-navy/12;
+  }
+  .btd-card-hover {
+    @apply transition-[border-color,box-shadow] hover:border-coral hover:shadow-[0_10px_30px_rgba(33,50,68,0.09)];
+  }
+  .btd-dark {
+    @apply bg-navy text-mist;
+  }
+  .btd-input {
+    @apply w-full rounded border border-navy/16 px-3 py-2 text-sm bg-white focus:border-link focus:outline-none;
+  }
+  .btd-eyebrow {
+    @apply text-12 font-bold uppercase tracking-[0.14em] text-link;
+  }
+  .btd-tag {
+    @apply inline-block justify-self-start rounded-full px-2.5 py-[5px] text-11 font-bold uppercase tracking-[0.1em] text-navy;
+  }
+  .btd-btn {
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-full font-bold text-navy transition-colors;
+  }
+  .btd-btn-coral {
+    @apply btd-btn bg-coral hover:bg-coral-hover;
+  }
+  .btd-btn-sky {
+    @apply btd-btn bg-sky hover:bg-sky-hover;
+  }
+  .btd-btn-outline {
+    @apply btd-btn border-2 border-navy hover:bg-navy hover:text-mist;
+  }
+  .btd-hero-h1 {
+    font-size: clamp(2.5rem, 6.2vw, 4.75rem);
+    line-height: 1.02;
+    font-weight: 800;
+  }
+  .btd-section-h2 {
+    font-size: clamp(1.875rem, 3.4vw, 2.75rem);
+    line-height: 1.1;
+    font-weight: 800;
+  }
+  .btd-page-h1 {
+    font-size: clamp(2.125rem, 5vw, 3.625rem);
+    line-height: 1.05;
+    font-weight: 800;
+  }
 }
-.a11y-large-text h1 { font-size: 1.15em; }
-.a11y-large-text h2 { font-size: 1.15em; }
-.a11y-large-text p, .a11y-large-text li, .a11y-large-text label, .a11y-large-text button {
-  font-size: 1.05em;
-  line-height: 1.7;
+
+/* ---- Accessibility modes (classes live on <html>, set by AccessibilityContext) ---- */
+html.a11y-large-text { font-size: 112.5%; }
+html.a11y-easy-read { font-size: calc(100% + 1px); }
+html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
+
+.a11y-easy-read body,
+.a11y-easy-read p,
+.a11y-easy-read li {
+  line-height: 1.9 !important;
+}
+.a11y-easy-read .btd-optional-detail {
+  display: none;
 }
 
 /* ---- Accessibility mode: high contrast ---- */
-.a11y-high-contrast {
+.a11y-high-contrast body {
   background: #FFFFFF !important;
   color: #000000 !important;
 }
-.a11y-high-contrast .btd-surface {
+.a11y-high-contrast .btd-surface,
+.a11y-high-contrast .btd-dark {
   background: #FFFFFF !important;
+  color: #000000 !important;
   border: 2px solid #000000 !important;
 }
+.a11y-high-contrast .btd-dark *,
 .a11y-high-contrast a,
 .a11y-high-contrast button {
   color: #000000 !important;
@@ -57,37 +122,4 @@
 .a11y-high-contrast * {
   text-shadow: none !important;
   box-shadow: none !important;
-}
-
-/* ---- Accessibility mode: Easy Read ---- */
-.a11y-easy-read p {
-  max-width: 60ch;
-  line-height: 1.9;
-  font-size: 1.08em;
-}
-.a11y-easy-read .btd-optional-detail {
-  display: none;
-}
-
-.btd-container {
-  @apply mx-auto max-w-6xl px-5 sm:px-8;
-}
-
-.btd-card {
-  @apply btd-surface rounded-lg bg-white border border-ink/10 shadow-sm;
-}
-
-.btd-surface {
-  background: #FFFFFF;
-}
-
-.btd-input {
-  @apply w-full rounded border border-ink/15 px-3 py-2 text-sm bg-white focus:border-gold focus:outline-none;
-}
-
-.spotlight-bg {
-  background:
-    radial-gradient(60% 55% at 22% 20%, rgba(184, 145, 43, 0.16), transparent 60%),
-    radial-gradient(45% 40% at 85% 10%, rgba(110, 139, 124, 0.14), transparent 60%),
-    #FAF8F3;
 }

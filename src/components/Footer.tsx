@@ -1,18 +1,18 @@
+import { Link } from "react-router-dom";
+
 export default function Footer() {
   return (
-    <footer className="border-t border-ink/10 mt-16">
-      <div className="btd-container py-8 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-sm text-slate-light">
-        <p>
+    <footer className="btd-dark text-mist/75">
+      <div className="btd-container py-10 flex flex-wrap gap-5 items-start justify-between">
+        <p className="max-w-[40em] text-sm leading-[1.65]">
           Verity is an education and advocacy tool. It does not diagnose,
           treat, or replace the guidance of a licensed healthcare provider.
         </p>
-        <div className="flex items-center gap-4 shrink-0">
-          <a href="/privacy" className="hover:text-ink hover:underline">
+        <div className="flex flex-wrap items-center gap-5 text-sm">
+          <Link to="/privacy" className="text-sky hover:underline">
             Privacy Policy
-          </a>
-          <p className="text-xs">
-            Emergency? Call 911 now.
-          </p>
+          </Link>
+          <span className="font-bold text-butter">Emergency? Call 911 now.</span>
         </div>
       </div>
     </footer>
