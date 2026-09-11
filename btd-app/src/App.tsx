@@ -21,7 +21,11 @@ import Privacy from "./pages/Privacy";
 
 export default function App() {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo({ top: 0, behavior: "instant" }), [pathname]);
+  // Block body on purpose: newer browsers return a Promise from scrollTo, and
+  // React would call any returned value as a cleanup function and crash.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname]);
 
   return (
     <div className="min-h-screen flex flex-col">
