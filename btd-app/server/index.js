@@ -103,12 +103,14 @@ Rules:
 - Keep the person's own voice where possible — don't make it sound clinical or cold.
 - Keep each symptom description to one clear sentence.
 - Keep each question as a single, specific, answerable question.
+- Medications and ruled-out items arrive as arrays of objects: tidy each entry in place and return the SAME number of entries, in the same order. Never merge, split, reorder, or drop one.
+- Never change a medication name, dose, or frequency into a different drug or number — only fix formatting and spelling (e.g. "10mg" to "10 mg").
 - Return ONLY valid JSON, no preamble, no markdown fences, matching this exact shape:
 {
   "reasonForVisit": "string",
   "symptoms": [{ "description": "string", "onset": "string" }],
-  "medications": "string",
-  "ruledOut": "string",
+  "medications": [{ "name": "string", "dose": "string", "frequency": "string" }],
+  "ruledOut": [{ "description": "string", "when": "string" }],
   "accommodations": "string",
   "questions": ["string"]
 }`;

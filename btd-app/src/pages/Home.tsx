@@ -223,7 +223,7 @@ export default function Home() {
             Our guiding principle
           </p>
           <blockquote className="mt-[18px] font-display text-[clamp(1.75rem,4vw,2.875rem)] leading-[1.2] tracking-[-0.02em]">
-            "Nothing about me without me."
+            "Nothing for me, without me."
           </blockquote>
           <p className="mx-auto mt-[18px] max-w-[46em] text-base leading-[1.7] text-sky-ink">
             Built by listening directly to self-advocates and families first — not

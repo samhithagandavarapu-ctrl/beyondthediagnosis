@@ -1,31 +1,19 @@
 import { useState } from "react";
-import { jsPDF } from "jspdf";
 import { Link } from "react-router-dom";
 import { refineAppointmentForm } from "../lib/api";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { CheckIn, checkInLines } from "../lib/myVoice";
-
-type Symptom = {
-  id: string;
-  description: string;
-  onset: string;
-  baselineOrNew: "baseline" | "new";
-};
-
-type Question = {
-  id: string;
-  text: string;
-};
-
-type FormState = {
-  patientName: string;
-  reasonForVisit: string;
-  symptoms: Symptom[];
-  medications: string;
-  ruledOut: string;
-  accommodations: string;
-  questions: Question[];
-};
+import Icon from "../components/icons/Icon";
+import {
+  AppointmentForm,
+  Medication,
+  Question,
+  RuledOutItem,
+  Symptom,
+  buildAppointmentPdf,
+  medicationLine,
+  symptomDetail,
+} from "../lib/appointmentPdf";
 
 const newId = () => crypto.randomUUID();
 
@@ -36,21 +24,26 @@ const emptySymptom = (): Symptom => ({
   baselineOrNew: "new",
 });
 
+// Medications and ruled-out items are one entry per thing, like symptoms —
+// a single free-text box turns into an unreadable wall on the printed page,
+// and there's nothing to line up dose against frequency.
+const emptyMedication = (): Medication => ({ id: newId(), name: "", dose: "", frequency: "" });
+const emptyRuledOut = (): RuledOutItem => ({ id: newId(), description: "", when: "" });
 const emptyQuestion = (): Question => ({ id: newId(), text: "" });
 
-const emptyForm = (): FormState => ({
+const emptyForm = (): AppointmentForm => ({
   patientName: "",
   reasonForVisit: "",
   symptoms: [emptySymptom()],
-  medications: "",
-  ruledOut: "",
+  medications: [emptyMedication()],
+  ruledOut: [emptyRuledOut()],
   accommodations: "",
   questions: [emptyQuestion()],
 });
 
 export default function AppointmentPrep() {
   const { savedCheckIn, clearCheckIn } = useMyVoice();
-  const [form, setForm] = useState<FormState>(emptyForm());
+  const [form, setForm] = useState<AppointmentForm>(emptyForm());
   // Opt-in on purpose: the check-in belongs to the person who made it, so it
   // only reaches the provider summary if someone says yes here.
   const [includeMyVoice, setIncludeMyVoice] = useState(true);
@@ -62,24 +55,25 @@ export default function AppointmentPrep() {
     setRefining(true);
     setRefineError(null);
     try {
-      const payload = {
+      const refined = await refineAppointmentForm({
         reasonForVisit: form.reasonForVisit,
         symptoms: form.symptoms.map((s) => ({ description: s.description, onset: s.onset })),
-        medications: form.medications,
-        ruledOut: form.ruledOut,
+        medications: form.medications.map((m) => ({
+          name: m.name,
+          dose: m.dose,
+          frequency: m.frequency,
+        })),
+        ruledOut: form.ruledOut.map((r) => ({ description: r.description, when: r.when })),
         accommodations: form.accommodations,
         questions: form.questions.map((q) => q.text),
-      };
-      const refined = await refineAppointmentForm(payload);
+      });
 
       setForm((f) => ({
         ...f,
         reasonForVisit: refined.reasonForVisit ?? f.reasonForVisit,
-        medications: refined.medications ?? f.medications,
-        ruledOut: refined.ruledOut ?? f.ruledOut,
         accommodations: refined.accommodations ?? f.accommodations,
         symptoms:
-          refined.symptoms && refined.symptoms.length > 0
+          refined.symptoms?.length
             ? refined.symptoms.map((s, i) => ({
                 id: f.symptoms[i]?.id ?? newId(),
                 description: s.description,
@@ -87,15 +81,32 @@ export default function AppointmentPrep() {
                 baselineOrNew: f.symptoms[i]?.baselineOrNew ?? "new",
               }))
             : f.symptoms,
+        medications:
+          refined.medications?.length
+            ? refined.medications.map((m, i) => ({
+                id: f.medications[i]?.id ?? newId(),
+                name: m.name,
+                dose: m.dose,
+                frequency: m.frequency,
+              }))
+            : f.medications,
+        ruledOut:
+          refined.ruledOut?.length
+            ? refined.ruledOut.map((r, i) => ({
+                id: f.ruledOut[i]?.id ?? newId(),
+                description: r.description,
+                when: r.when,
+              }))
+            : f.ruledOut,
         questions:
-          refined.questions && refined.questions.length > 0
+          refined.questions?.length
             ? refined.questions.map((text, i) => ({
                 id: f.questions[i]?.id ?? newId(),
                 text,
               }))
             : f.questions,
       }));
-    } catch (err) {
+    } catch {
       setRefineError(
         "Couldn't refine this right now. Make sure the API server is running and ANTHROPIC_API_KEY is set."
       );
@@ -104,34 +115,35 @@ export default function AppointmentPrep() {
     }
   }
 
-  function updateSymptom(id: string, patch: Partial<Symptom>) {
+  // One helper per list keeps the update sites short and identical in shape.
+  function updateItem<K extends "symptoms" | "medications" | "ruledOut" | "questions">(
+    key: K,
+    id: string,
+    patch: Partial<AppointmentForm[K][number]>
+  ) {
     setForm((f) => ({
       ...f,
-      symptoms: f.symptoms.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+      [key]: (f[key] as { id: string }[]).map((entry) =>
+        entry.id === id ? { ...entry, ...patch } : entry
+      ),
     }));
   }
 
-  function addSymptom() {
-    setForm((f) => ({ ...f, symptoms: [...f.symptoms, emptySymptom()] }));
+  function addItem<K extends "symptoms" | "medications" | "ruledOut" | "questions">(
+    key: K,
+    make: () => AppointmentForm[K][number]
+  ) {
+    setForm((f) => ({ ...f, [key]: [...(f[key] as unknown[]), make()] }));
   }
 
-  function removeSymptom(id: string) {
-    setForm((f) => ({ ...f, symptoms: f.symptoms.filter((s) => s.id !== id) }));
-  }
-
-  function updateQuestion(id: string, text: string) {
+  function removeItem(
+    key: "symptoms" | "medications" | "ruledOut" | "questions",
+    id: string
+  ) {
     setForm((f) => ({
       ...f,
-      questions: f.questions.map((q) => (q.id === id ? { ...q, text } : q)),
+      [key]: (f[key] as { id: string }[]).filter((entry) => entry.id !== id),
     }));
-  }
-
-  function addQuestion() {
-    setForm((f) => ({ ...f, questions: [...f.questions, emptyQuestion()] }));
-  }
-
-  function removeQuestion(id: string) {
-    setForm((f) => ({ ...f, questions: f.questions.filter((q) => q.id !== id) }));
   }
 
   const myVoice = includeMyVoice ? savedCheckIn : null;
@@ -177,42 +189,33 @@ export default function AppointmentPrep() {
         <ListSection
           label="Symptoms"
           addLabel="+ Add another symptom"
-          onAdd={addSymptom}
+          onAdd={() => addItem("symptoms", emptySymptom)}
         >
           {form.symptoms.map((s, i) => (
-            <div key={s.id} className="btd-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase tracking-wide text-slate-light font-semibold">
-                  Symptom {i + 1}
-                </span>
-                {form.symptoms.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeSymptom(s.id)}
-                    className="text-xs text-clay hover:underline"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
+            <EntryCard
+              key={s.id}
+              index={i}
+              label="Symptom"
+              onRemove={form.symptoms.length > 1 ? () => removeItem("symptoms", s.id) : undefined}
+            >
               <input
                 className="btd-input"
                 placeholder="Describe the symptom"
                 value={s.description}
-                onChange={(e) => updateSymptom(s.id, { description: e.target.value })}
+                onChange={(e) => updateItem("symptoms", s.id, { description: e.target.value })}
               />
               <div className="grid sm:grid-cols-2 gap-3">
                 <input
                   className="btd-input"
                   placeholder="When did it start? (onset / duration)"
                   value={s.onset}
-                  onChange={(e) => updateSymptom(s.id, { onset: e.target.value })}
+                  onChange={(e) => updateItem("symptoms", s.id, { onset: e.target.value })}
                 />
                 <select
                   className="btd-input"
                   value={s.baselineOrNew}
                   onChange={(e) =>
-                    updateSymptom(s.id, {
+                    updateItem("symptoms", s.id, {
                       baselineOrNew: e.target.value as Symptom["baselineOrNew"],
                     })
                   }
@@ -221,27 +224,9 @@ export default function AppointmentPrep() {
                   <option value="baseline">Baseline — part of how they usually are</option>
                 </select>
               </div>
-            </div>
+            </EntryCard>
           ))}
         </ListSection>
-
-        <Field label="Current medications">
-          <textarea
-            className="btd-input min-h-[70px]"
-            value={form.medications}
-            onChange={(e) => setForm({ ...form, medications: e.target.value })}
-            placeholder="Name, dose, and how often — one per line"
-          />
-        </Field>
-
-        <Field label="Already ruled out">
-          <textarea
-            className="btd-input min-h-[70px]"
-            value={form.ruledOut}
-            onChange={(e) => setForm({ ...form, ruledOut: e.target.value })}
-            placeholder="Tests, conditions, or explanations already checked and ruled out"
-          />
-        </Field>
 
         <MyVoiceSection
           checkIn={savedCheckIn}
@@ -249,6 +234,72 @@ export default function AppointmentPrep() {
           onIncludeChange={setIncludeMyVoice}
           onClear={clearCheckIn}
         />
+
+        <ListSection
+          label="Current medications"
+          addLabel="+ Add another medication"
+          onAdd={() => addItem("medications", emptyMedication)}
+        >
+          {form.medications.map((m, i) => (
+            <EntryCard
+              key={m.id}
+              index={i}
+              label="Medication"
+              onRemove={
+                form.medications.length > 1 ? () => removeItem("medications", m.id) : undefined
+              }
+            >
+              <input
+                className="btd-input"
+                placeholder="Medication name"
+                value={m.name}
+                onChange={(e) => updateItem("medications", m.id, { name: e.target.value })}
+              />
+              <div className="grid sm:grid-cols-2 gap-3">
+                <input
+                  className="btd-input"
+                  placeholder="Dose (e.g. 10 mg)"
+                  value={m.dose}
+                  onChange={(e) => updateItem("medications", m.id, { dose: e.target.value })}
+                />
+                <input
+                  className="btd-input"
+                  placeholder="How often (e.g. twice a day)"
+                  value={m.frequency}
+                  onChange={(e) => updateItem("medications", m.id, { frequency: e.target.value })}
+                />
+              </div>
+            </EntryCard>
+          ))}
+        </ListSection>
+
+        <ListSection
+          label="Already ruled out"
+          addLabel="+ Add another"
+          onAdd={() => addItem("ruledOut", emptyRuledOut)}
+        >
+          {form.ruledOut.map((r, i) => (
+            <EntryCard
+              key={r.id}
+              index={i}
+              label="Ruled out"
+              onRemove={form.ruledOut.length > 1 ? () => removeItem("ruledOut", r.id) : undefined}
+            >
+              <input
+                className="btd-input"
+                placeholder="Test, condition, or explanation already checked"
+                value={r.description}
+                onChange={(e) => updateItem("ruledOut", r.id, { description: e.target.value })}
+              />
+              <input
+                className="btd-input"
+                placeholder="When was it checked? (optional)"
+                value={r.when}
+                onChange={(e) => updateItem("ruledOut", r.id, { when: e.target.value })}
+              />
+            </EntryCard>
+          ))}
+        </ListSection>
 
         <Field label="Communication or accommodation needs">
           <textarea
@@ -262,23 +313,21 @@ export default function AppointmentPrep() {
         <ListSection
           label="Prioritized questions"
           addLabel="+ Add another question"
-          onAdd={addQuestion}
+          onAdd={() => addItem("questions", emptyQuestion)}
         >
           {form.questions.map((q, i) => (
             <div key={q.id} className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-slate-light w-5 shrink-0">
-                {i + 1}.
-              </span>
+              <span className="text-sm font-semibold text-slate-light w-5 shrink-0">{i + 1}.</span>
               <input
                 className="btd-input"
                 placeholder="A single question you want answered"
                 value={q.text}
-                onChange={(e) => updateQuestion(q.id, e.target.value)}
+                onChange={(e) => updateItem("questions", q.id, { text: e.target.value })}
               />
               {form.questions.length > 1 && (
                 <button
                   type="button"
-                  onClick={() => removeQuestion(q.id)}
+                  onClick={() => removeItem("questions", q.id)}
                   className="text-xs text-clay hover:underline shrink-0"
                 >
                   Remove
@@ -299,9 +348,10 @@ export default function AppointmentPrep() {
             type="button"
             onClick={handleRefine}
             disabled={refining}
-            className="px-5 py-3 rounded border border-gold text-gold-dark font-semibold hover:bg-gold/10 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded border border-gold text-gold-dark font-semibold hover:bg-gold/10 transition-colors disabled:opacity-50"
           >
-            {refining ? "Refining…" : "✨ Refine with AI"}
+            <Icon name="refine" size={18} />
+            {refining ? "Refining…" : "Refine with AI"}
           </button>
           <button
             type="submit"
@@ -311,6 +361,71 @@ export default function AppointmentPrep() {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block font-semibold text-sm text-ink mb-2">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function EntryCard({
+  index,
+  label,
+  onRemove,
+  children,
+}: {
+  index: number;
+  label: string;
+  onRemove?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="btd-card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wide text-slate-light font-semibold">
+          {label} {index + 1}
+        </span>
+        {onRemove && (
+          <button type="button" onClick={onRemove} className="text-xs text-clay hover:underline">
+            Remove
+          </button>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ListSection({
+  label,
+  addLabel,
+  onAdd,
+  children,
+}: {
+  label: string;
+  addLabel: string;
+  onAdd: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-semibold text-sm text-ink">{label}</span>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="text-xs font-semibold text-gold-dark hover:underline"
+        >
+          {addLabel}
+        </button>
+      </div>
+      <div className="space-y-3">{children}</div>
     </div>
   );
 }
@@ -375,190 +490,34 @@ function MyVoiceSection({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block font-semibold text-sm text-ink mb-2">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function ListSection({
-  label,
-  addLabel,
-  onAdd,
-  children,
-}: {
-  label: string;
-  addLabel: string;
-  onAdd: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-semibold text-sm text-ink">{label}</span>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="text-xs font-semibold text-gold-dark hover:underline"
-        >
-          {addLabel}
-        </button>
-      </div>
-      <div className="space-y-3">{children}</div>
-    </div>
-  );
-}
-
-// ---- Real PDF generation (jsPDF) ----
-function buildPdf(form: FormState, myVoice: CheckIn | null): jsPDF {
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const marginX = 56;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const contentWidth = pageWidth - marginX * 2;
-  let y = 64;
-
-  const goldDark = "#8C6D1F";
-  const ink = "#1C2B33";
-  const slate = "#5B6E77";
-
-  function ensureSpace(lines: number, lineHeight = 14) {
-    const needed = lines * lineHeight;
-    if (y + needed > doc.internal.pageSize.getHeight() - 56) {
-      doc.addPage();
-      y = 64;
-    }
-  }
-
-  function heading(text: string) {
-    ensureSpace(2, 20);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(goldDark);
-    doc.text(text.toUpperCase(), marginX, y);
-    y += 16;
-    doc.setTextColor(ink);
-  }
-
-  function paragraph(text: string) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(ink);
-    const lines = doc.splitTextToSize(text, contentWidth);
-    ensureSpace(lines.length, 15);
-    doc.text(lines, marginX, y);
-    y += lines.length * 15 + 12;
-  }
-
-  // Title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.setTextColor(ink);
-  doc.text(
-    `Visit Summary${form.patientName ? ` — ${form.patientName}` : ""}`,
-    marginX,
-    y
-  );
-  y += 20;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(slate);
-  doc.text(
-    `Prepared with Verity · ${new Date().toLocaleDateString()}`,
-    marginX,
-    y
-  );
-  y += 28;
-
-  if (form.reasonForVisit.trim()) {
-    heading("Reason for visit");
-    paragraph(form.reasonForVisit);
-  }
-
-  const symptoms = form.symptoms.filter((s) => s.description.trim());
-  if (symptoms.length > 0) {
-    heading("Symptoms");
-    symptoms.forEach((s) => {
-      const detail = [
-        s.onset ? `Onset: ${s.onset}` : "",
-        s.baselineOrNew === "new" ? "New for this person" : "Part of baseline",
-      ]
-        .filter(Boolean)
-        .join(" · ");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(ink);
-      const lines = doc.splitTextToSize(`• ${s.description}`, contentWidth);
-      ensureSpace(lines.length + 1, 15);
-      doc.text(lines, marginX, y);
-      y += lines.length * 15;
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(9.5);
-      doc.setTextColor(slate);
-      doc.text(detail, marginX + 12, y);
-      y += 18;
-    });
-    y += 4;
-  }
-
-  if (myVoice) {
-    heading("In their own words (My Voice)");
-    checkInLines(myVoice).forEach((line) => paragraph(line));
-  }
-
-  if (form.medications.trim()) {
-    heading("Current medications");
-    paragraph(form.medications);
-  }
-
-  if (form.ruledOut.trim()) {
-    heading("Already ruled out");
-    paragraph(form.ruledOut);
-  }
-
-  if (form.accommodations.trim()) {
-    heading("Communication / accommodation needs");
-    paragraph(form.accommodations);
-  }
-
-  const questions = form.questions.filter((q) => q.text.trim());
-  if (questions.length > 0) {
-    heading("Questions, in priority order");
-    questions.forEach((q, i) => {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      doc.setTextColor(ink);
-      const lines = doc.splitTextToSize(`${i + 1}. ${q.text}`, contentWidth);
-      ensureSpace(lines.length, 15);
-      doc.text(lines, marginX, y);
-      y += lines.length * 15 + 4;
-    });
-  }
-
-  return doc;
-}
+// ---- Summary ----
+// The on-screen summary deliberately mirrors the PDF's structure, so what you
+// see here is what lands on the page — including when it goes to the printer.
 
 function SummaryView({
   form,
   myVoice,
   onBack,
 }: {
-  form: FormState;
+  form: AppointmentForm;
   myVoice: CheckIn | null;
   onBack: () => void;
 }) {
   function downloadPdf() {
-    const doc = buildPdf(form, myVoice);
+    const doc = buildAppointmentPdf(form, myVoice);
     const namePart = form.patientName.trim()
       ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
       : "visit-summary";
     doc.save(`${namePart}-appointment-summary.pdf`);
   }
 
+  const symptoms = form.symptoms.filter((s) => s.description.trim());
+  const meds = form.medications.filter((m) => m.name.trim());
+  const ruledOut = form.ruledOut.filter((r) => r.description.trim());
+  const questions = form.questions.filter((q) => q.text.trim());
+
   return (
-    <div className="btd-container py-10 max-w-2xl">
+    <div className="btd-container py-10 max-w-2xl btd-print-root">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 print:hidden">
         <button onClick={onBack} className="text-sm text-slate hover:underline">
           ← Back to edit
@@ -579,81 +538,132 @@ function SummaryView({
         </div>
       </div>
 
-      <div className="btd-card p-8">
-        <h1 className="text-2xl font-display font-semibold mb-1">
-          Visit Summary{form.patientName ? ` — ${form.patientName}` : ""}
-        </h1>
-        <p className="text-xs text-slate-light mb-6">
-          Prepared with Verity · {new Date().toLocaleDateString()}
-        </p>
-
-        <SummarySection title="Reason for visit" body={form.reasonForVisit} />
-
-        <div className="mb-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-light mb-2">
-            Symptoms
-          </h2>
-          <ul className="space-y-2">
-            {form.symptoms
-              .filter((s) => s.description.trim())
-              .map((s) => (
-                <li key={s.id} className="text-sm border-l-2 border-gold pl-3">
-                  <p className="font-medium text-ink">{s.description}</p>
-                  <p className="text-slate-light">
-                    {s.onset ? `Onset: ${s.onset} · ` : ""}
-                    {s.baselineOrNew === "new" ? "New for this person" : "Part of baseline"}
-                  </p>
-                </li>
-              ))}
-          </ul>
-        </div>
-
-        {myVoice && (
-          <div className="mb-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-light mb-2">
-              In their own words (My Voice)
-            </h2>
-            <ul className="space-y-1">
-              {checkInLines(myVoice).map((line) => (
-                <li key={line} className="border-l-2 border-sky pl-3 text-sm text-ink">
-                  {line}
-                </li>
-              ))}
-            </ul>
+      <article className="btd-card overflow-hidden btd-print-sheet">
+        <header className="btd-dark px-8 py-7 border-b-[3px] border-sky">
+          <p className="text-11 font-bold uppercase tracking-[0.14em] text-butter">
+            Verity · Visit summary
+          </p>
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+            <h1 className="font-display text-28 font-extrabold text-mist">
+              {form.patientName.trim() || "Visit summary"}
+            </h1>
+            <p className="text-13 text-mist/80">
+              {new Date().toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
           </div>
-        )}
+        </header>
 
-        <SummarySection title="Current medications" body={form.medications} />
-        <SummarySection title="Already ruled out" body={form.ruledOut} />
-        <SummarySection title="Communication / accommodation needs" body={form.accommodations} />
+        <div className="px-8 py-7">
+          {form.reasonForVisit.trim() && (
+            <Section title="Reason for visit">
+              <p className="text-sm leading-relaxed text-body whitespace-pre-wrap">
+                {form.reasonForVisit}
+              </p>
+            </Section>
+          )}
 
-        <div className="mb-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-light mb-2">
-            Questions, in priority order
-          </h2>
-          <ol className="list-decimal list-inside space-y-1">
-            {form.questions
-              .filter((q) => q.text.trim())
-              .map((q) => (
-                <li key={q.id} className="text-sm text-ink">
-                  {q.text}
-                </li>
-              ))}
-          </ol>
+          {symptoms.length > 0 && (
+            <Section title="What we're seeing">
+              <ul className="space-y-3">
+                {symptoms.map((s) => (
+                  <SummaryItem key={s.id} title={s.description} detail={symptomDetail(s)} />
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {myVoice && (
+            <div className="btd-avoid-break mb-7 rounded-tile border-l-4 border-sky bg-sky-tint px-5 py-4">
+              <p className="text-11 font-bold uppercase tracking-[0.1em] text-link">
+                In their own words ·{" "}
+                {new Date(myVoice.createdAt).toLocaleDateString(undefined, {
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {checkInLines(myVoice).map((line) => (
+                  <li key={line} className="text-sm leading-relaxed text-navy">
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {meds.length > 0 && (
+            <Section title="Current medications">
+              <ul className="space-y-3">
+                {meds.map((m) => (
+                  <SummaryItem key={m.id} title={m.name} detail={medicationLine(m)} />
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {ruledOut.length > 0 && (
+            <Section title="Already ruled out">
+              <ul className="space-y-3">
+                {ruledOut.map((r) => (
+                  <SummaryItem
+                    key={r.id}
+                    title={r.description}
+                    detail={r.when.trim() ? `Checked: ${r.when}` : ""}
+                  />
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {form.accommodations.trim() && (
+            <Section title="How to communicate with this patient">
+              <p className="text-sm leading-relaxed text-body whitespace-pre-wrap">
+                {form.accommodations}
+              </p>
+            </Section>
+          )}
+
+          {questions.length > 0 && (
+            <Section title="Questions, in priority order">
+              <ol className="space-y-2">
+                {questions.map((q, i) => (
+                  <li key={q.id} className="btd-avoid-break flex gap-3 text-sm text-navy">
+                    <span className="font-bold text-link">{i + 1}.</span>
+                    <span className="leading-relaxed">{q.text}</span>
+                  </li>
+                ))}
+              </ol>
+            </Section>
+          )}
+
+          <p className="btd-print-note btd-avoid-break mt-8 border-t border-navy/12 pt-4 text-11 text-muted">
+            Prepared with Verity. This is a family's own record, not a medical document.
+          </p>
         </div>
-      </div>
+      </article>
     </div>
   );
 }
 
-function SummarySection({ title, body }: { title: string; body: string }) {
-  if (!body.trim()) return null;
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-light mb-1">
-        {title}
-      </h2>
-      <p className="text-sm text-ink whitespace-pre-wrap leading-relaxed">{body}</p>
-    </div>
+    <section className="mb-7">
+      <h2 className="text-11 font-bold uppercase tracking-[0.11em] text-link">{title}</h2>
+      <div className="mt-1.5 mb-3 h-px bg-sky" />
+      {children}
+    </section>
+  );
+}
+
+function SummaryItem({ title, detail }: { title: string; detail: string }) {
+  return (
+    <li className="btd-avoid-break border-l-[3px] border-sky pl-3">
+      <p className="text-sm font-semibold text-navy">{title}</p>
+      {detail && <p className="mt-0.5 text-12 text-muted">{detail}</p>}
+    </li>
   );
 }

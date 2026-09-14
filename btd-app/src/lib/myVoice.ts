@@ -4,6 +4,8 @@
 // just visual state) so it can be merged into the existing jsPDF Appointment
 // Prep export without re-deriving anything from the UI.
 
+import type { IconName } from "../components/icons/Icon";
+
 export type ReadingLevel = "icon" | "icon-text" | "full";
 
 export const READING_LEVELS: {
@@ -32,7 +34,7 @@ export type FeelingId = "great" | "good" | "okay" | "bad" | "awful";
 
 export type Feeling = {
   id: FeelingId;
-  face: string;
+  icon: IconName;
   /** Short word used at the icon+text tier. */
   short: string;
   /** Full-text label, also what gets read aloud. */
@@ -43,11 +45,11 @@ export type Feeling = {
 };
 
 export const FEELINGS: Feeling[] = [
-  { id: "great", face: "😀", short: "Great", label: "I feel great", sentence: "great", tone: "bg-sky-tint" },
-  { id: "good", face: "🙂", short: "Good", label: "I feel good", sentence: "okay", tone: "bg-sky-tint" },
-  { id: "okay", face: "😐", short: "So-so", label: "I feel so-so", sentence: "not great", tone: "bg-butter/40" },
-  { id: "bad", face: "🙁", short: "Bad", label: "I feel bad", sentence: "bad", tone: "bg-coral/30" },
-  { id: "awful", face: "😣", short: "Really bad", label: "I feel really bad", sentence: "really bad", tone: "bg-coral/50" },
+  { id: "great", icon: "face-great", short: "Great", label: "I feel great", sentence: "great", tone: "bg-sky-tint" },
+  { id: "good", icon: "face-good", short: "Good", label: "I feel good", sentence: "okay", tone: "bg-sky-tint" },
+  { id: "okay", icon: "face-okay", short: "So-so", label: "I feel so-so", sentence: "not great", tone: "bg-butter/40" },
+  { id: "bad", icon: "face-bad", short: "Bad", label: "I feel bad", sentence: "bad", tone: "bg-coral/30" },
+  { id: "awful", icon: "face-awful", short: "Really bad", label: "I feel really bad", sentence: "really bad", tone: "bg-coral/50" },
 ];
 
 export type BodyPartId =
@@ -71,8 +73,6 @@ export type BodyPart = {
   label: string;
   /** How it reads inside "in my ___". */
   sentence: string;
-  /** A picture for the parts that get their own button. */
-  icon?: string;
   /** Hotspot placement on the outline, as percentages of its box. Parts with
    *  no position are the ones a front-facing outline can't show clearly
    *  (eyes, ears, mouth, back) or that aren't one place at all (all over) —
@@ -85,19 +85,19 @@ export type BodyPart = {
 };
 
 export const BODY_PARTS: BodyPart[] = [
-  { id: "head", short: "Head", label: "My head", sentence: "head", icon: "🤕", x: 50, y: 11, size: 28 },
-  { id: "throat", short: "Throat", label: "My throat", sentence: "throat", icon: "😷", x: 50, y: 21.5, size: 12 },
-  { id: "chest", short: "Chest", label: "My chest", sentence: "chest", icon: "🫁", x: 50, y: 31, size: 26 },
-  { id: "tummy", short: "Tummy", label: "My tummy", sentence: "tummy", icon: "🤢", x: 50, y: 45, size: 26 },
-  { id: "arms", short: "Arms", label: "My arms", sentence: "arms", icon: "💪", x: 20, y: 37, size: 14 },
-  { id: "hands", short: "Hands", label: "My hands", sentence: "hands", icon: "✋", x: 82, y: 47, size: 14 },
-  { id: "legs", short: "Legs", label: "My legs", sentence: "legs", icon: "🦵", x: 41, y: 62, size: 16 },
-  { id: "feet", short: "Feet", label: "My feet", sentence: "feet", icon: "🦶", x: 59, y: 93.5, size: 15 },
-  { id: "eyes", short: "Eyes", label: "My eyes", sentence: "eyes", icon: "👀" },
-  { id: "ears", short: "Ears", label: "My ears", sentence: "ears", icon: "👂" },
-  { id: "mouth", short: "Mouth", label: "My mouth or teeth", sentence: "mouth", icon: "👄" },
-  { id: "back", short: "Back", label: "My back", sentence: "back", icon: "🔙" },
-  { id: "all-over", short: "All over", label: "All over my body", sentence: "whole body", icon: "🧍" },
+  { id: "head", short: "Head", label: "My head", sentence: "head", x: 50, y: 11, size: 28 },
+  { id: "throat", short: "Throat", label: "My throat", sentence: "throat", x: 50, y: 21.5, size: 12 },
+  { id: "chest", short: "Chest", label: "My chest", sentence: "chest", x: 50, y: 31, size: 26 },
+  { id: "tummy", short: "Tummy", label: "My tummy", sentence: "tummy", x: 50, y: 45, size: 26 },
+  { id: "arms", short: "Arms", label: "My arms", sentence: "arms", x: 20, y: 37, size: 14 },
+  { id: "hands", short: "Hands", label: "My hands", sentence: "hands", x: 82, y: 47, size: 14 },
+  { id: "legs", short: "Legs", label: "My legs", sentence: "legs", x: 41, y: 62, size: 16 },
+  { id: "feet", short: "Feet", label: "My feet", sentence: "feet", x: 59, y: 93.5, size: 15 },
+  { id: "eyes", short: "Eyes", label: "My eyes", sentence: "eyes" },
+  { id: "ears", short: "Ears", label: "My ears", sentence: "ears" },
+  { id: "mouth", short: "Mouth", label: "My mouth or teeth", sentence: "mouth" },
+  { id: "back", short: "Back", label: "My back", sentence: "back" },
+  { id: "all-over", short: "All over", label: "All over my body", sentence: "whole body" },
 ];
 
 /** Parts drawn as hotspots on the outline. */
@@ -120,7 +120,7 @@ export type SinceId = "today" | "few-days" | "week-plus";
 
 export type SinceOption = {
   id: SinceId;
-  icon: string;
+  icon: IconName;
   short: string;
   label: string;
   /** How it reads inside "since ___". */
@@ -128,9 +128,9 @@ export type SinceOption = {
 };
 
 export const SINCE_OPTIONS: SinceOption[] = [
-  { id: "today", icon: "☀️", short: "Today", label: "Since today", sentence: "today" },
-  { id: "few-days", icon: "📆", short: "A few days", label: "Since a few days ago", sentence: "a few days ago" },
-  { id: "week-plus", icon: "🗓️", short: "A week or more", label: "Since a week or more ago", sentence: "a week or more ago" },
+  { id: "today", icon: "since-today", short: "Today", label: "Since today", sentence: "today" },
+  { id: "few-days", icon: "since-few-days", short: "A few days", label: "Since a few days ago", sentence: "a few days ago" },
+  { id: "week-plus", icon: "since-week", short: "A week or more", label: "Since a week or more ago", sentence: "a week or more ago" },
 ];
 
 export function sinceOption(id: SinceId): SinceOption {
@@ -198,7 +198,7 @@ export function checkInLines(c: CheckIn): string[] {
 
 export type WalkthroughCard = {
   id: string;
-  icon: string;
+  icon: IconName;
   short: string;
   title: string;
   body: string;
@@ -210,7 +210,7 @@ export type WalkthroughCard = {
 export const WALKTHROUGH_CARDS: WalkthroughCard[] = [
   {
     id: "arrive",
-    icon: "🚪",
+    icon: "door",
     short: "I arrive",
     title: "First, I arrive",
     body: "We walk in and tell the front desk my name. Someone will say hello.",
@@ -218,7 +218,7 @@ export const WALKTHROUGH_CARDS: WalkthroughCard[] = [
   },
   {
     id: "wait",
-    icon: "🪑",
+    icon: "chair",
     short: "I wait",
     title: "Then I wait",
     body: "We sit in the waiting room. I can bring something I like. Waiting is the boring part — that's okay.",
@@ -226,7 +226,7 @@ export const WALKTHROUGH_CARDS: WalkthroughCard[] = [
   },
   {
     id: "vitals",
-    icon: "🌡️",
+    icon: "thermometer",
     short: "They check me",
     title: "A nurse checks a few things",
     body: "They may check my height, my weight, and how warm I am. It doesn't hurt.",
@@ -234,7 +234,7 @@ export const WALKTHROUGH_CARDS: WalkthroughCard[] = [
   },
   {
     id: "talk",
-    icon: "🗣️",
+    icon: "talk",
     short: "I talk",
     title: "The doctor talks with me",
     body: "The doctor asks how I feel. I can tell them, or show them what I made here. They should talk to me, not only to the person who came with me.",
@@ -242,7 +242,7 @@ export const WALKTHROUGH_CARDS: WalkthroughCard[] = [
   },
   {
     id: "exam",
-    icon: "🩺",
+    icon: "stethoscope",
     short: "Maybe a shot",
     title: "There might be an exam or a shot",
     body: "The doctor may listen to my chest or look in my ears. Sometimes there is a shot. It's quick. I can ask them to count to three first.",
@@ -250,7 +250,7 @@ export const WALKTHROUGH_CARDS: WalkthroughCard[] = [
   },
   {
     id: "done",
-    icon: "🎉",
+    icon: "celebrate",
     short: "I'm done",
     title: "Then I'm done",
     body: "We say goodbye and go home. I did it.",
@@ -270,7 +270,7 @@ export type StickerId = "told-my-doctor" | "said-how-i-feel" | "knows-the-visit"
 
 export type StickerKind = {
   id: StickerId;
-  art: string;
+  art: IconName;
   label: string;
   /** Why it was earned — phrased as the action, never as a streak. */
   earnedFor: string;
@@ -279,25 +279,25 @@ export type StickerKind = {
 export const STICKER_KINDS: StickerKind[] = [
   {
     id: "told-my-doctor",
-    art: "🗣️",
+    art: "sticker-told",
     label: "I told my doctor something",
     earnedFor: "You made a sentence to tell your doctor. That is self-advocacy.",
   },
   {
     id: "said-how-i-feel",
-    art: "💙",
+    art: "sticker-feel",
     label: "I said how I feel",
     earnedFor: "You finished a check-in and said how your body feels.",
   },
   {
     id: "knows-the-visit",
-    art: "🗺️",
+    art: "sticker-map",
     label: "I know what happens at a visit",
     earnedFor: "You looked through the whole visit, start to finish.",
   },
   {
     id: "used-my-voice",
-    art: "🎤",
+    art: "sticker-voice",
     label: "I used my own voice",
     earnedFor: "You recorded your voice instead of typing.",
   },

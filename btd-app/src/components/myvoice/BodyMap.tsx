@@ -1,11 +1,11 @@
 import {
-  BODY_PARTS,
   BodyPartId,
   MAPPED_BODY_PARTS,
   OFF_MAP_BODY_PARTS,
   ReadingLevel,
 } from "../../lib/myVoice";
 import { useMyVoice } from "../../context/MyVoiceContext";
+import BodyPartIcon from "../icons/BodyPartIcon";
 
 // Tappable body outline. The hotspots are real buttons layered over the
 // drawing, so the map works with a keyboard and a screen reader as well as
@@ -101,9 +101,7 @@ export default function BodyMap({ selected, onToggle, readingLevel }: Props) {
                   : "border-navy/15 bg-white hover:border-sky hover:bg-sky-tint"
               }`}
             >
-              <span aria-hidden="true" className="text-2xl leading-none">
-                {part.icon}
-              </span>
+              <BodyPartIcon part={part.id} size={28} className="text-navy" />
               {showText ? (
                 <span className="text-12 font-bold text-navy">{part.short}</span>
               ) : (
@@ -114,11 +112,12 @@ export default function BodyMap({ selected, onToggle, readingLevel }: Props) {
         })}
       </div>
 
-      {/* Word chips for everything, once there are words to show. At the
-          pictures-only tier the map and the picture buttons are enough. */}
+      {/* Word chips for the parts that live on the outline — a hotspot is not
+          labelled, so the words go here. The off-map parts already carry their
+          own labels above, and listing them twice just reads as a mistake. */}
       {showText && (
         <div className="mt-5 flex flex-wrap justify-center gap-2">
-          {BODY_PARTS.map((part) => {
+          {MAPPED_BODY_PARTS.map((part) => {
             const isOn = selected.includes(part.id);
             return (
               <button
@@ -126,12 +125,13 @@ export default function BodyMap({ selected, onToggle, readingLevel }: Props) {
                 type="button"
                 aria-pressed={isOn}
                 onClick={() => handle(part.id, part.label)}
-                className={`min-h-[40px] rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`flex min-h-[40px] items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors ${
                   isOn
                     ? "border-navy bg-coral text-navy"
                     : "border-navy/15 bg-white text-body hover:border-sky hover:bg-sky-tint"
                 }`}
               >
+                <BodyPartIcon part={part.id} size={20} />
                 {readingLevel === "full" ? part.label : part.short}
               </button>
             );

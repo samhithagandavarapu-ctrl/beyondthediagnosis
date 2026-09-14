@@ -10,6 +10,7 @@ import SpeakButton from "../components/myvoice/SpeakButton";
 import StickerBook from "../components/myvoice/StickerBook";
 import VisitWalkthrough from "../components/myvoice/VisitWalkthrough";
 import VoiceRecorder from "../components/myvoice/VoiceRecorder";
+import Icon, { IconName } from "../components/icons/Icon";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
 import {
@@ -117,7 +118,10 @@ function SettingsStrip() {
                 readAloud ? "border-navy bg-butter text-navy" : "border-navy/15 bg-white text-body"
               }`}
             >
-              {readAloud ? "🔊 Read aloud on" : "🔇 Read aloud off"}
+              <span className="flex items-center gap-1.5">
+                <Icon name={readAloud ? "speaker" : "speaker-off"} size={16} />
+                {readAloud ? "Read aloud on" : "Read aloud off"}
+              </span>
             </button>
           )}
           <PracticeModeToggle tone="light" />
@@ -142,15 +146,15 @@ function SettingsStrip() {
 
 // ---- Hub ----
 
-const TILES: { id: Section; icon: string; copy: { icon: string; short: string; full: string } }[] = [
+const TILES: { id: Section; icon: IconName; copy: { icon: string; short: string; full: string } }[] = [
   {
     id: "check-in",
-    icon: "🙂",
+    icon: "hub-feelings",
     copy: { icon: "How I feel", short: "How I feel today", full: "Check in: how does my body feel today?" },
   },
   {
     id: "tell",
-    icon: "🗣️",
+    icon: "hub-tell",
     copy: {
       icon: "Tell my doctor",
       short: "Tell my doctor",
@@ -159,7 +163,7 @@ const TILES: { id: Section; icon: string; copy: { icon: string; short: string; f
   },
   {
     id: "visit",
-    icon: "🏥",
+    icon: "hub-visit",
     copy: {
       icon: "What happens",
       short: "What happens at a visit",
@@ -168,7 +172,7 @@ const TILES: { id: Section; icon: string; copy: { icon: string; short: string; f
   },
   {
     id: "stickers",
-    icon: "⭐",
+    icon: "hub-stickers",
     copy: { icon: "My stickers", short: "My stickers", full: "My sticker book" },
   },
 ];
@@ -200,8 +204,8 @@ function Home({ onPick, hasSaved }: { onPick: (s: Section) => void; hasSaved: bo
               }}
               className="btd-card btd-card-hover flex min-h-[170px] flex-col items-center justify-center gap-3 p-6 text-center"
             >
-              <span aria-hidden="true" className="text-[3.25rem] leading-none">
-                {tile.icon}
+              <span className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-sky-tint text-navy">
+                <Icon name={tile.icon} size={38} />
               </span>
               <span className="text-17 font-display font-extrabold text-navy">{label}</span>
             </button>
@@ -358,9 +362,10 @@ function CheckInFlow({
         type="button"
         onClick={finish}
         disabled={!checkInHasContent(checkIn)}
-        className="btd-btn-coral min-h-[56px] justify-self-start px-8 py-4 text-base disabled:opacity-40"
+        className="btd-btn-coral min-h-[56px] justify-self-start gap-2 px-8 py-4 text-base disabled:opacity-40"
       >
-        ✅ I'm done
+        <Icon name="check" size={22} />
+        I'm done
       </button>
     </div>
   );
@@ -436,9 +441,10 @@ function TellMyDoctor({
           type="button"
           onClick={save}
           disabled={!sentence}
-          className="btd-btn-coral min-h-[56px] px-8 py-4 text-base disabled:opacity-40"
+          className="btd-btn-coral min-h-[56px] gap-2 px-8 py-4 text-base disabled:opacity-40"
         >
-          {practice ? "Practice saying it" : "💾 Save this to tell my doctor"}
+          <Icon name="save" size={22} />
+          {practice ? "Practice saying it" : "Save this to tell my doctor"}
         </button>
         {saved &&
           (practice ? (

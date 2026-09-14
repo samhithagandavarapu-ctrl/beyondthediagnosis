@@ -1,5 +1,6 @@
 import { FEELINGS, FeelingId, ReadingLevel } from "../../lib/myVoice";
 import { useMyVoice } from "../../context/MyVoiceContext";
+import Icon from "../icons/Icon";
 
 // Five faces, great through really bad. Tapping one is enough to answer —
 // no text is required at any tier.
@@ -39,9 +40,7 @@ export default function FaceScale({ value, onChange, readingLevel }: Props) {
                 : "border-navy/12 hover:border-sky"
             }`}
           >
-            <span aria-hidden="true" className="text-[2.5rem] leading-none">
-              {f.face}
-            </span>
+            <Icon name={f.icon} size={44} className="text-navy" />
             {showText && (
               <span className="text-13 font-bold text-navy">
                 {readingLevel === "full" ? f.label : f.short}

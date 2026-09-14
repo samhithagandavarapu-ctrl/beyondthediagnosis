@@ -144,3 +144,87 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
     transform: scale(0.8);
   }
 }
+
+/* ---- Printing the appointment summary ----
+   window.print() should produce the same document as the PDF export, not a
+   screenshot of the app: no nav, no accessibility bar, no floating buttons,
+   and no item split across a page break. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  /* The whole type scale is rem-based (see tailwind.config.js), so scaling the
+     root scales the sheet proportionally — the same lever the large-text
+     accessibility mode uses, pointed the other way. Screen sizes are tuned for
+     reading at arm's length; paper can run a little tighter. */
+  html {
+    font-size: 93%;
+  }
+  header,
+  footer,
+  .btd-dark:not(.btd-print-sheet header) {
+    display: none !important;
+  }
+  body {
+    background: #ffffff;
+  }
+  .btd-print-root {
+    max-width: none;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .btd-print-sheet {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  /* The summary's own navy header band should survive — it's the title. */
+  .btd-print-sheet header {
+    display: block !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 18px 0 14px;
+    background: #ffffff !important;
+    color: #213244 !important;
+    border-bottom: 3px solid #8FCBF2;
+  }
+  .btd-print-sheet header * {
+    color: #213244 !important;
+  }
+  .btd-print-sheet > div {
+    padding: 22px 0 0 !important;
+  }
+  /* Screen spacing is generous for reading; on paper it costs a whole extra
+     sheet, so the printed sheet runs tighter — a summary of this size should
+     land on one page, same as the PDF export. */
+  .btd-print-sheet section {
+    margin-bottom: 14px !important;
+  }
+  .btd-print-sheet section > div:first-of-type {
+    margin-bottom: 8px !important;
+  }
+  .btd-print-sheet p,
+  .btd-print-sheet li {
+    line-height: 1.45 !important;
+  }
+  .btd-print-sheet ul > li + li,
+  .btd-print-sheet ol > li + li {
+    margin-top: 7px !important;
+  }
+  /* The closing note is one line — it should never be the only thing on a
+     second sheet. */
+  .btd-print-note {
+    margin-top: 12px !important;
+    padding-top: 8px !important;
+  }
+  .btd-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  section {
+    break-inside: auto;
+  }
+  h2 {
+    break-after: avoid;
+  }
+}

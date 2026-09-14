@@ -1,4 +1,5 @@
 import { useMyVoice } from "../context/MyVoiceContext";
+import Icon from "./icons/Icon";
 import type { ReadingLevel } from "../lib/myVoice";
 
 // Vee — the My Voice mascot. Brand kit colors only: Sky Blue, Coral, Yellow.
@@ -79,9 +80,10 @@ export default function Mascot({ mood = "hello", copy, size = 84 }: MascotProps)
           <button
             type="button"
             onClick={() => say(message)}
-            className="mt-1 text-12 font-bold text-link hover:underline"
+            className="mt-1 inline-flex items-center gap-1.5 text-12 font-bold text-link hover:underline"
           >
-            🔊 Hear it
+            <Icon name="speaker" size={14} />
+            Hear it
           </button>
         )}
       </div>

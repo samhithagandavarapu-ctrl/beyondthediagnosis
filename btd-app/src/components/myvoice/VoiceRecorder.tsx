@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Icon from "../icons/Icon";
 
 // Optional voice note, as an alternative to typing. The recording lives in
 // this tab only — it is never uploaded and never written to storage, so
@@ -81,9 +82,7 @@ export default function VoiceRecorder({ recorded, onRecordedChange }: Props) {
             recording ? "bg-coral hover:bg-coral-hover" : "bg-sky hover:bg-sky-hover"
           }`}
         >
-          <span aria-hidden="true" className="mr-2 text-lg">
-            {recording ? "⏹️" : "🎤"}
-          </span>
+          <Icon name={recording ? "stop" : "mic"} size={20} className="mr-2" />
           {recording ? "Stop" : "Say it out loud"}
         </button>
         {url && (

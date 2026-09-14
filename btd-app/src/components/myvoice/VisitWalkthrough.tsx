@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { ReadingLevel, walkthroughCards } from "../../lib/myVoice";
 import { useMyVoice } from "../../context/MyVoiceContext";
 import SpeakButton from "./SpeakButton";
+import Icon from "../icons/Icon";
 
 // Static picture sequence — arrival through done. No branching in v1: it is
 // the same visit every time, which is the point.
@@ -52,20 +53,19 @@ export default function VisitWalkthrough({ readingLevel, onReachedEnd }: Props) 
         <p className="btd-eyebrow">
           Step {index + 1} of {cards.length}
         </p>
-        <div aria-hidden="true" className="my-4 text-[4.5rem] leading-none">
-          {card.icon}
+        <div className="my-5 flex justify-center">
+          <span className="flex h-[96px] w-[96px] items-center justify-center rounded-full bg-sky-tint text-navy">
+            <Icon name={card.icon} size={48} />
+          </span>
         </div>
-        {showText ? (
+        {/* Each tier says the step once: the short label on its own until
+            there's room for the full sentence and its explanation. */}
+        {readingLevel === "full" ? (
           <>
             <h3 className="text-23 font-extrabold text-navy">{card.title}</h3>
-            {readingLevel === "full" && (
-              <p className="mx-auto mt-3 max-w-[32em] text-base leading-[1.7] text-body">
-                {card.body}
-              </p>
-            )}
-            {readingLevel === "icon-text" && (
-              <p className="mt-2 text-17 font-semibold text-body">{card.short}</p>
-            )}
+            <p className="mx-auto mt-3 max-w-[32em] text-base leading-[1.7] text-body">
+              {card.body}
+            </p>
           </>
         ) : (
           <h3 className="text-23 font-extrabold text-navy">{card.short}</h3>

@@ -12,8 +12,8 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 export type RefinedAppointmentForm = {
   reasonForVisit: string;
   symptoms: { description: string; onset: string }[];
-  medications: string;
-  ruledOut: string;
+  medications: { name: string; dose: string; frequency: string }[];
+  ruledOut: { description: string; when: string }[];
   accommodations: string;
   questions: string[];
 };

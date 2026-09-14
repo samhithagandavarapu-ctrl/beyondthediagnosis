@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Icon from "./icons/Icon";
 
 // Standalone calming screen: a floating button that is available on every
 // page, and a full-screen breathing overlay. No login, no saved state, no
@@ -34,7 +35,7 @@ export default function CalmingScreen() {
         onClick={() => setOpen(true)}
         className="fixed bottom-5 right-5 z-40 flex min-h-[56px] items-center gap-2 rounded-full bg-sky px-5 py-3 font-bold text-navy shadow-[0_6px_20px_rgba(33,50,68,0.25)] transition-colors hover:bg-sky-hover print:hidden"
       >
-        <span aria-hidden="true" className="text-lg">🫧</span>
+        <Icon name="breath" size={22} />
         <span className="text-sm">Calm</span>
       </button>
       {open && <CalmOverlay onClose={() => setOpen(false)} />}
@@ -144,7 +145,10 @@ function CalmOverlay({ onClose }: { onClose: () => void }) {
           sound ? "border-sky bg-sky text-navy" : "border-mist/40 text-mist hover:border-mist"
         }`}
       >
-        {sound ? "🔈 Sound on" : "🔇 Sound off"}
+        <span className="flex items-center gap-2">
+          <Icon name={sound ? "speaker" : "speaker-off"} size={18} />
+          {sound ? "Sound on" : "Sound off"}
+        </span>
       </button>
     </div>
   );

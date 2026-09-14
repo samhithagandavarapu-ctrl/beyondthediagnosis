@@ -11,6 +11,8 @@ import {
 } from "../../lib/myVoice";
 import { useMyVoice } from "../../context/MyVoiceContext";
 import SpeakButton from "./SpeakButton";
+import Icon, { IconName } from "../icons/Icon";
+import BodyPartIcon from "../icons/BodyPartIcon";
 
 // "Tell my doctor": tap three things and a sentence appears. The result is
 // plain text, and it rides along on the check-in data so the Appointment Prep
@@ -42,7 +44,7 @@ export default function SentenceBuilder({ value, onChange, readingLevel }: Props
             <Chip
               key={f.id}
               on={value.overall === f.id}
-              icon={f.face}
+              icon={f.icon}
               text={readingLevel === "full" ? f.label : f.short}
               showText={showText}
               ariaLabel={f.label}
@@ -61,7 +63,7 @@ export default function SentenceBuilder({ value, onChange, readingLevel }: Props
             <Chip
               key={p.id}
               on={value.bodyParts.includes(p.id)}
-              icon={p.icon ?? null}
+              bodyPart={p.id}
               text={readingLevel === "full" ? p.label : p.short}
               showText={showText}
               ariaLabel={p.label}
@@ -131,13 +133,15 @@ function Slot({
 function Chip({
   on,
   icon,
+  bodyPart,
   text,
   showText,
   ariaLabel,
   onClick,
 }: {
   on: boolean;
-  icon: string | null;
+  icon?: IconName;
+  bodyPart?: BodyPartId;
   text: string;
   showText: boolean;
   ariaLabel: string;
@@ -155,11 +159,8 @@ function Chip({
           : "border-navy/15 bg-white text-body hover:border-sky hover:bg-sky-tint"
       }`}
     >
-      {icon && (
-        <span aria-hidden="true" className="text-xl leading-none">
-          {icon}
-        </span>
-      )}
+      {icon && <Icon name={icon} size={22} />}
+      {bodyPart && <BodyPartIcon part={bodyPart} size={22} />}
       {showText ? <span className="text-sm">{text}</span> : <span className="sr-only">{text}</span>}
     </button>
   );
