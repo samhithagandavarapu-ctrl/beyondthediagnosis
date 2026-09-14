@@ -57,11 +57,19 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
   }, [user]);
 
   // Always mirror to localStorage (works whether logged in or not).
+  // Guarded like MyVoiceContext: Safari throws here in private windows and
+  // after a cross-site redirect (the OAuth hand-back), and an effect that
+  // throws takes the whole app down with it — a blank page instead of a
+  // forgotten preference.
   useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ largeText, highContrast, easyRead })
-    );
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ largeText, highContrast, easyRead })
+      );
+    } catch {
+      // Blocked or full storage: the setting still applies for this visit.
+    }
   }, [largeText, highContrast, easyRead]);
 
   // If logged in, also save changes back to their profile — except right
