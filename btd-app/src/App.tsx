@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import AccessibilityBar from "./components/AccessibilityBar";
+import CalmingScreen from "./components/CalmingScreen";
 import Home from "./pages/Home";
 import Tools from "./pages/Tools";
 import Future from "./pages/Future";
@@ -18,6 +19,7 @@ import AdminStories from "./pages/AdminStories";
 import Understanding from "./pages/Understanding";
 import Profile from "./pages/Profile";
 import Privacy from "./pages/Privacy";
+import MyVoice from "./pages/MyVoice";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -38,6 +40,7 @@ export default function App() {
           <Route path="/future" element={<Future />} />
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/appointment-prep" element={<AppointmentPrep />} />
+          <Route path="/my-voice" element={<MyVoice />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/provider-education" element={<ProviderEducation />} />
           <Route path="/stories" element={<Stories />} />
@@ -51,6 +54,8 @@ export default function App() {
         </Routes>
       </main>
       <Footer />
+      {/* App-wide, not part of /my-voice: reachable mid-chat, mid-form, anywhere. */}
+      <CalmingScreen />
     </div>
   );
 }

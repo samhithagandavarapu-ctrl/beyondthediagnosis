@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { jsPDF } from "jspdf";
+import { Link } from "react-router-dom";
 import { refineAppointmentForm } from "../lib/api";
+import { useMyVoice } from "../context/MyVoiceContext";
+import { CheckIn, checkInLines } from "../lib/myVoice";
 
 type Symptom = {
   id: string;
@@ -46,7 +49,11 @@ const emptyForm = (): FormState => ({
 });
 
 export default function AppointmentPrep() {
+  const { savedCheckIn, clearCheckIn } = useMyVoice();
   const [form, setForm] = useState<FormState>(emptyForm());
+  // Opt-in on purpose: the check-in belongs to the person who made it, so it
+  // only reaches the provider summary if someone says yes here.
+  const [includeMyVoice, setIncludeMyVoice] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [refining, setRefining] = useState(false);
   const [refineError, setRefineError] = useState<string | null>(null);
@@ -127,8 +134,10 @@ export default function AppointmentPrep() {
     setForm((f) => ({ ...f, questions: f.questions.filter((q) => q.id !== id) }));
   }
 
+  const myVoice = includeMyVoice ? savedCheckIn : null;
+
   if (showSummary) {
-    return <SummaryView form={form} onBack={() => setShowSummary(false)} />;
+    return <SummaryView form={form} myVoice={myVoice} onBack={() => setShowSummary(false)} />;
   }
 
   return (
@@ -234,6 +243,13 @@ export default function AppointmentPrep() {
           />
         </Field>
 
+        <MyVoiceSection
+          checkIn={savedCheckIn}
+          include={includeMyVoice}
+          onIncludeChange={setIncludeMyVoice}
+          onClear={clearCheckIn}
+        />
+
         <Field label="Communication or accommodation needs">
           <textarea
             className="btd-input min-h-[70px]"
@@ -299,6 +315,66 @@ export default function AppointmentPrep() {
   );
 }
 
+function MyVoiceSection({
+  checkIn,
+  include,
+  onIncludeChange,
+  onClear,
+}: {
+  checkIn: CheckIn | null;
+  include: boolean;
+  onIncludeChange: (include: boolean) => void;
+  onClear: () => void;
+}) {
+  if (!checkIn) {
+    return (
+      <div className="rounded-tile border border-dashed border-navy/20 bg-mist p-4">
+        <p className="text-sm font-semibold text-ink">In their own words</p>
+        <p className="mt-1 text-sm text-slate">
+          Nothing from My Voice yet. If the person this visit is for does a check-in in{" "}
+          <Link to="/my-voice" className="font-semibold text-link hover:underline">
+            My Voice
+          </Link>
+          , what they said can be printed on this summary — in their words, not yours.
+        </p>
+      </div>
+    );
+  }
+
+  const lines = checkInLines(checkIn);
+  return (
+    <div className="rounded-tile border-2 border-sky bg-sky-tint p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-ink">In their own words (from My Voice)</p>
+          <p className="text-xs text-slate-light">
+            Checked in {new Date(checkIn.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+        <button type="button" onClick={onClear} className="text-xs text-clay hover:underline">
+          Remove this check-in
+        </button>
+      </div>
+      <ul className="mt-3 space-y-1">
+        {lines.map((line) => (
+          <li key={line} className="border-l-2 border-sky pl-3 text-sm text-ink">
+            {line}
+          </li>
+        ))}
+      </ul>
+      <label className="mt-3 flex items-center gap-2 text-sm font-medium text-ink">
+        <input
+          type="checkbox"
+          checked={include}
+          onChange={(e) => onIncludeChange(e.target.checked)}
+          className="h-4 w-4"
+        />
+        Put this on the summary
+      </label>
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -337,7 +413,7 @@ function ListSection({
 }
 
 // ---- Real PDF generation (jsPDF) ----
-function buildPdf(form: FormState): jsPDF {
+function buildPdf(form: FormState, myVoice: CheckIn | null): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const marginX = 56;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -427,6 +503,11 @@ function buildPdf(form: FormState): jsPDF {
     y += 4;
   }
 
+  if (myVoice) {
+    heading("In their own words (My Voice)");
+    checkInLines(myVoice).forEach((line) => paragraph(line));
+  }
+
   if (form.medications.trim()) {
     heading("Current medications");
     paragraph(form.medications);
@@ -459,9 +540,17 @@ function buildPdf(form: FormState): jsPDF {
   return doc;
 }
 
-function SummaryView({ form, onBack }: { form: FormState; onBack: () => void }) {
+function SummaryView({
+  form,
+  myVoice,
+  onBack,
+}: {
+  form: FormState;
+  myVoice: CheckIn | null;
+  onBack: () => void;
+}) {
   function downloadPdf() {
-    const doc = buildPdf(form);
+    const doc = buildPdf(form, myVoice);
     const namePart = form.patientName.trim()
       ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
       : "visit-summary";
@@ -518,6 +607,21 @@ function SummaryView({ form, onBack }: { form: FormState; onBack: () => void }) 
               ))}
           </ul>
         </div>
+
+        {myVoice && (
+          <div className="mb-5">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-light mb-2">
+              In their own words (My Voice)
+            </h2>
+            <ul className="space-y-1">
+              {checkInLines(myVoice).map((line) => (
+                <li key={line} className="border-l-2 border-sky pl-3 text-sm text-ink">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <SummarySection title="Current medications" body={form.medications} />
         <SummarySection title="Already ruled out" body={form.ruledOut} />

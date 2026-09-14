@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchProfile, upsertProfile } from "../lib/profile";
 import { Link } from "react-router-dom";
+import { useMyVoice } from "../context/MyVoiceContext";
+import { READING_LEVELS } from "../lib/myVoice";
 
 export default function Profile() {
   const { user, loading } = useAuth();
+  const { readingLevel, setReadingLevel } = useMyVoice();
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
@@ -115,6 +118,36 @@ export default function Profile() {
           {saving ? "Saving…" : "Save changes"}
         </button>
       </form>
+
+      <div className="btd-card mt-6 p-6">
+        <h2 className="font-display text-xl font-semibold">How much reading in My Voice</h2>
+        <p className="mt-1 mb-4 text-sm text-slate">
+          One setting for the whole{" "}
+          <Link to="/my-voice" className="font-semibold text-link hover:underline">
+            My Voice
+          </Link>{" "}
+          section — it changes the check-in, the visit walkthrough, and how Vee talks. Change
+          it any time; it saves as you pick.
+        </p>
+        <div className="grid gap-2">
+          {READING_LEVELS.map((level) => (
+            <button
+              key={level.id}
+              type="button"
+              aria-pressed={readingLevel === level.id}
+              onClick={() => setReadingLevel(level.id)}
+              className={`rounded-tile border-2 px-4 py-3 text-left transition-colors ${
+                readingLevel === level.id
+                  ? "border-navy bg-sky-tint"
+                  : "border-navy/15 hover:border-sky"
+              }`}
+            >
+              <span className="block text-sm font-bold text-navy">{level.label}</span>
+              <span className="block text-13 text-muted">{level.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

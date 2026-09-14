@@ -123,3 +123,24 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   text-shadow: none !important;
   box-shadow: none !important;
 }
+
+/* ---- Calming screen breathing guide ---- */
+/* 4s in, 1.5s hold, 6s out — matches the timings in CalmingScreen.tsx. */
+@keyframes btd-breathe {
+  0% { transform: scale(0.55); opacity: 0.6; }
+  35% { transform: scale(1); opacity: 1; }
+  48% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.55); opacity: 0.6; }
+}
+.btd-breathe {
+  animation: btd-breathe 11.5s ease-in-out infinite;
+}
+/* The global reduced-motion rule collapses animations to nothing, which would
+   leave the circle frozen mid-breath. Hold it at a calm resting size instead
+   and let the written prompt lead. */
+@media (prefers-reduced-motion: reduce) {
+  .btd-breathe {
+    animation: none !important;
+    transform: scale(0.8);
+  }
+}

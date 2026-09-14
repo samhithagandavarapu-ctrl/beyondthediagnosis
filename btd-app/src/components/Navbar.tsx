@@ -4,6 +4,7 @@ import { CTA_LABEL } from "../data/site";
 
 const links = [
   { to: "/tools", label: "The Tools" },
+  { to: "/my-voice", label: "My Voice" },
   { to: "/understanding-overshadowing", label: "The Problem" },
   { to: "/future", label: "Future Work" },
   { to: "/provider-education", label: "For Providers" },

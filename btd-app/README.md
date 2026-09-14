@@ -14,6 +14,20 @@ families, and their clinicians. Built from the DECA Innovation Plan project doc.
 - **Appointment Prep Tool** (`/appointment-prep`) — structured form that generates a
   real downloadable PDF summary, with a "✨ Refine with AI" button that tightens and
   clarifies your wording without inventing new facts.
+- **My Voice** (`/my-voice`) — the self-advocacy side of the app, built for the person
+  with Down syndrome to use themselves rather than for a caregiver: a tappable body
+  outline and five-face scale for a check-in, a tap-to-build "tell my doctor" sentence,
+  a picture walkthrough of a visit, and Vee the mascot with a sticker book that rewards
+  actions (never streaks, never missed days). Read-aloud on every label, and a single
+  reading-level setting — pictures only / pictures and short words / full sentences —
+  that drives the whole section. What someone builds here can be printed on the
+  Appointment Prep summary, in their own words.
+- **Calming screen** — a floating "Calm" button on every page opens a breathing guide
+  with optional gentle audio. Stateless: no login, nothing saved, usable mid-chat or
+  mid-form.
+- **Practice mode** — a global "Practice" / "This is real" switch in the accessibility
+  bar. The UI is identical either way, but practice never saves, never exports, and
+  never reaches a real appointment record — for rehearsing the night before a visit.
 - **Login** (`/login`) — email/password, Google sign-in, and phone number, with a
   "forgot password" reset flow. Needs a free Supabase project connected — see "Setting
   up login" below.
@@ -94,11 +108,19 @@ btd-app/
   server/index.js          Express API — the only place the API key lives
   src/
     pages/                 One file per route (Home, Assistant, AppointmentPrep, ...)
-    components/            Navbar, Footer, AccessibilityBar
+    components/            Navbar, Footer, AccessibilityBar, CalmingScreen, Mascot,
+                            PracticeModeToggle, myvoice/ (body map, face scale,
+                            sentence builder, walkthrough, sticker book)
     context/                AccessibilityContext (large text / high contrast / easy read)
+                            PracticeModeContext (practice vs. real)
+                            MyVoiceContext (reading level, read-aloud, check-in,
+                            stickers)
     data/                  Starter content for Resources and Stories — replace with
                             real, vetted content before this goes live
     lib/api.ts             Frontend helper that calls /api/chat
+    lib/myVoice.ts         My Voice vocabulary and the structured check-in data that
+                            merges into the Appointment Prep PDF
+    lib/speech.ts          Read-aloud (Web Speech API)
 ```
 
 ## Design notes

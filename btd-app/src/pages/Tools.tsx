@@ -9,6 +9,12 @@ const prepSteps = [
   ["3. Print one page", "Hand it over, or send it ahead of the visit."],
 ];
 
+const myVoiceSteps = [
+  ["Show how you feel", "Tap where it hurts and pick a face — no reading required."],
+  ["Tell my doctor", "Taps become a sentence you can say, or print on the summary."],
+  ["Know what happens", "A picture walkthrough of the visit, arrival to done."],
+];
+
 export default function Tools() {
   return (
     <div>
@@ -64,6 +70,28 @@ export default function Tools() {
           </div>
           <Link to="/appointment-prep" className="btd-btn-sky mt-5 min-h-[46px] px-[22px] py-3 text-15">
             Build a summary →
+          </Link>
+        </article>
+
+        <article className="btd-card p-[30px]">
+          <span className="btd-tag bg-sky">For the person, not the paperwork</span>
+          <h2 className="mt-3.5 mb-2 text-28 font-extrabold">My Voice</h2>
+          <p className="mb-[18px] max-w-[44em] text-base leading-[1.7] text-body">
+            Built for the person with Down syndrome to use themselves. Tap a body outline and a
+            face to say how you feel, build a sentence to tell your doctor, and see what happens
+            at a visit before you go — with read-aloud on every label and a reading level that
+            can drop to pictures only.
+          </p>
+          <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))]">
+            {myVoiceSteps.map(([label, text]) => (
+              <div key={label} className="rounded-tile bg-mist p-4">
+                <p className="text-13 font-bold text-link">{label}</p>
+                <p className="mt-1.5 text-sm leading-[1.55] text-body">{text}</p>
+              </div>
+            ))}
+          </div>
+          <Link to="/my-voice" className="btd-btn-coral mt-5 min-h-[46px] px-[22px] py-3 text-15">
+            Open My Voice →
           </Link>
         </article>
 

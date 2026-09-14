@@ -1,4 +1,5 @@
 import { useAccessibility } from "../context/AccessibilityContext";
+import PracticeModeToggle from "./PracticeModeToggle";
 
 export default function AccessibilityBar() {
   const { largeText, highContrast, easyRead, toggleLargeText, toggleHighContrast, toggleEasyRead } =
@@ -37,6 +38,8 @@ export default function AccessibilityBar() {
         >
           Easy read
         </button>
+        <span className="mx-1 opacity-40" aria-hidden="true">|</span>
+        <PracticeModeToggle />
         <span className="ml-auto opacity-65">Emergency? Call 911.</span>
       </div>
     </div>
