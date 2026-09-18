@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { fetchPendingStories, fetchApprovedForAdmin, setStoryStatus, StoryRow } from "../lib/stories";
 import { authEnabled } from "../lib/supabaseClient";
+import PageLoading from "../components/PageLoading";
 
 export default function AdminStories() {
   const { user, isAdmin, loading } = useAuth();
@@ -30,7 +31,7 @@ export default function AdminStories() {
     setBusyId(null);
   }
 
-  if (loading) return null;
+  if (loading) return <PageLoading />;
 
   if (!user) {
     return (

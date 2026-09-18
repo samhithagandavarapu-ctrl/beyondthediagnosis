@@ -30,13 +30,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    supabase.auth.getSession().then(({ data }: any) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    // If this ever rejects — a blocked storage write, a network blip while the
+    // OAuth code is being exchanged — loading must still end. Leaving it true
+    // is what leaves people staring at a blank page.
+    supabase.auth
+      .getSession()
+      .then(({ data }: any) => {
+        setUser(data.session?.user ?? null);
+      })
+      .catch((error: unknown) => {
+        console.error("Could not read the saved session:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     const { data: listener } = supabase.auth.onAuthStateChange((event: string, session: any) => {
       setUser(session?.user ?? null);
+      setLoading(false);
       if (event === "PASSWORD_RECOVERY") {
         setPasswordRecoveryMode(true);
       }
@@ -84,9 +95,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async signInWithGoogle() {
       const disabled = guardDisabled();
       if (disabled) return disabled;
+      // Come back to our own callback route rather than straight to "/", so
+      // there is a page whose whole job is to say "signing you in…" while the
+      // code in the URL is exchanged for a session.
+      const next = `${window.location.pathname}${window.location.search}`;
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+        next === "/login" ? "/" : next
+      )}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo },
       });
       return { error: error?.message ?? null };
     },
