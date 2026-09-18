@@ -13,6 +13,8 @@ import Resources from "./pages/Resources";
 import ProviderEducation from "./pages/ProviderEducation";
 import Stories from "./pages/Stories";
 import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
+import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import SubmitStory from "./pages/SubmitStory";
 import AdminStories from "./pages/AdminStories";
@@ -45,12 +47,16 @@ export default function App() {
           <Route path="/provider-education" element={<ProviderEducation />} />
           <Route path="/stories" element={<Stories />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/stories/submit" element={<SubmitStory />} />
           <Route path="/admin/stories" element={<AdminStories />} />
           <Route path="/understanding-overshadowing" element={<Understanding />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/privacy" element={<Privacy />} />
+          {/* Anything unrecognised — including a provider redirect that lands
+              somewhere unexpected — gets a real page, never an empty one. */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />

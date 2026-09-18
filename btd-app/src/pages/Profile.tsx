@@ -4,6 +4,7 @@ import { fetchProfile, upsertProfile } from "../lib/profile";
 import { Link } from "react-router-dom";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { READING_LEVELS } from "../lib/myVoice";
+import PageLoading from "../components/PageLoading";
 
 export default function Profile() {
   const { user, loading } = useAuth();
@@ -47,7 +48,7 @@ export default function Profile() {
     else setSaved(true);
   }
 
-  if (loading || fetching) return null;
+  if (loading || fetching) return <PageLoading label="Loading your profile…" />;
 
   if (!user) {
     return (

@@ -194,6 +194,15 @@ Configuration** and add your site's URL (e.g. `https://verity-app.vercel.app`) t
 "Redirect URLs" — this is what makes the password reset email and Google sign-in land
 back on your actual site instead of localhost.
 
+Add these two entries so every sign-in route is allowed back in (swap in your own
+domain, and add the `http://localhost:5173` versions too while you're developing):
+
+- `https://verity-app.vercel.app/auth/callback` — where Google sign-in returns
+- `https://verity-app.vercel.app/reset-password` — where the password reset email lands
+
+If `/auth/callback` isn't on that list, Supabase quietly sends people to your site's
+root instead, and the sign-in doesn't finish.
+
 ## Deploying to a live website
 
 This app has two pieces that get deployed separately: the **frontend** (static
