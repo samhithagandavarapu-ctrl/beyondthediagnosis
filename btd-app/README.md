@@ -83,11 +83,18 @@ Then open http://localhost:5173.
 
 ## How the assistant is wired
 
-`src/pages/Assistant.tsx` sends the conversation to `/api/chat` on the frontend.
-`server/index.js` receives that, attaches the system prompt from Section 6 of the
-project doc, and forwards it to `https://api.anthropic.com/v1/messages` using your
-`ANTHROPIC_API_KEY`. The key never touches the browser — it only lives on the server,
-which is how it has to work for anything you deploy publicly.
+`src/pages/Assistant.tsx` sends the conversation to `/api/chat`. The prompts and
+the Claude call itself live in one shared module, `api/_lib/claude.js`, which two
+thin wrappers use:
+
+- **Deployed:** `api/chat.js` and `api/refine-appointment.js` run as Vercel
+  serverless functions, at `/api/*` on the same domain as the site.
+- **Local dev:** `server/index.js` is an Express server exposing the same
+  endpoints on port 3001, which Vite proxies `/api/*` to.
+
+Both paths run identical prompt and request code, so what you test locally is
+what ships. Either way your `ANTHROPIC_API_KEY` is read server-side and never
+touches the browser — which is how it has to work for anything public.
 
 To change the model, set `ANTHROPIC_MODEL` in `.env` (defaults to `claude-sonnet-5`).
 
@@ -205,10 +212,13 @@ root instead, and the sign-in doesn't finish.
 
 ## Deploying to a live website
 
-This app has two pieces that get deployed separately: the **frontend** (static
-files) and the **backend** (the Express server that holds your API key). This
-guide uses Vercel for the frontend and Render for the backend — both have free
-tiers and don't require a credit card to start.
+The whole app deploys to Vercel as one project: the site is static files, and
+the two AI endpoints (`/api/chat`, `/api/refine-appointment`) run as serverless
+functions from the `api/` folder. There is no separate backend to host, no CORS
+to configure, and nothing to keep awake.
+
+Your Claude API key lives only in Vercel's environment variables — it is read
+server-side inside the functions and never reaches the browser.
 
 ### 0. Put the code on GitHub
 
@@ -226,79 +236,72 @@ Deploys pull from a Git repo, so this has to happen first.
    ```
    (`.env` is already excluded by `.gitignore` — your API key never gets pushed.)
 
-### 1. Deploy the backend (Render)
-
-1. Go to https://render.com and sign up / log in.
-2. Click **New +** → **Web Service**, and connect your GitHub repo.
-3. Configure it:
-   - **Root Directory:** `btd-app` (only if your repo has other folders — otherwise leave blank)
-   - **Runtime:** Node
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm run server`
-   - **Instance type:** Free is fine to start
-4. Under **Environment Variables**, add:
-   - `ANTHROPIC_API_KEY` → your real key
-   - `ANTHROPIC_MODEL` → `claude-sonnet-5` (optional, this is the default)
-   - `FRONTEND_ORIGIN` → leave blank for now, you'll fill this in after step 2
-5. Click **Create Web Service**. Render will build and deploy it, then give you
-   a URL like `https://beyond-the-diagnosis-api.onrender.com`. Save that URL.
-6. Visit `https://YOUR-RENDER-URL/api/health` in a browser — you should see
-   `{"ok":true}`. That confirms the backend is live.
-
-*(Free-tier Render services "sleep" after inactivity and take ~30–60 seconds to
-wake up on the next request — fine for a demo, worth upgrading before this gets
-real traffic.)*
-
-### 2. Deploy the frontend (Vercel)
+### 1. Deploy to Vercel
 
 1. Go to https://vercel.com and sign up / log in with GitHub.
-2. Click **Add New** → **Project**, and import the same repo.
+2. Click **Add New** → **Project**, and import the repo.
 3. Configure it:
    - **Root Directory:** `btd-app`
    - **Framework Preset:** Vite (should auto-detect)
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist`
 4. Under **Environment Variables**, add:
-   - `VITE_API_URL` → your Render URL from step 1, e.g.
-     `https://beyond-the-diagnosis-api.onrender.com`
-   - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` → only if you've set up login
-     (see "Setting up login" above) — skip these if you haven't yet
-5. Click **Deploy**. You'll get a URL like
-   `https://beyond-the-diagnosis.vercel.app`.
+   - `ANTHROPIC_API_KEY` → your real key from
+     https://console.anthropic.com/settings/keys
+   - `ANTHROPIC_MODEL` → optional; defaults to `claude-sonnet-5`. Set it to
+     `claude-opus-5` for stronger answers at higher cost per message.
+   - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` → only if you've set up
+     login (see "Setting up login" above)
+   - `VITE_ADMIN_EMAILS` → optional; who can reach `/admin/stories`
+5. Click **Deploy**.
 
-### 3. Connect the two
+**Environment variables that start with `VITE_` are baked into the build.** If
+you add or change one later, you must **redeploy** — saving it in the dashboard
+alone changes nothing. `ANTHROPIC_API_KEY` is read at request time, so it takes
+effect on the next request after a redeploy.
 
-Go back to Render → your service → **Environment**, and set:
+### 2. Test it live
 
-- `FRONTEND_ORIGIN` → your Vercel URL, e.g. `https://beyond-the-diagnosis.vercel.app`
+Open `https://YOUR-SITE/api/health` in a browser. You should see:
 
-Save — Render will redeploy automatically. This tells the backend to accept
-requests from your live frontend (CORS).
+```json
+{ "ok": true, "apiKeyConfigured": true, "model": "claude-sonnet-5" }
+```
 
-### 4. Test it live
+If `apiKeyConfigured` is `false`, the key isn't set on Vercel (or you haven't
+redeployed since adding it). Then open `/assistant` and send a message.
 
-Open your Vercel URL and go to `/assistant`. Send a message. If it replies,
-you're fully live. If you get an error, check:
+If the assistant shows an error, it now tells you what actually went wrong
+rather than guessing. Two worth recognising:
 
-- Render's **Logs** tab for the backend
-- That `VITE_API_URL` in Vercel has no trailing slash and no `/api` at the end
-- That `FRONTEND_ORIGIN` in Render exactly matches your Vercel URL (including `https://`)
+- *"didn't reach the API — the request returned a web page instead"* → the
+  functions aren't deployed. Check that **Root Directory** is `btd-app`, so that
+  `api/` sits at the root of what Vercel builds, and look for the functions
+  listed in the deployment's build output.
+- *"ANTHROPIC_API_KEY is missing on the server"* → exactly what it says; add it
+  and redeploy.
 
-### 5. (Optional) Use your own domain
+Vercel's **Logs** tab (filtered to your function) shows the server-side detail
+for anything else.
 
-- **Frontend:** In Vercel, go to your project → **Settings** → **Domains**, add
-  your domain, and follow the DNS instructions it gives you.
-- **Backend:** Same idea in Render under **Settings** → **Custom Domain** if you
-  want something like `api.beyondthediagnosis.org` instead of the `.onrender.com`
-  URL. If you do this, update `VITE_API_URL` in Vercel and redeploy.
-- Domains are usually bought through a registrar like Namecheap, Google Domains'
-  successor Squarespace Domains, or directly through Vercel.
+### 3. (Optional) Use your own domain
 
-### Alternatives to Vercel / Render
+In Vercel, go to your project → **Settings** → **Domains**, add your domain, and
+follow the DNS instructions it gives you. Domains are usually bought through a
+registrar like Namecheap, Squarespace Domains, or directly through Vercel.
 
-Any static host works for the frontend (Netlify, Cloudflare Pages, GitHub
-Pages) and any Node host works for the backend (Railway, Fly.io, a VPS). The
-steps are the same shape: build the frontend with `VITE_API_URL` set to wherever
-the backend ends up, and give the backend `ANTHROPIC_API_KEY` and
-`FRONTEND_ORIGIN` as environment variables — never hardcode the API key.
+**If you add a custom domain and you use login, update Supabase too** —
+Authentication → URL Configuration → set **Site URL** to your custom domain and
+add it to **Redirect URLs** (see "Set your redirect URL for production" above).
+Supabase silently redirects to the old Site URL otherwise, which lands people on
+a hostname that may no longer serve the app.
 
+### Alternatives to Vercel
+
+Any host that serves static files plus Node functions works the same way
+(Netlify Functions, Cloudflare Workers). If you'd rather run the API as a
+long-lived Node server instead — on Railway, Fly.io, Render, or a VPS —
+`server/index.js` is exactly that server: it exposes the same endpoints from the
+same shared code in `api/_lib/claude.js`. Deploy it with `npm run server`, give
+it `ANTHROPIC_API_KEY`, and set `VITE_API_URL` on the frontend to its URL, then
+redeploy the frontend. Never hardcode the API key.

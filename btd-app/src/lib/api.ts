@@ -3,11 +3,43 @@ export type ChatMessage = {
   content: string;
 };
 
-// In local dev this is empty, so requests go to "/api/chat" and Vite's proxy
-// (vite.config.ts) forwards them to the local Express server.
-// In production, set VITE_API_URL to your deployed backend's URL, e.g.
-// https://btd-api.onrender.com — see README "Deploying" section.
+// Empty means same origin, which is the normal case: in production the API runs
+// as Vercel serverless functions in api/ alongside the site, and in local dev
+// Vite's proxy (vite.config.ts) forwards /api to the Express dev server.
+// VITE_API_URL is only for hosting the API somewhere else entirely.
 const API_BASE = import.meta.env.VITE_API_URL || "";
+
+/** Reads a response that is supposed to be JSON, and fails with something a
+ *  person can act on when it isn't.
+ *
+ *  The specific trap: if the API isn't deployed where the app expects, the
+ *  request lands on the SPA fallback and HTML comes back with status 200. That
+ *  used to surface as "make sure the API server is running", which is wrong
+ *  and unactionable on a deployed site. */
+async function readJson(res: Response, label: string) {
+  const body = await res.text();
+
+  let parsed: any = null;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    if (body.trimStart().startsWith("<")) {
+      throw new Error(
+        `${label} didn't reach the API — the request returned a web page instead. ` +
+          `The API isn't deployed at ${API_BASE || window.location.origin}/api.`
+      );
+    }
+    throw new Error(`${label} got an unreadable response (${res.status}).`);
+  }
+
+  // The API reports its own failures as { error }, which is already written for
+  // a person to read — pass it straight through rather than inventing a cause.
+  if (!res.ok) {
+    throw new Error(parsed?.error || `${label} failed (${res.status}).`);
+  }
+
+  return parsed;
+}
 
 export type RefinedAppointmentForm = {
   reasonForVisit: string;
@@ -25,12 +57,7 @@ export async function refineAppointmentForm(form: unknown): Promise<RefinedAppoi
     body: JSON.stringify({ form }),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Refine request failed (${res.status}): ${text}`);
-  }
-
-  const data = await res.json();
+  const data = await readJson(res, "The polish request");
   return data.refined as RefinedAppointmentForm;
 }
 export async function sendChatMessage(messages: ChatMessage[]): Promise<string> {
@@ -40,11 +67,6 @@ export async function sendChatMessage(messages: ChatMessage[]): Promise<string> 
     body: JSON.stringify({ messages }),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Assistant request failed (${res.status}): ${text}`);
-  }
-
-  const data = await res.json();
+  const data = await readJson(res, "The assistant");
   return data.reply as string;
 }

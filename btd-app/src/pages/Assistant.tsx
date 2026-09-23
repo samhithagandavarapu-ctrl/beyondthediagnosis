@@ -42,9 +42,13 @@ export default function Assistant() {
     try {
       const reply = await sendChatMessage(next);
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // Show what actually went wrong. The old text blamed a local dev server,
+      // which is misleading anywhere but a developer's own machine.
       setError(
-        "The assistant couldn't respond just now. Make sure the API server is running (npm run server) and ANTHROPIC_API_KEY is set."
+        err instanceof Error && err.message
+          ? err.message
+          : "The assistant couldn't respond just now. Please try again."
       );
     } finally {
       setLoading(false);

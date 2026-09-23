@@ -106,9 +106,11 @@ export default function AppointmentPrep() {
               }))
             : f.questions,
       }));
-    } catch {
+    } catch (err: unknown) {
       setRefineError(
-        "Couldn't refine this right now. Make sure the API server is running and ANTHROPIC_API_KEY is set."
+        err instanceof Error && err.message
+          ? `${err.message} Your draft is unchanged.`
+          : "Couldn't polish this right now. Your draft is unchanged."
       );
     } finally {
       setRefining(false);
