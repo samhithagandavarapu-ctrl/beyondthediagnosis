@@ -1,7 +1,7 @@
 import { STICKER_KINDS, stickerKind } from "../../lib/myVoice";
 import { useMyVoice } from "../../context/MyVoiceContext";
 import SpeakButton from "./SpeakButton";
-import Icon from "../icons/Icon";
+import StickerBadge from "./StickerBadge";
 
 // Stickers reward an action that was taken — never a streak, and never a day
 // that was missed. A sticker you haven't earned yet just shows what earns it.
@@ -28,13 +28,7 @@ export default function StickerBook() {
               }`}
             >
               <div className="flex justify-center">
-                <span
-                  className={`flex h-[58px] w-[58px] items-center justify-center rounded-full ${
-                    earned ? "bg-sky text-navy" : "bg-mist text-navy/25"
-                  }`}
-                >
-                  <Icon name={kind.art} size={30} />
-                </span>
+                <StickerBadge id={kind.id} earned={earned} size={118} />
               </div>
               {showText && (
                 <p className="mt-2 text-sm font-bold text-navy">{kind.label}</p>

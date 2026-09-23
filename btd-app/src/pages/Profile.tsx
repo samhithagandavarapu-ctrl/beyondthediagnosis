@@ -14,6 +14,7 @@ import {
   stickerKind,
 } from "../lib/myVoice";
 import Icon from "../components/icons/Icon";
+import StickerBadge from "../components/myvoice/StickerBadge";
 import PageHero from "../components/PageHero";
 import PageLoading from "../components/PageLoading";
 
@@ -486,38 +487,17 @@ export default function Profile() {
               title="Sticker book"
               intro="Earned by doing things, not by showing up daily. Nothing expires and nothing is lost by taking a break."
             >
-              <ul className="grid gap-3 sm:grid-cols-2">
+              <ul className="grid gap-5 sm:grid-cols-2">
                 {STICKER_KINDS.map((kind) => {
                   const earned = stickers.find((s) => s.id === kind.id);
                   const meta = stickerKind(kind.id);
                   return (
-                    <li
-                      key={kind.id}
-                      className={`flex items-start gap-3 rounded-tile border-2 p-4 ${
-                        earned ? "border-navy bg-butter" : "border-dashed border-navy/20"
-                      }`}
-                    >
-                      <Icon
-                        name={meta.art}
-                        size={36}
-                        className={`shrink-0 ${earned ? "text-butter-ink" : "text-navy/30"}`}
-                      />
-                      <div className="min-w-0">
-                        <span
-                          className={`block text-sm font-bold ${
-                            earned ? "text-butter-ink" : "text-muted"
-                          }`}
-                        >
-                          {meta.label}
-                        </span>
-                        <span
-                          className={`mt-0.5 block text-13 leading-[1.5] ${
-                            earned ? "text-butter-ink/80" : "text-muted"
-                          }`}
-                        >
-                          {earned ? `Earned ${shortDate(earned.at)}` : `Not yet — ${meta.earnedFor}`}
-                        </span>
-                      </div>
+                    <li key={kind.id} className="flex flex-col items-center text-center">
+                      <StickerBadge id={kind.id} earned={Boolean(earned)} size={124} />
+                      <span className="mt-2 text-sm font-bold text-navy">{meta.label}</span>
+                      <span className="mt-0.5 text-13 leading-[1.5] text-muted">
+                        {earned ? `Earned ${shortDate(earned.at)}` : `Not yet — ${meta.earnedFor}`}
+                      </span>
                     </li>
                   );
                 })}
