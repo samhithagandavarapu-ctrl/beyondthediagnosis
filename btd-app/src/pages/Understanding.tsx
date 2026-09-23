@@ -51,18 +51,6 @@ export default function Understanding() {
             </p>
           </div>
 
-          <div className="rounded-card bg-butter p-7">
-            <h2 className="mb-2.5 text-26 font-extrabold">A real example</h2>
-            <p className="text-base leading-[1.75] text-butter-ink">
-              A physician who specializes in adult Down syndrome care describes a case: a
-              mother called about her adult son's three-week cough. Two providers had already
-              told her it was "just Down syndrome." When the clinic examined him and ordered
-              a chest X-ray, the cause was pneumonia — common, treatable, and unrelated to his
-              chromosomes. It cleared with standard antibiotics. Nothing about the case was
-              unusual except that, twice, no one looked.
-            </p>
-          </div>
-
           <div>
             <h2 className="mb-2.5 text-30 font-extrabold">Why it happens — three biases</h2>
             <div className="grid gap-3">

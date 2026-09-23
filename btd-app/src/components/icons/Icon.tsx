@@ -189,26 +189,45 @@ const PATHS: Record<IconName, JSX.Element> = {
   ),
 
   // ---- Stickers ----
+  // The four stickers are little characters rather than symbols: each one has
+  // a face, because a sticker you earned should look pleased about it.
   "sticker-told": (
     <>
       <path d="M4 5.6 a2 2 0 0 1 2-2 h12 a2 2 0 0 1 2 2 v7.6 a2 2 0 0 1 -2 2 h-7.4 L6 19.2 v-4 h-2 z" />
-      <path d="M8.2 8 L15.8 8M8.2 11.2 L13 11.2" />
+      <circle cx="9.6" cy="8.2" r="0.85" fill="currentColor" stroke="none" />
+      <circle cx="14.4" cy="8.2" r="0.85" fill="currentColor" stroke="none" />
+      <path d="M9.8 10.9 Q12 12.7 14.2 10.9" />
     </>
   ),
   "sticker-feel": (
-    <path d="M12 20.4 L4.8 13.4 a4.4 4.4 0 0 1 6.2 -6.2 L12 8.2 l1 -1 a4.4 4.4 0 0 1 6.2 6.2 z" />
+    <>
+      <path d="M12 20.4 L4.8 13.4 a4.4 4.4 0 0 1 6.2 -6.2 L12 8.2 l1 -1 a4.4 4.4 0 0 1 6.2 6.2 z" />
+      <circle cx="9.7" cy="12.1" r="0.8" fill="currentColor" stroke="none" />
+      <circle cx="14.3" cy="12.1" r="0.8" fill="currentColor" stroke="none" />
+      <path d="M9.9 14.6 Q12 16.3 14.1 14.6" />
+    </>
   ),
   "sticker-map": (
     <>
       <path d="M3.4 6.4 L9 4.2 L15 6.8 L20.6 4.6 L20.6 17.6 L15 19.8 L9 17.2 L3.4 19.4 Z" />
-      <path d="M9 4.2 L9 17.2M15 6.8 L15 19.8" />
+      {/* A dotted route from a starting dot to a star, rather than two fold
+          lines: the visit has a beginning and somewhere good at the end. */}
+      <path d="M6.8 16.6 Q9.2 12.6 12 13 T14 10.8" strokeDasharray="0.1 3" />
+      <circle cx="6.8" cy="16.6" r="1.2" fill="currentColor" stroke="none" />
+      <path d="M17.6 9.9 L18.5 11.5 L20.1 12.4 L18.5 13.3 L17.6 14.9 L16.7 13.3 L15.1 12.4 L16.7 11.5 Z" />
     </>
   ),
   "sticker-voice": (
     <>
       <rect x="9" y="2.8" width="6" height="11.2" rx="3" />
+      <circle cx="10.7" cy="7" r="0.7" fill="currentColor" stroke="none" />
+      <circle cx="13.3" cy="7" r="0.7" fill="currentColor" stroke="none" />
+      <path d="M10.8 9.3 Q12 10.4 13.2 9.3" />
       <path d="M5.4 11.4 a6.6 6.6 0 0 0 13.2 0" />
       <path d="M12 18 L12 21.2M8.8 21.2 L15.2 21.2" />
+      {/* Two little "it's being heard" sparkles either side of the mic. */}
+      <path d="M4.3 4.9 L5.1 6.5 L4.3 8.1 L3.5 6.5 Z" />
+      <path d="M19.7 4.9 L20.5 6.5 L19.7 8.1 L18.9 6.5 Z" />
     </>
   ),
 

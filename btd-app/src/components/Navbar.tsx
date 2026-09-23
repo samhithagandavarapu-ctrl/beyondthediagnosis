@@ -48,6 +48,12 @@ export default function Navbar() {
               Admin
             </NavLink>
           )}
+          <Link
+            to="/assistant"
+            className="btd-btn-coral ml-2 mr-1 px-[18px] py-[11px] text-sm shadow-[0_1px_0_rgba(33,50,68,0.15)]"
+          >
+            {CTA_LABEL}
+          </Link>
           {user ? (
             <>
               {/* A named destination, not a bare email address: "My profile" says
@@ -76,12 +82,6 @@ export default function Navbar() {
               Sign in
             </NavLink>
           )}
-          <Link
-            to="/assistant"
-            className="btd-btn-coral ml-2 px-[18px] py-[11px] text-sm shadow-[0_1px_0_rgba(33,50,68,0.15)]"
-          >
-            {CTA_LABEL}
-          </Link>
         </nav>
       </div>
       {/* mobile nav */}
