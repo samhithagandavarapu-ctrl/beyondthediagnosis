@@ -505,12 +505,26 @@ function SummaryView({
   myVoice: CheckIn | null;
   onBack: () => void;
 }) {
-  function downloadPdf() {
-    const doc = buildAppointmentPdf(form, myVoice);
-    const namePart = form.patientName.trim()
-      ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
-      : "visit-summary";
-    doc.save(`${namePart}-appointment-summary.pdf`);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  // Async because the PDF loads the site's typeface before drawing; the button
+  // says so rather than looking dead for the moment that takes.
+  async function downloadPdf() {
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const doc = await buildAppointmentPdf(form, myVoice);
+      const namePart = form.patientName.trim()
+        ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
+        : "visit-summary";
+      doc.save(`${namePart}-appointment-summary.pdf`);
+    } catch (err) {
+      console.error(err);
+      setDownloadError("Couldn't build the PDF. You can use Print instead.");
+    } finally {
+      setDownloading(false);
+    }
   }
 
   const symptoms = form.symptoms.filter((s) => s.description.trim());
@@ -527,9 +541,10 @@ function SummaryView({
         <div className="flex gap-2">
           <button
             onClick={downloadPdf}
-            className="px-4 py-2 rounded bg-ink text-paper text-sm font-semibold"
+            disabled={downloading}
+            className="px-4 py-2 rounded bg-ink text-paper text-sm font-semibold disabled:opacity-60"
           >
-            Download PDF
+            {downloading ? "Preparing…" : "Download PDF"}
           </button>
           <button
             onClick={() => window.print()}
@@ -539,6 +554,11 @@ function SummaryView({
           </button>
         </div>
       </div>
+      {downloadError && (
+        <p className="mb-4 rounded border border-coral bg-coral/20 px-3 py-2 text-sm text-coral-ink print:hidden">
+          {downloadError}
+        </p>
+      )}
 
       <article className="btd-card overflow-hidden btd-print-sheet">
         <header className="btd-dark px-8 py-7 border-b-[3px] border-sky">

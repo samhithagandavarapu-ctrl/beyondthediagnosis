@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import { CheckIn, checkInLines } from "./myVoice";
+import { usePdfFont } from "./pdfFonts";
 
 // The PDF a family hands across a desk. It gets about thirty seconds of a
 // clinician's attention, so the layout does the arguing: a titled header, one
@@ -58,7 +59,35 @@ const CONTENT_WIDTH = PAGE.width - MARGIN * 2;
 const HEADER_HEIGHT = 92;
 const FOOTER_SPACE = 54;
 
-type Ctx = { doc: jsPDF; y: number };
+// Every setFont call goes through ctx.font, so the whole document falls back
+// to Helvetica together if the real typeface can't be loaded.
+type Ctx = { doc: jsPDF; y: number; font: string };
+
+const CORAL: [number, number, number] = [255, 166, 148];
+const CORAL_INK: [number, number, number] = [74, 31, 20];
+const BUTTER_INK: [number, number, number] = [74, 58, 18];
+const HAIRLINE: [number, number, number] = [214, 228, 240];
+
+/** A small filled pill with a label — how the page marks a symptom as new
+ *  rather than baseline, the one distinction a clinician scans for. */
+function pill(
+  ctx: Ctx,
+  x: number,
+  y: number,
+  text: string,
+  fill: [number, number, number],
+  ink: [number, number, number]
+): number {
+  const { doc } = ctx;
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(7.5);
+  const w = doc.getTextWidth(text) + 16;
+  doc.setFillColor(...fill);
+  doc.roundedRect(x, y - 7.5, w, 13, 6.5, 6.5, "F");
+  doc.setTextColor(...ink);
+  doc.text(text, x + 8, y + 1.5, { charSpace: 0.4 });
+  return w;
+}
 
 function fmtDate(iso?: string) {
   const d = iso ? new Date(iso) : new Date();
@@ -85,7 +114,7 @@ function drawHeader(ctx: Ctx, form: AppointmentForm) {
   doc.setFillColor(...SKY);
   doc.rect(0, HEADER_HEIGHT - 3, PAGE.width, 3, "F");
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(ctx.font, "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...BUTTER);
   doc.text("VERITY  ·  VISIT SUMMARY", MARGIN, 34, { charSpace: 1.2 });
@@ -95,18 +124,50 @@ function drawHeader(ctx: Ctx, form: AppointmentForm) {
   const name = form.patientName.trim() || "Visit summary";
   doc.text(doc.splitTextToSize(name, CONTENT_WIDTH - 150)[0], MARGIN, 62);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont(ctx.font, "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(228, 241, 252);
   doc.text(fmtDate(), PAGE.width - MARGIN, 62, { align: "right" });
 
-  ctx.y = HEADER_HEIGHT + 34;
+  ctx.y = HEADER_HEIGHT + 30;
+}
+
+/** The reason for the visit sits in a tinted card directly under the header,
+ *  because it's the one line a clinician reads before anything else. */
+function reasonCard(ctx: Ctx, reason: string) {
+  const { doc } = ctx;
+  const padX = 18;
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(11.5);
+  const lines: string[] = doc.splitTextToSize(reason.trim(), CONTENT_WIDTH - padX * 2);
+  const height = 30 + lines.length * 16 + 14;
+  ensure(ctx, height + 12);
+
+  const top = ctx.y - 14;
+  doc.setFillColor(...SKY_TINT);
+  doc.roundedRect(MARGIN, top, CONTENT_WIDTH, height, 8, 8, "F");
+
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...LINK);
+  doc.text("REASON FOR VISIT", MARGIN + padX, top + 22, { charSpace: 1.1 });
+
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(11.5);
+  doc.setTextColor(...NAVY);
+  let ty = top + 42;
+  lines.forEach((line) => {
+    doc.text(line, MARGIN + padX, ty);
+    ty += 16;
+  });
+
+  ctx.y = top + height + 26;
 }
 
 function sectionHeading(ctx: Ctx, text: string) {
   const { doc } = ctx;
   ensure(ctx, 44);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(ctx.font, "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...LINK);
   doc.text(text.toUpperCase(), MARGIN, ctx.y, { charSpace: 1.1 });
@@ -119,7 +180,7 @@ function sectionHeading(ctx: Ctx, text: string) {
 
 function paragraph(ctx: Ctx, text: string) {
   const { doc } = ctx;
-  doc.setFont("helvetica", "normal");
+  doc.setFont(ctx.font, "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(...BODY);
   const lines = doc.splitTextToSize(text.trim(), CONTENT_WIDTH);
@@ -134,67 +195,88 @@ function paragraph(ctx: Ctx, text: string) {
 /** One list item: a sky rule down the left, a bold line, and an optional
  *  muted detail line underneath. Every list in the document uses this, which
  *  is most of what makes the page feel like one document. */
-function item(ctx: Ctx, title: string, detail?: string) {
+type Tag = { text: string; fill: [number, number, number]; ink: [number, number, number] };
+
+function item(ctx: Ctx, title: string, detail?: string, tag?: Tag) {
   const { doc } = ctx;
   const indent = MARGIN + 13;
   const width = CONTENT_WIDTH - 13;
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(ctx.font, "bold");
   doc.setFontSize(10.5);
   const titleLines: string[] = doc.splitTextToSize(title.trim(), width);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont(ctx.font, "normal");
   doc.setFontSize(9);
   const detailLines: string[] = detail?.trim()
     ? doc.splitTextToSize(detail.trim(), width)
     : [];
 
-  const blockHeight = titleLines.length * 14 + detailLines.length * 12 + 8;
+  // A tag with no detail line still needs a row to sit on.
+  const detailRows = detailLines.length || (tag ? 1 : 0);
+  const blockHeight = titleLines.length * 15 + detailRows * 14 + 10;
   ensure(ctx, blockHeight);
 
   const top = ctx.y - 10;
   doc.setFillColor(...SKY);
   doc.rect(MARGIN, top, 2.5, blockHeight - 2, "F");
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10.5);
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(11);
   doc.setTextColor(...NAVY);
   titleLines.forEach((line) => {
     doc.text(line, indent, ctx.y);
-    ctx.y += 14;
+    ctx.y += 15;
   });
 
   if (detailLines.length) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFont(ctx.font, "normal");
+    doc.setFontSize(9.5);
     doc.setTextColor(...MUTED);
-    detailLines.forEach((line) => {
+    detailLines.forEach((line, i) => {
       doc.text(line, indent, ctx.y);
-      ctx.y += 12;
+      // The tag rides the end of the first detail line, or its own row when
+      // there's no detail at all.
+      if (tag && i === 0) {
+        pill(ctx, indent + doc.getTextWidth(line) + 12, ctx.y - 3, tag.text, tag.fill, tag.ink);
+        doc.setFont(ctx.font, "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...MUTED);
+      }
+      ctx.y += 14;
     });
+  } else if (tag) {
+    pill(ctx, indent, ctx.y - 3, tag.text, tag.fill, tag.ink);
+    ctx.y += 14;
   }
-  ctx.y += 8;
+  ctx.y += 10;
 }
 
 function numberedItem(ctx: Ctx, n: number, text: string) {
   const { doc } = ctx;
-  const indent = MARGIN + 22;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10.5);
-  const lines: string[] = doc.splitTextToSize(text.trim(), CONTENT_WIDTH - 22);
-  ensure(ctx, lines.length * 14 + 8);
+  const indent = MARGIN + 28;
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(11);
+  const lines: string[] = doc.splitTextToSize(text.trim(), CONTENT_WIDTH - 28);
+  ensure(ctx, lines.length * 16 + 10);
 
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...LINK);
-  doc.text(`${n}.`, MARGIN + 2, ctx.y);
+  // A filled circle, centred on the first line's cap height — a bare "1."
+  // disappears next to the question it belongs to.
+  doc.setFillColor(...NAVY);
+  doc.circle(MARGIN + 9, ctx.y - 3.5, 8, "F");
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...WHITE);
+  doc.text(String(n), MARGIN + 9, ctx.y - 0.5, { align: "center" });
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(11);
   doc.setTextColor(...NAVY);
   lines.forEach((line) => {
     doc.text(line, indent, ctx.y);
-    ctx.y += 14;
+    ctx.y += 15.5;
   });
-  ctx.y += 6;
+  ctx.y += 9;
 }
 
 /** The person's own words get a tinted panel — the one block on the page that
@@ -204,7 +286,7 @@ function myVoicePanel(ctx: Ctx, checkIn: CheckIn) {
   const lines = checkInLines(checkIn);
   if (!lines.length) return;
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont(ctx.font, "normal");
   doc.setFontSize(10.5);
   const wrapped = lines.flatMap(
     (line) => doc.splitTextToSize(line, CONTENT_WIDTH - 36) as string[]
@@ -218,7 +300,7 @@ function myVoicePanel(ctx: Ctx, checkIn: CheckIn) {
   doc.setFillColor(...SKY);
   doc.rect(MARGIN, top, 3.5, panelHeight, "F");
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(ctx.font, "bold");
   doc.setFontSize(8);
   doc.setTextColor(...LINK);
   doc.text(
@@ -229,7 +311,7 @@ function myVoicePanel(ctx: Ctx, checkIn: CheckIn) {
   );
 
   let ty = top + 38;
-  doc.setFont("helvetica", "normal");
+  doc.setFont(ctx.font, "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(...NAVY);
   wrapped.forEach((line) => {
@@ -241,7 +323,7 @@ function myVoicePanel(ctx: Ctx, checkIn: CheckIn) {
 }
 
 /** Footers go on last, once the page count is known. */
-function drawFooters(doc: jsPDF) {
+function drawFooters(doc: jsPDF, font: string) {
   const total = doc.getNumberOfPages();
   for (let page = 1; page <= total; page++) {
     doc.setPage(page);
@@ -250,7 +332,7 @@ function drawFooters(doc: jsPDF) {
     doc.setLineWidth(0.8);
     doc.line(MARGIN, y - 14, PAGE.width - MARGIN, y - 14);
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont(font, "normal");
     doc.setFontSize(8);
     doc.setTextColor(...MUTED);
     doc.text(
@@ -275,25 +357,34 @@ export function symptomDetail(s: Symptom): string {
     .join("   ·   ");
 }
 
-export function buildAppointmentPdf(
+export async function buildAppointmentPdf(
   form: AppointmentForm,
   myVoice: CheckIn | null
-): jsPDF {
+): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const ctx: Ctx = { doc, y: 0 };
+  // Registered before the first draw, so no text is laid out in a font the
+  // finished document doesn't use.
+  const font = await usePdfFont(doc);
+  const ctx: Ctx = { doc, y: 0, font };
 
   drawHeader(ctx, form);
 
   if (form.reasonForVisit.trim()) {
-    sectionHeading(ctx, "Reason for visit");
-    paragraph(ctx, form.reasonForVisit);
+    reasonCard(ctx, form.reasonForVisit);
   }
 
   const symptoms = form.symptoms.filter((s) => s.description.trim());
   if (symptoms.length) {
     sectionHeading(ctx, "What we're seeing");
-    symptoms.forEach((s) => item(ctx, s.description, symptomDetail(s)));
-    ctx.y += 4;
+    symptoms.forEach((s) =>
+      item(ctx, s.description, s.onset.trim() ? `Started: ${s.onset.trim()}` : "", {
+        text:
+          s.baselineOrNew === "new" ? "NEW — NOT TYPICAL" : "PART OF THEIR BASELINE",
+        fill: s.baselineOrNew === "new" ? CORAL : BUTTER,
+        ink: s.baselineOrNew === "new" ? CORAL_INK : BUTTER_INK,
+      })
+    );
+    ctx.y += 6;
   }
 
   if (myVoice) myVoicePanel(ctx, myVoice);
@@ -325,6 +416,6 @@ export function buildAppointmentPdf(
     questions.forEach((q, i) => numberedItem(ctx, i + 1, q.text));
   }
 
-  drawFooters(doc);
+  drawFooters(doc, font);
   return doc;
 }

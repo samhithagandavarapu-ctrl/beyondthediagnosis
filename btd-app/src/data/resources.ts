@@ -24,7 +24,7 @@ export const LIFE_STAGES: { id: LifeStage; label: string }[] = [
 ];
 
 // Real, vetted sources — reviewed National Down Syndrome Society (NDSS),
-// Lettercase, NIH, and peer-reviewed guidance.
+// the Adult Down Syndrome Center, Lettercase, NIH, and peer-reviewed guidance.
 // Swap or expand as you find more, and re-check links periodically since
 // organizations occasionally restructure their sites.
 export const RESOURCES: Resource[] = [
@@ -83,6 +83,22 @@ export const RESOURCES: Resource[] = [
       "NDSS's guidance on locating adult-focused Down syndrome care, including specialty clinics and how to ask whether a practice has relevant experience.",
     stage: "adult",
     link: "https://ndss.org/resources",
+  },
+  {
+    id: "r7b",
+    title: "Adult Down Syndrome Center resource library",
+    description:
+      "A clinic-run library written for adults with Down syndrome and the people who care for them — health, aging, mental and behavioral health, and day-to-day support.",
+    stage: "adult",
+    link: "https://adultdownsyndrome.org/resources/",
+  },
+  {
+    id: "r7c",
+    title: "Adult Down Syndrome Center resources for caregivers",
+    description:
+      "The same library, approached from the caregiver's side: what to watch for, how to prepare for visits, and how support changes as someone ages.",
+    stage: "caregiver",
+    link: "https://adultdownsyndrome.org/resources/",
   },
   {
     id: "r8",
