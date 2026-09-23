@@ -99,8 +99,8 @@ export default function Tools() {
           <span className="btd-tag bg-butter">Always free</span>
           <h2 className="mt-3.5 mb-2 text-28 font-extrabold">Resource Navigator</h2>
           <p className="mb-[18px] max-w-[44em] text-base leading-[1.7] text-body">
-            Vetted guidance from NDSS, the Adult Down Syndrome Center, Lettercase, NIH and
-            peer-reviewed sources — filtered by where you are right now.
+            Vetted guidance from NDSS, Lettercase, NIH and peer-reviewed sources —
+            filtered by where you are right now.
           </p>
           <div className="flex flex-wrap gap-2.5">
             {LIFE_STAGES.map((s) => (

@@ -16,7 +16,6 @@ const hotspots = [
 ];
 
 const sources = [
-  ["https://adultdownsyndrome.org/resources/diagnostic-overshadowing/", "\"Diagnostic Overshadowing\" — Adult Down Syndrome Center"],
   ["https://careds.org/article/diagnostic-overshadowing/", "\"Avoiding Diagnostic Overshadowing when Caring for Adults with Down Syndrome\" — CARE Down Syndrome (NDSS)"],
   ["https://www.ncdsalliance.org/healthcareinformation/", "Healthcare Information for Families & Caregivers — NC Down Syndrome Alliance"],
 ];
@@ -30,7 +29,7 @@ export default function Understanding() {
         tone="navy"
         eyebrow="The problem"
         title="Understanding diagnostic overshadowing"
-        lede="A plain-language guide to the pattern this platform exists to fight — drawn from clinical sources at the Adult Down Syndrome Center and CARE Down Syndrome, an initiative of the National Down Syndrome Society."
+        lede="A plain-language guide to the pattern this platform exists to fight — drawn from clinical sources at CARE Down Syndrome, an initiative of the National Down Syndrome Society."
       />
       <section className="btd-container pt-14 pb-20 grid gap-6 items-start md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="grid gap-7">
@@ -55,7 +54,7 @@ export default function Understanding() {
           <div className="rounded-card bg-butter p-7">
             <h2 className="mb-2.5 text-26 font-extrabold">A real example</h2>
             <p className="text-base leading-[1.75] text-butter-ink">
-              A physician at the Adult Down Syndrome Center describes an early case: a
+              A physician who specializes in adult Down syndrome care describes a case: a
               mother called about her adult son's three-week cough. Two providers had already
               told her it was "just Down syndrome." When the clinic examined him and ordered
               a chest X-ray, the cause was pneumonia — common, treatable, and unrelated to his

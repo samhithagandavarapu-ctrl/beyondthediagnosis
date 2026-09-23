@@ -15,6 +15,14 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-navy text-mist" : "text-body hover:bg-sky/30 hover:text-navy"
   }`;
 
+/** First letter of the account, for the avatar dot. Falls back to a dot rather
+ *  than a letter for phone-only accounts, which have no name to draw from. */
+function initialFor(email?: string | null, phone?: string | null) {
+  const source = (email || "").trim();
+  if (source) return source[0]!.toUpperCase();
+  return phone ? "#" : "?";
+}
+
 export default function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
 
@@ -42,11 +50,19 @@ export default function Navbar() {
           )}
           {user ? (
             <>
-              <NavLink
-                to="/profile"
-                className="hidden sm:inline px-2 text-xs text-muted max-w-[140px] truncate hover:text-navy hover:underline"
-              >
-                {user.email || user.phone}
+              {/* A named destination, not a bare email address: "My profile" says
+                  where the link goes, and the account it belongs to is a hint
+                  underneath rather than the label itself. */}
+              <NavLink to="/profile" className={linkClass} title={user.email || user.phone || undefined}>
+                <span className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-navy text-[0.6875rem] font-bold text-mist"
+                  >
+                    {initialFor(user.email, user.phone)}
+                  </span>
+                  My profile
+                </span>
               </NavLink>
               <button
                 onClick={() => signOut()}

@@ -32,7 +32,7 @@ families, and their clinicians. Built from the DECA Innovation Plan project doc.
   "forgot password" reset flow. Needs a free Supabase project connected — see "Setting
   up login" below.
 - **Resource Navigator** (`/resources`) — resources filterable by life stage, each
-  linking to a real, vetted source (NDSS, Lettercase, Adult Down Syndrome Center, NIH).
+  linking to a real, vetted source (NDSS, Lettercase, NIH).
 - **Provider Education Hub** (`/provider-education`) — module listing with pricing,
   clearly marked as not active/not a live purchase system yet.
 - **Community Stories** (`/stories`) — searchable/filterable story cards.

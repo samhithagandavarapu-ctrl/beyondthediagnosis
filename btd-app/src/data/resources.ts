@@ -24,7 +24,7 @@ export const LIFE_STAGES: { id: LifeStage; label: string }[] = [
 ];
 
 // Real, vetted sources — reviewed National Down Syndrome Society (NDSS),
-// Adult Down Syndrome Center, Lettercase, NIH, and peer-reviewed guidance.
+// Lettercase, NIH, and peer-reviewed guidance.
 // Swap or expand as you find more, and re-check links periodically since
 // organizations occasionally restructure their sites.
 export const RESOURCES: Resource[] = [
@@ -80,9 +80,9 @@ export const RESOURCES: Resource[] = [
     id: "r7",
     title: "Finding a clinician who specializes in adult DS care",
     description:
-      "The Adult Down Syndrome Center's resource library — one of the few clinics in the country built specifically for adults with Down syndrome.",
+      "NDSS's guidance on locating adult-focused Down syndrome care, including specialty clinics and how to ask whether a practice has relevant experience.",
     stage: "adult",
-    link: "https://adultdownsyndrome.org/",
+    link: "https://ndss.org/resources",
   },
   {
     id: "r8",
