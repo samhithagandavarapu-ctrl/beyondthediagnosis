@@ -41,7 +41,7 @@ export default function ResetPassword() {
               onClick={() => navigate("/")}
               className="px-4 py-2.5 rounded bg-ink text-paper font-semibold text-sm"
             >
-              Continue to Verity
+              Continue to Voiced
             </button>
           </div>
         ) : (

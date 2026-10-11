@@ -68,7 +68,7 @@ export default function Home() {
               <span className="text-link"> not a shrug and a label.</span>
             </h1>
             <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
-              Verity helps people with Down syndrome, their families, and their
+              Voiced helps people with Down syndrome, their families, and their
               clinicians catch what diagnostic overshadowing hides — when a real,
               treatable symptom gets waved off as "just Down syndrome."
             </p>

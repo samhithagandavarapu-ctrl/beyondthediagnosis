@@ -32,7 +32,7 @@ export default function Navbar() {
         <NavLink to="/" className="flex items-center gap-2.5 shrink-0">
           <img src="/logo.svg" alt="" className="h-[34px] w-[34px]" />
           <span className="font-display text-[1.375rem] font-extrabold tracking-[-0.03em]">
-            Verity
+            Voiced
           </span>
         </NavLink>
         <nav aria-label="Main" className="ml-auto flex flex-wrap items-center justify-end gap-1">

@@ -3,7 +3,7 @@ import type { jsPDF } from "jspdf";
 /** Loads the site's own typeface into a jsPDF document.
  *
  *  jsPDF only ships the PDF base-14 fonts, so an unstyled export comes out in
- *  Helvetica — which looks nothing like the rest of Verity. Public Sans is the
+ *  Helvetica — which looks nothing like the rest of Voiced. Public Sans is the
  *  body face the site already uses and is OFL-licensed, so it ships as a static
  *  asset (public/fonts/) and is fetched only when someone actually builds a
  *  PDF. That keeps ~170KB of font out of the app bundle.

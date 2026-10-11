@@ -67,5 +67,5 @@ app.post("/api/refine-appointment", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Verity dev API running on http://localhost:${PORT} (model: ${MODEL})`);
+  console.log(`Voiced dev API running on http://localhost:${PORT} (model: ${MODEL})`);
 });

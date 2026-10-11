@@ -1,4 +1,4 @@
-# Verity
+# Voiced
 
 *"Nothing for me, without me."*
 
@@ -155,7 +155,7 @@ Straight from the project doc's next steps:
 
 The Login page (`/login`) is fully built — email/password, "Continue with Google," phone
 number, and "Forgot password" all work — but it needs a free backend connected first.
-Verity uses **Supabase**, a free service that handles user accounts so you don't have to
+Voiced uses **Supabase**, a free service that handles user accounts so you don't have to
 build your own. Until you connect it, the Sign In button still shows but tells people
 login isn't set up yet — nothing breaks.
 

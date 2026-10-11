@@ -117,7 +117,7 @@ export default function SubmitStory() {
             onChange={(e) => setConsent(e.target.checked)}
             className="mt-1"
           />
-          I'm okay with this story being reviewed and possibly published on Verity.
+          I'm okay with this story being reviewed and possibly published on Voiced.
         </label>
 
         <button

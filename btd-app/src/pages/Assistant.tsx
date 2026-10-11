@@ -16,7 +16,7 @@ export default function Assistant() {
     {
       role: "assistant",
       content:
-        "Hi — I'm the Verity Advocacy Assistant. I can help you understand your rights, prepare for an appointment, or think through how to raise a concern with a provider. I can't diagnose anything or recommend treatment — but I can help you build a clear, confident case to bring to your doctor. What's going on?",
+        "Hi — I'm the Voiced Advocacy Assistant. I can help you understand your rights, prepare for an appointment, or think through how to raise a concern with a provider. I can't diagnose anything or recommend treatment — but I can help you build a clear, confident case to bring to your doctor. What's going on?",
     },
   ]);
   const [input, setInput] = useState("");

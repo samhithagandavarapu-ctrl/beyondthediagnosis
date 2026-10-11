@@ -31,7 +31,7 @@ export default function Login() {
 
   return (
     <div className="btd-container py-14 max-w-md">
-      <h1 className="text-3xl font-display font-semibold mb-2">Sign in to Verity</h1>
+      <h1 className="text-3xl font-display font-semibold mb-2">Sign in to Voiced</h1>
       <p className="text-slate mb-8">
         Save your appointment prep history and pick up where you left off.
       </p>
