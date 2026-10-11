@@ -563,7 +563,7 @@ function SummaryView({
       <article className="btd-card overflow-hidden btd-print-sheet">
         <header className="btd-dark px-8 py-7 border-b-[3px] border-sky">
           <p className="text-11 font-bold uppercase tracking-[0.14em] text-butter">
-            Verity · Visit summary
+            Voiced · Visit summary
           </p>
           <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
             <h1 className="font-display text-28 font-extrabold text-mist">
@@ -663,7 +663,7 @@ function SummaryView({
           )}
 
           <p className="btd-print-note btd-avoid-break mt-8 border-t border-navy/12 pt-4 text-11 text-muted">
-            Prepared with Verity. This is a family's own record, not a medical document.
+            Prepared with Voiced. This is a family's own record, not a medical document.
           </p>
         </div>
       </article>

@@ -258,7 +258,7 @@ function StoryPanel({ defaultName }: { defaultName: string }) {
               className="mt-0.5 h-4 w-4 shrink-0"
             />
             <span>
-              I'm okay with this being reviewed and published on Verity
+              I'm okay with this being reviewed and published on Voiced
               {defaultName ? `, credited to "${defaultName}"` : ", with no name attached"}.
             </span>
           </label>

@@ -25,7 +25,7 @@ export default {
         body: "#3C5266",
         muted: "#4A6076",
         link: "#1B5C8F",
-        // Legacy names, remapped onto the Verity palette so pages that still
+        // Legacy names, remapped onto the Voiced palette so pages that still
         // use them (Login, AppointmentPrep, Profile, ...) follow the redesign.
         paper: "#F3F9FE",
         ink: "#213244",
