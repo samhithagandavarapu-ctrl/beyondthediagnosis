@@ -7,7 +7,7 @@ export type ChatMessage = {
 // as Vercel serverless functions in api/ alongside the site, and in local dev
 // Vite's proxy (vite.config.ts) forwards /api to the Express dev server.
 // VITE_API_URL is only for hosting the API somewhere else entirely.
-const API_BASE = import.meta.env.VITE_API_URL || "";
+export const API_BASE = import.meta.env.VITE_API_URL || "";
 
 /** Reads a response that is supposed to be JSON, and fails with something a
  *  person can act on when it isn't.

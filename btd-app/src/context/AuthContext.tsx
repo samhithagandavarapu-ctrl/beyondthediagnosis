@@ -1,21 +1,37 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase, authEnabled } from "../lib/supabaseClient";
+import { API_BASE } from "../lib/api";
 
 type AuthState = {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
   passwordRecoveryMode: boolean;
-  signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUpWithEmail: (
+    email: string,
+    password: string
+  ) => Promise<{ error: string | null; signedIn?: boolean }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithGoogle: () => Promise<{ error: string | null }>;
   signInWithPhone: (phone: string) => Promise<{ error: string | null }>;
   verifyPhoneOtp: (phone: string, token: string) => Promise<{ error: string | null }>;
   sendPasswordReset: (email: string) => Promise<{ error: string | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  updateEmail: (newEmail: string) => Promise<{ error: string | null }>;
+  deleteAccount: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 };
+
+const DEFAULT_ADMIN_EMAIL = "voiced@gmail.com";
+
+/** Where links in Supabase's emails (sign-up confirmation, email change) send
+ *  people back to. Without it Supabase falls back to the project's "Site URL",
+ *  which is often still localhost — and that is the blank screen people saw
+ *  after clicking "confirm your email". */
+function emailRedirectTo(next: string) {
+  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+}
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
@@ -66,8 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || "")
-    .split(",")
+  // The site's own admin inbox is always an admin; VITE_ADMIN_EMAILS can add
+  // more people without a code change.
+  const adminEmails = [DEFAULT_ADMIN_EMAIL, ...(import.meta.env.VITE_ADMIN_EMAILS || "").split(",")]
     .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
   const isAdmin = Boolean(user?.email && adminEmails.includes(user.email.toLowerCase()));
@@ -81,8 +98,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async signUpWithEmail(email, password) {
       const disabled = guardDisabled();
       if (disabled) return disabled;
-      const { error } = await supabase.auth.signUp({ email, password });
-      return { error: error?.message ?? null };
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: emailRedirectTo("/profile") },
+      });
+      // A session straight away means the project doesn't require email
+      // confirmation, so there is no email to wait for.
+      return { error: error?.message ?? null, signedIn: Boolean(data?.session) };
     },
 
     async signInWithEmail(email, password) {
@@ -138,6 +161,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (!error) setPasswordRecoveryMode(false);
       return { error: error?.message ?? null };
+    },
+
+    async updateEmail(newEmail) {
+      const disabled = guardDisabled();
+      if (disabled) return disabled;
+      const { error } = await supabase.auth.updateUser(
+        { email: newEmail },
+        { emailRedirectTo: emailRedirectTo("/profile") }
+      );
+      return { error: error?.message ?? null };
+    },
+
+    async deleteAccount() {
+      const disabled = guardDisabled();
+      if (disabled) return disabled;
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) return { error: "Your session has expired. Sign in again, then try once more." };
+      try {
+        const res = await fetch(`${API_BASE}/api/delete-account`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) return { error: body.error || "We couldn't delete your account. Please try again." };
+      } catch {
+        return { error: "We couldn't reach the server. Check your connection and try again." };
+      }
+      // The account is gone server-side; drop the now-dead session here too.
+      await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+      setUser(null);
+      return { error: null };
     },
 
     async signOut() {

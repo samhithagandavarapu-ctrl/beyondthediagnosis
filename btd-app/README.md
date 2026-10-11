@@ -178,6 +178,17 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
 Email/password sign-up, sign-in, and password reset work immediately — no further setup.
 
+For the **Delete account** button on the profile page, also add the
+`service_role` key from the same Supabase page — to `.env` for local dev and to
+Vercel's Environment Variables (not prefixed with `VITE_`, so it stays on the
+server):
+
+```
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+```
+
+Without it, the button explains that deletion isn't set up and to email instead.
+
 ### 3. Turn on "Continue with Google" (optional, free)
 
 1. In Supabase, go to **Authentication → Providers → Google**, and toggle it on.
@@ -204,11 +215,17 @@ back on your actual site instead of localhost.
 Add these two entries so every sign-in route is allowed back in (swap in your own
 domain, and add the `http://localhost:5173` versions too while you're developing):
 
-- `https://verity-app.vercel.app/auth/callback` — where Google sign-in returns
+- `https://verity-app.vercel.app/auth/callback` — where Google sign-in and the
+  "confirm your email" link return
 - `https://verity-app.vercel.app/reset-password` — where the password reset email lands
 
 If `/auth/callback` isn't on that list, Supabase quietly sends people to your site's
 root instead, and the sign-in doesn't finish.
+
+Also set **Site URL** on that same page to your real site address (not
+`http://localhost:3000`, the default). Supabase falls back to it whenever a
+redirect isn't allowed, and a localhost Site URL is what shows people a blank
+page after they click "confirm your email."
 
 ## Deploying to a live website
 
@@ -252,7 +269,10 @@ Deploys pull from a Git repo, so this has to happen first.
      `claude-opus-5` for stronger answers at higher cost per message.
    - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` → only if you've set up
      login (see "Setting up login" above)
-   - `VITE_ADMIN_EMAILS` → optional; who can reach `/admin/stories`
+   - `SUPABASE_SERVICE_ROLE_KEY` → only if you want the "Delete account"
+     button to work (see "Setting up login" above)
+   - `VITE_ADMIN_EMAILS` → optional; `voiced@gmail.com` is always an admin, and
+     anyone listed here (comma-separated) can also reach `/admin/stories`
 5. Click **Deploy**.
 
 **Environment variables that start with `VITE_` are baked into the build.** If

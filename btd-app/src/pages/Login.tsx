@@ -1,14 +1,25 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authEnabled } from "../lib/supabaseClient";
 
 type Mode = "signin" | "signup" | "phone" | "phone-code" | "forgot" | "forgot-sent";
 
 export default function Login() {
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithPhone, verifyPhoneOtp, sendPasswordReset } =
-    useAuth();
+  const {
+    user,
+    loading,
+    signOut,
+    signInWithEmail,
+    signUpWithEmail,
+    signInWithGoogle,
+    signInWithPhone,
+    verifyPhoneOtp,
+    sendPasswordReset,
+  } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const accountDeleted = Boolean((location.state as { accountDeleted?: boolean } | null)?.accountDeleted);
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -29,12 +40,47 @@ export default function Login() {
     else onSuccess?.();
   }
 
+  // Already signed in: a sign-in form would be a dead end, so offer what a
+  // signed-in person actually came here for.
+  if (!loading && user) {
+    return (
+      <div className="btd-container py-14 max-w-md">
+        <h1 className="text-3xl font-display font-semibold mb-2">You're signed in</h1>
+        <p className="text-slate mb-8">Signed in as {user.email || user.phone || "your account"}.</p>
+        <div className="btd-card p-6 space-y-3">
+          <Link
+            to="/profile#account"
+            className="block w-full text-center px-4 py-2.5 rounded bg-ink text-paper font-semibold text-sm"
+          >
+            Manage your account
+          </Link>
+          <p className="text-xs text-slate">
+            Change your email or password, or delete your account.
+          </p>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="w-full px-4 py-2.5 rounded border border-ink/20 font-semibold text-sm hover:border-ink/40 transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="btd-container py-14 max-w-md">
       <h1 className="text-3xl font-display font-semibold mb-2">Sign in to Voiced</h1>
       <p className="text-slate mb-8">
         Save your appointment prep history and pick up where you left off.
       </p>
+
+      {accountDeleted && (
+        <div role="status" className="btd-card p-4 mb-6 bg-sage/10 border-sage/30 text-sm text-ink">
+          Your account has been deleted. Thank you for using Voiced.
+        </div>
+      )}
 
       {!authEnabled && (
         <div className="btd-card p-4 mb-6 bg-clay/10 border-clay/40 text-sm text-ink">
@@ -78,9 +124,17 @@ export default function Login() {
                 if (mode === "signin") {
                   run(() => signInWithEmail(email, password), () => navigate("/"));
                 } else {
-                  run(() => signUpWithEmail(email, password), () =>
-                    setNotice("Check your email to confirm your account.")
-                  );
+                  run(async () => {
+                    const result = await signUpWithEmail(email, password);
+                    if (!result.error) {
+                      if (result.signedIn) navigate("/profile");
+                      else
+                        setNotice(
+                          `We sent a confirmation link to ${email}. Click it to finish creating your account — it brings you back here, signed in.`
+                        );
+                    }
+                    return result;
+                  });
                 }
               }}
               className="space-y-3"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useAccessibility } from "../context/AccessibilityContext";
 import { useMyVoice } from "../context/MyVoiceContext";
@@ -67,16 +67,18 @@ function StickerMeter({ earned }: { earned: number }) {
 }
 
 function Panel({
+  id,
   title,
   intro,
   children,
 }: {
+  id?: string;
   title: string;
   intro?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="btd-card p-7">
+    <section id={id} className="btd-card p-7 scroll-mt-24">
       <h2 className="text-23 font-extrabold text-navy">{title}</h2>
       {intro && <p className="mt-1.5 text-15 leading-[1.6] text-body">{intro}</p>}
       <div className="mt-5">{children}</div>
@@ -287,6 +289,227 @@ function StoryPanel({ defaultName }: { defaultName: string }) {
   );
 }
 
+function Message({ tone, children }: { tone: "error" | "ok"; children: React.ReactNode }) {
+  return (
+    <p
+      role={tone === "error" ? "alert" : "status"}
+      className={
+        tone === "error"
+          ? "rounded border border-coral bg-coral/20 px-3 py-2 text-sm text-coral-ink"
+          : "rounded border border-sky bg-sky-tint px-3 py-2 text-sm text-sky-ink"
+      }
+    >
+      {children}
+    </p>
+  );
+}
+
+/** Everything about the sign-in itself: email, password, signing out, and
+ *  deleting the account outright. */
+function AccountPanel() {
+  const { user, updateEmail, updatePassword, deleteAccount, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const [newEmail, setNewEmail] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<{ tone: "error" | "ok"; text: string } | null>(null);
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ tone: "error" | "ok"; text: string } | null>(null);
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function handleEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailBusy(true);
+    setEmailMsg(null);
+    const target = newEmail.trim();
+    const { error } = await updateEmail(target);
+    setEmailBusy(false);
+    if (error) setEmailMsg({ tone: "error", text: error });
+    else {
+      setNewEmail("");
+      setEmailMsg({
+        tone: "ok",
+        text: `We sent a confirmation link to ${target}. Your email changes once you click it — if you also get one at your current address, click that too.`,
+      });
+    }
+  }
+
+  async function handlePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPasswordMsg(null);
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ tone: "error", text: "Those two passwords don't match." });
+      return;
+    }
+    setPasswordBusy(true);
+    const { error } = await updatePassword(newPassword);
+    setPasswordBusy(false);
+    if (error) setPasswordMsg({ tone: "error", text: error });
+    else {
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordMsg({ tone: "ok", text: "Password updated." });
+    }
+  }
+
+  async function handleDelete(e: React.FormEvent) {
+    e.preventDefault();
+    if (deleteText.trim().toUpperCase() !== "DELETE") return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    const { error } = await deleteAccount();
+    setDeleteBusy(false);
+    if (error) setDeleteError(error);
+    else navigate("/login", { replace: true, state: { accountDeleted: true } });
+  }
+
+  return (
+    <Panel
+      id="account"
+      title="Account"
+      intro={`Signed in as ${user?.email || user?.phone || "your account"}.`}
+    >
+      <div className="grid gap-7">
+        <form onSubmit={handleEmail} className="grid gap-3">
+          <h3 className="text-base font-bold text-navy">
+            {user?.email ? "Change email" : "Add an email"}
+          </h3>
+          {emailMsg && <Message tone={emailMsg.tone}>{emailMsg.text}</Message>}
+          <label htmlFor="a-email" className="sr-only">
+            New email
+          </label>
+          <input
+            id="a-email"
+            type="email"
+            required
+            className="btd-input"
+            placeholder="New email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={emailBusy}
+            className="btd-btn-outline justify-self-start px-[18px] py-[11px] text-sm disabled:opacity-50"
+          >
+            {emailBusy ? "Sending…" : "Send confirmation link"}
+          </button>
+        </form>
+
+        <form onSubmit={handlePassword} className="grid gap-3">
+          <h3 className="text-base font-bold text-navy">Change password</h3>
+          {passwordMsg && <Message tone={passwordMsg.tone}>{passwordMsg.text}</Message>}
+          <label htmlFor="a-password" className="sr-only">
+            New password
+          </label>
+          <input
+            id="a-password"
+            type="password"
+            required
+            minLength={6}
+            autoComplete="new-password"
+            className="btd-input"
+            placeholder="New password (at least 6 characters)"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <label htmlFor="a-password2" className="sr-only">
+            Type the new password again
+          </label>
+          <input
+            id="a-password2"
+            type="password"
+            required
+            minLength={6}
+            autoComplete="new-password"
+            className="btd-input"
+            placeholder="Type it again"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={passwordBusy}
+            className="btd-btn-outline justify-self-start px-[18px] py-[11px] text-sm disabled:opacity-50"
+          >
+            {passwordBusy ? "Saving…" : "Update password"}
+          </button>
+        </form>
+
+        <div className="grid gap-3">
+          <h3 className="text-base font-bold text-navy">Sign out</h3>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="btd-btn-outline justify-self-start px-[18px] py-[11px] text-sm"
+          >
+            Sign out on this device
+          </button>
+        </div>
+
+        <div className="grid gap-3 rounded-tile border-2 border-coral/60 p-5">
+          <h3 className="text-base font-bold text-coral-ink">Delete account</h3>
+          <p className="text-13 leading-[1.5] text-body">
+            Permanently removes your sign-in and your saved profile details. This can't be
+            undone. Stories you've already sent in aren't linked to your account, so email
+            us if you want one taken down.
+          </p>
+          {!confirmDelete ? (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="justify-self-start rounded-lg border-2 border-coral px-[18px] py-[9px] text-sm font-bold text-coral-ink hover:bg-coral/20"
+            >
+              Delete my account…
+            </button>
+          ) : (
+            <form onSubmit={handleDelete} className="grid gap-3">
+              {deleteError && <Message tone="error">{deleteError}</Message>}
+              <label htmlFor="a-delete" className="text-sm font-bold text-navy">
+                Type DELETE to confirm
+              </label>
+              <input
+                id="a-delete"
+                className="btd-input"
+                autoComplete="off"
+                value={deleteText}
+                onChange={(e) => setDeleteText(e.target.value)}
+              />
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  disabled={deleteBusy || deleteText.trim().toUpperCase() !== "DELETE"}
+                  className="rounded-lg bg-coral-ink px-[18px] py-[11px] text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {deleteBusy ? "Deleting…" : "Permanently delete my account"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    setDeleteText("");
+                    setDeleteError(null);
+                  }}
+                  className="btd-btn-outline px-[18px] py-[11px] text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 export default function Profile() {
   const { user, loading } = useAuth();
   const { largeText, highContrast, easyRead, toggleLargeText, toggleHighContrast, toggleEasyRead } =
@@ -309,6 +532,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const { hash } = useLocation();
 
   useEffect(() => {
     if (!user) {
@@ -340,6 +564,15 @@ export default function Profile() {
     if (error) setError(error);
     else setSaved(true);
   }
+
+  // "Manage your account" links to /profile#account; the page only exists once
+  // the profile has loaded, so scroll there after that.
+  const ready = !loading && !fetching && Boolean(user);
+  useEffect(() => {
+    if (ready && hash === "#account") {
+      document.getElementById("account")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [ready, hash]);
 
   if (loading || fetching) return <PageLoading label="Loading your profile…" />;
 
@@ -653,6 +886,8 @@ export default function Profile() {
                 What we store, in plain language →
               </Link>
             </section>
+
+            <AccountPanel />
           </div>
         </div>
       </div>

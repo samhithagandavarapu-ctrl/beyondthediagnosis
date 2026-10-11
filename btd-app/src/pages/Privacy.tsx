@@ -87,8 +87,10 @@ export default function Privacy() {
           <a href="/profile" className="text-gold-dark font-semibold hover:underline">
             Profile page
           </a>
-          . If you'd like your account or submitted data fully deleted, reach out using
-          the contact info below and we'll take care of it.
+          . You can also delete your account yourself from the Account section of that
+          page, which removes your sign-in and saved profile details. For anything else —
+          like taking down a story you sent in — reach out using the contact info below
+          and we'll take care of it.
         </p>
       </section>
 
