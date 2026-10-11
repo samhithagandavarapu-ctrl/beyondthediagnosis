@@ -31,17 +31,40 @@ export async function submitStory(submission: StorySubmission): Promise<{ error:
   return { error: error?.message ?? null };
 }
 
+// Every column the public page needs, and nothing else — in particular not
+// user_id, which links a published story back to an account.
+const PUBLIC_COLUMNS = "id, title, audience, excerpt, submitter_name, status, created_at";
+
 export async function fetchApprovedStories(): Promise<StoryRow[]> {
   if (!authEnabled) return [];
   const { data, error } = await supabase
     .from("stories")
-    .select("*")
+    .select(PUBLIC_COLUMNS)
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   if (error) {
     console.error(error);
     return [];
   }
+  return data ?? [];
+}
+
+/** The signed-in person's own stories that have been published — what the
+ *  notifications are built from. Needs the user_id column from
+ *  supabase/stories-notifications.sql; on a database without it this quietly
+ *  returns nothing rather than erroring, so notifications are simply empty.
+ *
+ *  user_id is filled in by the database (default auth.uid()), never sent from
+ *  here, so submitting keeps working whether or not that column exists. */
+export async function fetchMyApprovedStories(userId: string): Promise<StoryRow[]> {
+  if (!authEnabled) return [];
+  const { data, error } = await supabase
+    .from("stories")
+    .select(PUBLIC_COLUMNS)
+    .eq("user_id", userId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+  if (error) return [];
   return data ?? [];
 }
 

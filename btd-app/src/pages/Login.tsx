@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authEnabled } from "../lib/supabaseClient";
+import PasswordInput from "../components/PasswordInput";
 
 type Mode = "signin" | "signup" | "phone" | "phone-code" | "forgot" | "forgot-sent";
 
@@ -141,18 +142,16 @@ export default function Login() {
             >
               <input
                 type="email"
-                required
+    required
                 placeholder="Email"
                 className="btd-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <input
-                type="password"
+              <PasswordInput
                 required
                 minLength={6}
                 placeholder="Password"
-                className="btd-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -207,7 +206,7 @@ export default function Login() {
             </p>
             <input
               type="tel"
-              required
+  required
               placeholder="+1 555 555 5555"
               className="btd-input"
               value={phone}
@@ -241,7 +240,7 @@ export default function Login() {
             <p className="text-sm text-slate">Enter the code sent to {phone}.</p>
             <input
               type="text"
-              required
+  required
               inputMode="numeric"
               placeholder="6-digit code"
               className="btd-input"
@@ -271,7 +270,7 @@ export default function Login() {
             </p>
             <input
               type="email"
-              required
+  required
               placeholder="Email"
               className="btd-input"
               value={email}

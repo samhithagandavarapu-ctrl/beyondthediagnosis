@@ -24,7 +24,10 @@ export default function Privacy() {
             you type into the Appointment Prep Tool. These are used only to generate
             your downloadable PDF — they are not sent to or stored by our AI provider
             beyond what's needed for the optional "Refine with AI" feature, and are not
-            shared with any third party.
+            shared with any third party. Your draft and your appointment history are
+            saved in your own browser on this device so you don't lose them; they are
+            never uploaded to our servers, and you can delete any of them from the
+            Appointment Prep page.
           </li>
           <li>
             <strong>AI Assistant conversations:</strong> messages you send to the AI
@@ -35,7 +38,9 @@ export default function Privacy() {
           <li>
             <strong>Community Stories:</strong> anything you submit through "Share your
             story," including your name if you choose to include it. Submissions are
-            reviewed before publishing — nothing goes live automatically.
+            reviewed before publishing — nothing goes live automatically. If you're
+            signed in when you send one, it's linked to your account so we can let you
+            know in Notifications when it's published.
           </li>
           <li>
             <strong>Accessibility preferences:</strong> your large text / high contrast /

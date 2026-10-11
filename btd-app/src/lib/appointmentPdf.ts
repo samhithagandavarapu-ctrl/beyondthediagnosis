@@ -105,7 +105,7 @@ function ensure(ctx: Ctx, needed: number) {
   if (ctx.y + needed > PAGE.height - FOOTER_SPACE) newPage(ctx);
 }
 
-function drawHeader(ctx: Ctx, form: AppointmentForm) {
+function drawHeader(ctx: Ctx, form: AppointmentForm, date?: string) {
   const { doc } = ctx;
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE.width, HEADER_HEIGHT, "F");
@@ -127,7 +127,7 @@ function drawHeader(ctx: Ctx, form: AppointmentForm) {
   doc.setFont(ctx.font, "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(228, 241, 252);
-  doc.text(fmtDate(), PAGE.width - MARGIN, 62, { align: "right" });
+  doc.text(fmtDate(date), PAGE.width - MARGIN, 62, { align: "right" });
 
   ctx.y = HEADER_HEIGHT + 30;
 }
@@ -359,7 +359,9 @@ export function symptomDetail(s: Symptom): string {
 
 export async function buildAppointmentPdf(
   form: AppointmentForm,
-  myVoice: CheckIn | null
+  myVoice: CheckIn | null,
+  /** When the summary was made; defaults to today. */
+  date?: string
 ): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   // Registered before the first draw, so no text is laid out in a font the
@@ -367,7 +369,7 @@ export async function buildAppointmentPdf(
   const font = await usePdfFont(doc);
   const ctx: Ctx = { doc, y: 0, font };
 
-  drawHeader(ctx, form);
+  drawHeader(ctx, form, date);
 
   if (form.reasonForVisit.trim()) {
     reasonCard(ctx, form.reasonForVisit);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import PasswordInput from "../components/PasswordInput";
 
 export default function ResetPassword() {
   const { updatePassword, passwordRecoveryMode } = useAuth();
@@ -51,12 +52,10 @@ export default function ResetPassword() {
                 {error}
               </p>
             )}
-            <input
-              type="password"
+            <PasswordInput
               required
               minLength={6}
               placeholder="New password"
-              className="btd-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
