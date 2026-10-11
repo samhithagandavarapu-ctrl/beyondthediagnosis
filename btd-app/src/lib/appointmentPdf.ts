@@ -43,7 +43,7 @@ export type AppointmentForm = {
   questions: Question[];
 };
 
-// Verity palette, as jsPDF wants it.
+// Voiced palette, as jsPDF wants it.
 const NAVY: [number, number, number] = [33, 50, 68];
 const LINK: [number, number, number] = [27, 92, 143];
 const BODY: [number, number, number] = [60, 82, 102];
@@ -117,7 +117,7 @@ function drawHeader(ctx: Ctx, form: AppointmentForm) {
   doc.setFont(ctx.font, "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...BUTTER);
-  doc.text("VERITY  ·  VISIT SUMMARY", MARGIN, 34, { charSpace: 1.2 });
+  doc.text("VOICED  ·  VISIT SUMMARY", MARGIN, 34, { charSpace: 1.2 });
 
   doc.setFontSize(22);
   doc.setTextColor(...WHITE);
@@ -336,7 +336,7 @@ function drawFooters(doc: jsPDF, font: string) {
     doc.setFontSize(8);
     doc.setTextColor(...MUTED);
     doc.text(
-      "Prepared with Verity. This is a family's own record, not a medical document.",
+      "Prepared with Voiced. This is a family's own record, not a medical document.",
       MARGIN,
       y
     );
