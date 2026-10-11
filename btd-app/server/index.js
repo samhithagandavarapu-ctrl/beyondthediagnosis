@@ -10,6 +10,7 @@ import {
   MODEL,
   refineForm,
 } from "../api/_lib/claude.js";
+import { deleteAccount } from "../api/_lib/account.js";
 
 /** Local development only.
  *
@@ -64,6 +65,11 @@ app.post("/api/refine-appointment", async (req, res) => {
     const { status, message } = describeError(err);
     res.status(status).json({ error: message });
   }
+});
+
+app.post("/api/delete-account", async (req, res) => {
+  const { status, error } = await deleteAccount(req.headers.authorization);
+  res.status(status).json(error ? { error } : { ok: true });
 });
 
 app.listen(PORT, () => {

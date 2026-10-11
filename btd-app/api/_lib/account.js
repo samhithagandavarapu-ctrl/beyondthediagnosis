@@ -1,0 +1,48 @@
+import { createClient } from "@supabase/supabase-js";
+
+/** Account deletion, shared by the Vercel function (api/delete-account.js) and
+ *  the local dev server.
+ *
+ *  Removing a sign-in needs Supabase's service-role key, which can do anything
+ *  to the database — so it lives only in server environment variables and
+ *  this file is the only place that uses it. The caller proves who they are
+ *  with their own access token; nobody can delete an account but its owner. */
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+export async function deleteAccount(authorizationHeader) {
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    return {
+      status: 500,
+      error:
+        "Account deletion isn't set up on this site yet. Email us and we'll delete it for you.",
+    };
+  }
+
+  const token = (authorizationHeader || "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) return { status: 401, error: "Sign in first." };
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data, error: userError } = await admin.auth.getUser(token);
+  const user = data?.user;
+  if (userError || !user) {
+    return { status: 401, error: "Your session has expired. Sign in again, then try once more." };
+  }
+
+  // The profile row first, in case the table wasn't created with
+  // "on delete cascade" — otherwise it would block removing the sign-in.
+  const { error: profileError } = await admin.from("profiles").delete().eq("id", user.id);
+  if (profileError) console.error("Couldn't delete profile row:", profileError.message);
+
+  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
+  if (deleteError) {
+    console.error("Couldn't delete user:", deleteError.message);
+    return { status: 500, error: "We couldn't delete your account. Please try again." };
+  }
+
+  return { status: 200, error: null };
+}
