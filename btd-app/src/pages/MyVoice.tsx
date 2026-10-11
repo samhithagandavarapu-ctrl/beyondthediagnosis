@@ -38,7 +38,7 @@ export default function MyVoice() {
       <PageHero
         eyebrow="My Voice"
         title="Say how you feel, in your own way"
-        lede="This part of Verity is for you — not for the grown-up who brought you. Tap pictures to show how you feel, build a sentence to tell your doctor, and see what happens at a visit before you go."
+        lede="This part of Voiced is for you — not for the grown-up who brought you. Tap pictures to show how you feel, build a sentence to tell your doctor, and see what happens at a visit before you go."
       />
 
       <section className="btd-container pt-10 pb-20 grid gap-8">

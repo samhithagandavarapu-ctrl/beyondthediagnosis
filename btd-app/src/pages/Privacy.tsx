@@ -5,9 +5,9 @@ export default function Privacy() {
       <p className="text-slate-light text-sm mb-8">Last updated {new Date().toLocaleDateString()}</p>
 
       <div className="btd-card p-6 mb-8 bg-clay/10 border-clay/40 text-sm text-ink">
-        <strong>Plain-language note:</strong> Verity is an early-stage platform built by a
+        <strong>Plain-language note:</strong> Voiced is an early-stage platform built by a
         student founder. This page explains what we collect and why, in plain terms. It
-        is not formal legal advice, and it will be reviewed by a lawyer before Verity
+        is not formal legal advice, and it will be reviewed by a lawyer before Voiced
         handles data at a larger scale.
       </div>
 
@@ -61,7 +61,7 @@ export default function Privacy() {
       <section className="mb-8">
         <h2 className="text-xl font-display font-semibold mb-2">Who we work with</h2>
         <p className="text-sm text-ink leading-relaxed mb-3">
-          Verity is built on a small number of trusted infrastructure providers, each
+          Voiced is built on a small number of trusted infrastructure providers, each
           handling a specific piece:
         </p>
         <ul className="space-y-2 text-sm text-ink list-disc list-inside">
