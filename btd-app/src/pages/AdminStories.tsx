@@ -15,10 +15,10 @@ export default function AdminStories() {
   const { user, isAdmin, loading } = useAuth();
   const [pending, setPending] = useState<StoryRow[]>([]);
   const [approved, setApproved] = useState<StoryRow[]>([]);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<StoryRow["id"] | null>(null);
   const [fetching, setFetching] = useState(true);
   // The story being turned down, and why.
-  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<StoryRow["id"] | null>(null);
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
@@ -35,7 +35,7 @@ export default function AdminStories() {
     if (isAdmin) refresh();
   }, [isAdmin]);
 
-  async function act(id: string, status: "approved" | "rejected" | "pending") {
+  async function act(id: StoryRow["id"], status: "approved" | "rejected" | "pending") {
     setBusyId(id);
     setNotice(null);
     const { error } = await setStoryStatus(id, status);
@@ -44,7 +44,7 @@ export default function AdminStories() {
     setBusyId(null);
   }
 
-  function startReject(id: string) {
+  function startReject(id: StoryRow["id"]) {
     setRejecting(id);
     setReason("");
     setNote("");
