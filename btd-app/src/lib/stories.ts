@@ -1,7 +1,8 @@
 import { supabase, authEnabled } from "./supabaseClient";
 
 export type StoryRow = {
-  id: string;
+  // A number in the live database (int8), so compare with String(id).
+  id: string | number;
   title: string;
   audience: "Self-advocate" | "Parent" | "Caregiver" | "Clinician";
   excerpt: string;
@@ -117,7 +118,7 @@ export async function fetchApprovedForAdmin(): Promise<StoryRow[]> {
 }
 
 export async function setStoryStatus(
-  id: string,
+  id: StoryRow["id"],
   status: "approved" | "rejected" | "pending",
   rejection?: { reason: string; note: string }
 ): Promise<{ error: string | null; reasonSaved?: boolean }> {

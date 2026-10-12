@@ -40,7 +40,8 @@ export default function Stories() {
   const allStories = useMemo(
     () => [
       ...submitted.map((s) => ({
-        id: s.id,
+        // The database's ids are numbers; the link's #story-<id> is text.
+        id: String(s.id),
         title: s.title,
         audience: s.audience,
         excerpt: s.excerpt,
