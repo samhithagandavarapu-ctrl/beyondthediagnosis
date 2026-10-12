@@ -24,6 +24,8 @@ import Profile from "./pages/Profile";
 import Privacy from "./pages/Privacy";
 import MyVoice from "./pages/MyVoice";
 import Notifications from "./pages/Notifications";
+import Messages from "./pages/Messages";
+import AdminMessages from "./pages/AdminMessages";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -69,6 +71,8 @@ export default function App() {
           <Route path="/understanding-overshadowing" element={<Understanding />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/privacy" element={<Privacy />} />
           {/* Anything unrecognised — including a provider redirect that lands
               somewhere unexpected — gets a real page, never an empty one. */}

@@ -40,7 +40,14 @@ export default function Privacy() {
             story," including your name if you choose to include it. Submissions are
             reviewed before publishing — nothing goes live automatically. If you're
             signed in when you send one, it's linked to your account so we can let you
-            know in Notifications when it's published.
+            know in Notifications when it's been reviewed — published, or not published
+            and why.
+          </li>
+          <li>
+            <strong>Messages:</strong> if you message the Voiced team from the Messages
+            page, we store your messages, your name, and your account email so we can
+            read and reply. Only you and Voiced admins can see your conversation. Deleting
+            your account deletes your messages.
           </li>
           <li>
             <strong>Accessibility preferences:</strong> your large text / high contrast /
