@@ -48,6 +48,8 @@ Rules:
 - Keep each question as a single, specific, answerable question.
 - Medications and ruled-out items arrive as arrays of objects: tidy each entry in place and return the SAME number of entries, in the same order. Never merge, split, reorder, or drop one.
 - Never change a medication name, dose, or frequency into a different drug or number — only fix formatting and spelling (e.g. "10mg" to "10 mg").
+- The "timeline" object is a symptom timeline: "usualSelf" describes the person on a typical good day, and each entry is something that changed. Tidy the wording only. Return the SAME number of timeline entries, in the same order; never merge, split, reorder, add, or drop one. Keep every date, time, and duration exactly as written.
+- In the timeline above all: never diagnose, never suggest a medication, and never guess at or imply a cause — including never saying one entry caused or explains another, even when they happened at the same time.
 - Return ONLY valid JSON, no preamble, no markdown fences, matching this exact shape:
 {
   "reasonForVisit": "string",
@@ -55,7 +57,11 @@ Rules:
   "medications": [{ "name": "string", "dose": "string", "frequency": "string" }],
   "ruledOut": [{ "description": "string", "when": "string" }],
   "accommodations": "string",
-  "questions": ["string"]
+  "questions": ["string"],
+  "timeline": {
+    "usualSelf": "string",
+    "entries": [{ "description": "string", "notes": "string", "stoppedWhen": "string" }]
+  }
 }`;
 
 /** Only ever forward role/content — never extra fields from the client. */

@@ -51,6 +51,16 @@ export default function Navbar() {
           </Link>
           {user ? (
             <>
+              <NavLink
+                to={isAdmin ? "/admin/messages" : "/messages"}
+                className={linkClass}
+                aria-label={isAdmin ? "Message inbox" : "Messages"}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Icon name="chat" size={18} />
+                  <span className="hidden lg:inline">{isAdmin ? "Inbox" : "Messages"}</span>
+                </span>
+              </NavLink>
               {/* A named destination, not a bare email address: "My profile" says
                   where the link goes, and the account it belongs to is a hint
                   underneath rather than the label itself. */}

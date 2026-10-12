@@ -16,8 +16,13 @@ families, and their clinicians. Built from the DECA Innovation Plan project doc.
   clarifies your wording without inventing new facts. What you type is saved on the
   device as you go, and every summary you generate goes into an appointment history
   you can reopen, reprint, or reuse — kept in the browser, never uploaded.
+- **Symptom Timeline** — inside Appointment Prep: a baseline ("their usual self"),
+  then dated changes, medications, illnesses, tests, and life changes, with
+  anything close together marked "around the same time". Printed on the PDF.
 - **Notifications** (`/notifications`) — tells you when a story you sent in is
-  published, with a link to see it.
+  published or turned down (with the reason), and when you have a new message.
+- **Messages** (`/messages`, admin inbox at `/admin/messages`) — a chat between
+  signed-in people and the Voiced team.
 - **My Voice** (`/my-voice`) — the self-advocacy side of the app, built for the person
   with Down syndrome to use themselves rather than for a caregiver: a tappable body
   outline and five-face scale for a check-in, a tap-to-build "tell my doctor" sentence,
@@ -204,6 +209,22 @@ and run it. Until then everything still works — the tab just stays empty.
 Only stories sent in while signed in, after the SQL is run, are linked to an
 account; older ones have no owner to notify.
 
+### Rejection reasons and messages
+
+Run [`supabase/rejections-and-messages.sql`](supabase/rejections-and-messages.sql)
+in the SQL Editor too (after the one above). It adds:
+
+- **Rejection reasons** — when an admin rejects a story on `/admin/stories`, they
+  pick a reason, and the writer is told in Notifications that it didn't follow the
+  community guidelines, why, and how to reach you.
+- **Messages** — a `/messages` page where signed-in people can write to the
+  Voiced team, and an admin inbox at `/admin/messages` showing each person's name
+  and email. New messages show up live and in Notifications.
+
+The SQL decides who counts as an admin for messages (`is_voiced_admin()`). Keep
+its email list the same as the app's admin emails (`DEFAULT_ADMIN_EMAILS` in
+`src/context/AuthContext.tsx` plus `VITE_ADMIN_EMAILS`).
+
 ### 3. Turn on "Continue with Google" (optional, free)
 
 1. In Supabase, go to **Authentication → Providers → Google**, and toggle it on.
@@ -286,7 +307,8 @@ Deploys pull from a Git repo, so this has to happen first.
      login (see "Setting up login" above)
    - `SUPABASE_SERVICE_ROLE_KEY` → only if you want the "Delete account"
      button to work (see "Setting up login" above)
-   - `VITE_ADMIN_EMAILS` → optional; `voiced@gmail.com` is always an admin, and
+   - `VITE_ADMIN_EMAILS` → optional; `withvoiced@gmail.com` and `voiced@gmail.com`
+     are always admins, and
      anyone listed here (comma-separated) can also reach `/admin/stories`
 5. Click **Deploy**.
 

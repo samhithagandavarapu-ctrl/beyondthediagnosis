@@ -1,19 +1,23 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
-import { fetchMyApprovedStories } from "../lib/stories";
+import { fetchMyReviewedStories, StoryRow } from "../lib/stories";
+import { Message, fetchIncoming, lastSeen, subscribeToMessages } from "../lib/messages";
 
 // Notifications are worked out, not stored: each one is a fact about the
-// person's account (today, "a story you sent in was published") checked
-// against the list of ones they've already read. Only that read list is kept,
-// in this browser, per account.
+// person's account ("a story you sent in was published", "you have a new
+// message") checked against the list of ones they've already read. Only that
+// read list is kept, in this browser, per account.
+
+export const CONTACT_EMAIL = "withvoiced@gmail.com";
 
 export type AppNotification = {
   id: string;
-  kind: "story-approved";
+  kind: "story-approved" | "story-rejected" | "message";
   title: string;
   body: string;
-  /** Where "see it" goes. */
+  /** Where the button goes, and what it says. */
   href: string;
+  action: string;
   at: string;
   read: boolean;
 };
@@ -51,10 +55,67 @@ function saveRead(userId: string, ids: Set<string>) {
   }
 }
 
-type Raw = Omit<AppNotification, "read">;
+/** autoRead: already read without being marked, e.g. a message whose
+ *  conversation has been opened since. */
+type Raw = Omit<AppNotification, "read"> & { autoRead?: boolean };
+
+function storyNotification(s: StoryRow): Raw {
+  if (s.status === "approved") {
+    return {
+      id: `story-approved:${s.id}`,
+      kind: "story-approved",
+      title: "Your story was published",
+      body: `"${s.title}" is now on Community Stories for everyone to read.`,
+      href: `/stories#story-${s.id}`,
+      action: "See your story",
+      at: s.created_at,
+    };
+  }
+  const reason = s.rejection_reason?.trim();
+  const note = s.rejection_note?.trim();
+  return {
+    id: `story-rejected:${s.id}`,
+    kind: "story-rejected",
+    title: "Your story wasn't published",
+    body: [
+      `"${s.title}" didn't follow our community guidelines, so it won't appear on Community Stories.`,
+      reason ? `Reason: ${reason}.` : "",
+      note ? `Note from the reviewer: ${note}` : "",
+      `If you have questions, send us a message or email ${CONTACT_EMAIL}.`,
+    ]
+      .filter(Boolean)
+      .join(" "),
+    href: "/messages",
+    action: "Message us",
+    at: s.created_at,
+  };
+}
+
+/** One notification per conversation with something new in it: the newest
+ *  message from the other side. A newer message makes a new notification. */
+function messageNotifications(incoming: Message[], viewerId: string, asAdmin: boolean): Raw[] {
+  const newestPerThread = new Map<string, Message>();
+  for (const m of incoming) {
+    if (!newestPerThread.has(m.thread_user_id)) newestPerThread.set(m.thread_user_id, m);
+  }
+  return [...newestPerThread.values()].map((m) => {
+    const who = asAdmin ? m.sender_name?.trim() || m.sender_email || "someone" : "the Voiced team";
+    const preview = m.body.length > 140 ? `${m.body.slice(0, 140).trimEnd()}…` : m.body;
+    return {
+      id: `message:${m.id}`,
+      kind: "message",
+      title: `New message from ${who}`,
+      body: preview,
+      href: asAdmin ? `/admin/messages?user=${m.thread_user_id}` : "/messages",
+      action: "Read and reply",
+      at: m.created_at,
+      autoRead: lastSeen(viewerId, m.thread_user_id) >= m.created_at,
+    };
+  });
+}
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const userId = user?.id ?? null;
   const [raw, setRaw] = useState<Raw[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
@@ -70,20 +131,17 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   const refresh = useCallback(() => {
     if (!userId) return;
-    fetchMyApprovedStories(userId).then((stories) => {
-      if (currentUser.current !== userId) return;
-      setRaw(
-        stories.map((s) => ({
-          id: `story-approved:${s.id}`,
-          kind: "story-approved",
-          title: "Your story was published",
-          body: `"${s.title}" is now on Community Stories for everyone to read.`,
-          href: `/stories#story-${s.id}`,
-          at: s.created_at,
-        }))
-      );
-    });
-  }, [userId]);
+    Promise.all([fetchMyReviewedStories(userId), fetchIncoming(isAdmin)]).then(
+      ([stories, incoming]) => {
+        if (currentUser.current !== userId) return;
+        const items = [
+          ...stories.map(storyNotification),
+          ...messageNotifications(incoming, userId, isAdmin),
+        ].sort((a, b) => b.at.localeCompare(a.at));
+        setRaw(items);
+      }
+    );
+  }, [userId, isAdmin]);
 
   useEffect(() => {
     if (!userId) return;
@@ -93,14 +151,18 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") refresh();
     }, POLL_MS);
+    // Messages are a conversation, so don't wait for the next check: a new
+    // one updates the bell straight away (when live updates are switched on).
+    const stopLive = subscribeToMessages(isAdmin ? null : userId, () => refresh());
     return () => {
       window.removeEventListener("focus", onFocus);
       window.clearInterval(timer);
+      stopLive();
     };
-  }, [userId, refresh]);
+  }, [userId, isAdmin, refresh]);
 
   const notifications = useMemo(
-    () => raw.map((n) => ({ ...n, read: readIds.has(n.id) })),
+    () => raw.map(({ autoRead, ...n }) => ({ ...n, read: Boolean(autoRead) || readIds.has(n.id) })),
     [raw, readIds]
   );
 

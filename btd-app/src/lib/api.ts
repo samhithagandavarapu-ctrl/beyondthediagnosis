@@ -48,6 +48,11 @@ export type RefinedAppointmentForm = {
   ruledOut: { description: string; when: string }[];
   accommodations: string;
   questions: string[];
+  /** Missing when the draft had no timeline, or from an older server. */
+  timeline?: {
+    usualSelf: string;
+    entries: { description: string; notes: string; stoppedWhen: string }[];
+  };
 };
 
 export async function refineAppointmentForm(form: unknown): Promise<RefinedAppointmentForm> {

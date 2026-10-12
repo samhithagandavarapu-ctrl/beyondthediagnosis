@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/PasswordInput";
 
 export default function ResetPassword() {
-  const { updatePassword, passwordRecoveryMode } = useAuth();
+  const { user, updatePassword, passwordRecoveryMode } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -25,7 +25,7 @@ export default function ResetPassword() {
     <div className="btd-container py-14 max-w-md">
       <h1 className="text-3xl font-display font-semibold mb-2">Set a new password</h1>
 
-      {!passwordRecoveryMode && !done && (
+      {!passwordRecoveryMode && !user && !done && (
         <p className="text-sm text-slate mb-6">
           This page only works when opened from the reset link in your email. If you got
           here another way, go back and request a new link from the sign-in page.

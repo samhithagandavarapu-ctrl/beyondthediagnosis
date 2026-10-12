@@ -1,5 +1,6 @@
-import { useEffect } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import AccessibilityBar from "./components/AccessibilityBar";
@@ -23,6 +24,8 @@ import Profile from "./pages/Profile";
 import Privacy from "./pages/Privacy";
 import MyVoice from "./pages/MyVoice";
 import Notifications from "./pages/Notifications";
+import Messages from "./pages/Messages";
+import AdminMessages from "./pages/AdminMessages";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -31,6 +34,19 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [pathname]);
+
+  // A password reset link signs you in so the password can be changed — it
+  // must land on the page that changes it, wherever Supabase sent it (it
+  // falls back to the home page if /reset-password isn't an allowed
+  // redirect). Once only, so someone can still choose to go elsewhere.
+  const { passwordRecoveryMode } = useAuth();
+  const navigate = useNavigate();
+  const sentToReset = useRef(false);
+  useEffect(() => {
+    if (!passwordRecoveryMode || sentToReset.current) return;
+    sentToReset.current = true;
+    if (pathname !== "/reset-password") navigate("/reset-password", { replace: true });
+  }, [passwordRecoveryMode, pathname, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -55,6 +71,8 @@ export default function App() {
           <Route path="/understanding-overshadowing" element={<Understanding />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/privacy" element={<Privacy />} />
           {/* Anything unrecognised — including a provider redirect that lands
               somewhere unexpected — gets a real page, never an empty one. */}

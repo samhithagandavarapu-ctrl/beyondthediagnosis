@@ -47,7 +47,7 @@ export default function Notifications() {
             ? "You have 1 new notification"
             : `You have ${unreadCount} new notifications`
         }
-        lede="News about things you've done on Voiced — like a story you sent in being published."
+        lede="News about things you've done on Voiced — like a story you sent in being reviewed, or a new message."
       />
 
       <div className="btd-container max-w-3xl pt-12 pb-20">
@@ -76,7 +76,11 @@ export default function Notifications() {
                   <Link to="/profile" className="font-semibold text-link hover:underline">
                     send in from your profile
                   </Link>{" "}
-                  is published, it shows up here with a link to see it.
+                  has been reviewed, or the Voiced team{" "}
+                  <Link to="/messages" className="font-semibold text-link hover:underline">
+                    replies to a message
+                  </Link>
+                  , it shows up here.
                 </>
               ) : (
                 "Notifications need the Supabase project connected — see the README."
@@ -97,7 +101,10 @@ export default function Notifications() {
                     n.read ? "bg-navy/7 text-muted" : "bg-sky text-navy"
                   }`}
                 >
-                  <Icon name="celebrate" size={22} />
+                  <Icon
+                    name={n.kind === "message" ? "chat" : n.kind === "story-rejected" ? "talk" : "celebrate"}
+                    size={22}
+                  />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-base font-bold text-navy">
@@ -105,14 +112,16 @@ export default function Notifications() {
                     {n.title}
                   </p>
                   <p className="mt-0.5 text-15 leading-[1.6] text-body">{n.body}</p>
-                  <p className="mt-1 text-12 text-muted">Sent in {longDate(n.at)}</p>
+                  <p className="mt-1 text-12 text-muted">
+                    {n.kind === "message" ? "Sent" : "Story sent in"} {longDate(n.at)}
+                  </p>
                   <div className="mt-3 flex flex-wrap items-center gap-4">
                     <Link
                       to={n.href}
                       onClick={() => markRead(n.id)}
                       className="btd-btn-sky px-[16px] py-[9px] text-sm"
                     >
-                      See your story
+                      {n.action}
                     </Link>
                     {!n.read && (
                       <button

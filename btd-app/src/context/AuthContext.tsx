@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase, authEnabled } from "../lib/supabaseClient";
+import { supabase, authEnabled, cameFromPasswordResetLink } from "../lib/supabaseClient";
 import { API_BASE } from "../lib/api";
 
 type AuthState = {
@@ -23,7 +23,9 @@ type AuthState = {
   signOut: () => Promise<void>;
 };
 
-const DEFAULT_ADMIN_EMAIL = "voiced@gmail.com";
+// Keep in step with public.is_voiced_admin() in supabase/rejections-and-messages.sql,
+// which is what actually lets an admin read and answer messages.
+const DEFAULT_ADMIN_EMAILS = ["withvoiced@gmail.com", "voiced@gmail.com"];
 
 /** Where links in Supabase's emails (sign-up confirmation, email change) send
  *  people back to. Without it Supabase falls back to the project's "Site URL",
@@ -38,7 +40,7 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
+  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(cameFromPasswordResetLink);
 
   useEffect(() => {
     if (!authEnabled) {
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .getSession()
       .then(({ data }: any) => {
         setUser(data.session?.user ?? null);
+        if (cameFromPasswordResetLink()) setPasswordRecoveryMode(true);
       })
       .catch((error: unknown) => {
         console.error("Could not read the saved session:", error);
@@ -84,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // The site's own admin inbox is always an admin; VITE_ADMIN_EMAILS can add
   // more people without a code change.
-  const adminEmails = [DEFAULT_ADMIN_EMAIL, ...(import.meta.env.VITE_ADMIN_EMAILS || "").split(",")]
+  const adminEmails = [...DEFAULT_ADMIN_EMAILS, ...(import.meta.env.VITE_ADMIN_EMAILS || "").split(",")]
     .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
   const isAdmin = Boolean(user?.email && adminEmails.includes(user.email.toLowerCase()));
