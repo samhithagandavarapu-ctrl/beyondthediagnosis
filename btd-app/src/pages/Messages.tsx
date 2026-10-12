@@ -90,7 +90,7 @@ export default function Messages() {
         tone="navy"
         eyebrow="Messages"
         title="Message the Voiced team"
-        lede="Ask a question, tell us about a problem with the site, or ask about a story you sent in. A real person reads every message."
+        lede="Ask a question, tell us about a problem with the site, or ask about a story you sent in. You can add a photo or file too. A real person reads every message."
       />
       <div className="btd-container max-w-3xl pt-10 pb-20">
         <p className="mb-4 rounded-tile bg-coral px-4 py-3 text-sm font-semibold text-coral-ink">
@@ -119,12 +119,13 @@ export default function Messages() {
               viewerIsAdmin={false}
               theirName="Voiced team"
               emptyText="No messages yet. Say hello — we usually reply within a few days."
-              onSend={async (body) => {
+              onSend={async (body, file) => {
                 const { message, error } = await sendMessage({
                   threadUserId: user.id,
                   body,
                   fromAdmin: false,
                   senderName: name,
+                  file,
                 });
                 if (message) setMessages((prev) => mergeMessages(prev, [message]));
                 return error;

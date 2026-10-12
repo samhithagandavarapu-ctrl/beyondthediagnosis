@@ -46,6 +46,8 @@ export type IconName =
   | "chat"
   | "send"
   | "person"
+  | "file"
+  | "paperclip"
   // Symptom Timeline entry types
   | "tl-change"
   | "tl-skill"
@@ -338,6 +340,16 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M4 5.6 a1.8 1.8 0 0 1 1.8 -1.8 h12.4 a1.8 1.8 0 0 1 1.8 1.8 v8.8 a1.8 1.8 0 0 1 -1.8 1.8 H10 l-4.4 3.8 v-3.8 h0.2 A1.8 1.8 0 0 1 4 14.4 Z" />
       <path d="M8 8.6 h8M8 11.8 h5" />
     </>
+  ),
+  file: (
+    <>
+      <path d="M6 3.4 h8 l4.6 4.6 V20 a0.8 0.8 0 0 1 -0.8 0.8 H6 a0.8 0.8 0 0 1 -0.8 -0.8 V4.2 A0.8 0.8 0 0 1 6 3.4 Z" />
+      <path d="M13.6 3.6 V8.4 h4.8" />
+      <path d="M8.6 13 h6.8M8.6 16.4 h4.6" />
+    </>
+  ),
+  paperclip: (
+    <path d="M19.2 11.4 l-7.4 7.4 a4.4 4.4 0 0 1 -6.2 -6.2 l8 -8 a2.9 2.9 0 0 1 4.1 4.1 l-7.9 7.9 a1.4 1.4 0 0 1 -2 -2 l7.1 -7.1" />
   ),
   person: (
     <>

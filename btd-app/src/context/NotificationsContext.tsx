@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { fetchMyReviewedStories, StoryRow } from "../lib/stories";
-import { Message, fetchIncoming, lastSeen, subscribeToMessages } from "../lib/messages";
+import { Message, fetchIncoming, lastSeen, messagePreview, subscribeToMessages } from "../lib/messages";
 
 // Notifications are worked out, not stored: each one is a fact about the
 // person's account ("a story you sent in was published", "you have a new
@@ -100,7 +100,8 @@ function messageNotifications(incoming: Message[], viewerId: string, asAdmin: bo
   }
   return [...newestPerThread.values()].map((m) => {
     const who = asAdmin ? m.sender_name?.trim() || m.sender_email || "someone" : "the Voiced team";
-    const preview = m.body.length > 140 ? `${m.body.slice(0, 140).trimEnd()}…` : m.body;
+    const text = messagePreview(m);
+    const preview = text.length > 140 ? `${text.slice(0, 140).trimEnd()}…` : text;
     return {
       id: `message:${m.id}`,
       kind: "message",

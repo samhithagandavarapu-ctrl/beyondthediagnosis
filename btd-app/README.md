@@ -221,6 +221,11 @@ in the SQL Editor too (after the one above). It adds:
   Voiced team, and an admin inbox at `/admin/messages` showing each person's name
   and email. New messages show up live and in Notifications.
 
+To let people send **photos and files** in Messages, also run
+[`supabase/message-attachments.sql`](supabase/message-attachments.sql). Files go
+in a private storage bucket (`message-files`, up to 10 MB each: photos, PDFs,
+Word, Excel, and text files) that only the person and admins can open.
+
 The SQL decides who counts as an admin for messages (`is_voiced_admin()`). Keep
 its email list the same as the app's admin emails (`DEFAULT_ADMIN_EMAILS` in
 `src/context/AuthContext.tsx` plus `VITE_ADMIN_EMAILS`).

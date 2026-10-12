@@ -45,8 +45,10 @@ export default function Privacy() {
           </li>
           <li>
             <strong>Messages:</strong> if you message the Voiced team from the Messages
-            page, we store your messages, your name, and your account email so we can
-            read and reply. Only you and Voiced admins can see your conversation. Deleting
+            page, we store your messages, any photos or files you attach, your name, and
+            your account email so we can read and reply. Attachments are kept private:
+            they can only be opened through short-lived links, by you and by Voiced
+            admins. Only you and Voiced admins can see your conversation. Deleting
             your account deletes your messages.
           </li>
           <li>

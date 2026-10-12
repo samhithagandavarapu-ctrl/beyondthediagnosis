@@ -10,6 +10,7 @@ import {
   lastSeen,
   markSeen,
   mergeMessages,
+  messagePreview,
   sendMessage,
   subscribeToMessages,
 } from "../lib/messages";
@@ -172,7 +173,7 @@ export default function AdminMessages() {
                       )}
                       <span className="mt-1 block truncate text-13 text-body">
                         {t.latest.from_admin ? "You: " : ""}
-                        {t.latest.body}
+                        {messagePreview(t.latest)}
                       </span>
                     </button>
                   </li>
@@ -213,12 +214,13 @@ export default function AdminMessages() {
                 theirName={currentName}
                 emptyText="Nothing in this conversation yet."
                 placeholder={`Reply to ${currentName}`}
-                onSend={async (body) => {
+                onSend={async (body, file) => {
                   const { message, error } = await sendMessage({
                     threadUserId: selected,
                     body,
                     fromAdmin: true,
                     senderName: "Voiced team",
+                    file,
                   });
                   if (message) {
                     setMessages((prev) => mergeMessages(prev, [message]));
