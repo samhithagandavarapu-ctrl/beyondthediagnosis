@@ -1,5 +1,6 @@
 import type { AppointmentForm } from "./appointmentPdf";
 import type { CheckIn } from "./myVoice";
+import { timelineIsEmpty } from "./timeline";
 
 // Appointment Prep keeps two things in this browser, and nowhere else:
 //
@@ -115,7 +116,8 @@ export function formIsEmpty(form: AppointmentForm) {
     form.symptoms.every((s) => !s.description.trim() && !s.onset.trim()) &&
     form.medications.every((m) => !m.name.trim() && !m.dose.trim() && !m.frequency.trim()) &&
     form.ruledOut.every((r) => !r.description.trim() && !r.when.trim()) &&
-    form.questions.every((q) => !q.text.trim())
+    form.questions.every((q) => !q.text.trim()) &&
+    timelineIsEmpty(form.timeline)
   );
 }
 

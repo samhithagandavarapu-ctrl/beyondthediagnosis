@@ -16,6 +16,18 @@ import {
 } from "../lib/appointmentHistory";
 import { CheckIn, checkInLines } from "../lib/myVoice";
 import Icon from "../components/icons/Icon";
+import SymptomTimeline from "../components/timeline/SymptomTimeline";
+import {
+  Timeline,
+  TimelineEntry as TimelineEntryT,
+  emptyTimeline,
+  filledEntries,
+  groupByMonth,
+  isBigChange,
+  nearbyEntries,
+  sortEntries,
+  timelineType,
+} from "../lib/timeline";
 import {
   AppointmentForm,
   Medication,
@@ -25,6 +37,7 @@ import {
   buildAppointmentPdf,
   medicationLine,
   symptomDetail,
+  timelineDetail,
 } from "../lib/appointmentPdf";
 
 const newId = () => crypto.randomUUID();
@@ -51,6 +64,7 @@ const emptyForm = (): AppointmentForm => ({
   ruledOut: [emptyRuledOut()],
   accommodations: "",
   questions: [emptyQuestion()],
+  timeline: emptyTimeline(),
 });
 
 export default function AppointmentPrep() {
@@ -68,6 +82,10 @@ export default function AppointmentPrep() {
   const [refining, setRefining] = useState(false);
   const [refineError, setRefineError] = useState<string | null>(null);
 
+  // Drafts saved before the timeline existed have none; treat that as empty.
+  const timeline = form.timeline ?? emptyTimeline();
+  const refinableEntries = filledEntries(timeline);
+
   async function handleRefine() {
     setRefining(true);
     setRefineError(null);
@@ -83,7 +101,22 @@ export default function AppointmentPrep() {
         ruledOut: form.ruledOut.map((r) => ({ description: r.description, when: r.when })),
         accommodations: form.accommodations,
         questions: form.questions.map((q) => q.text),
+        // Only entries with something written; the reply comes back in the
+        // same order, and is matched back to them by position.
+        timeline: {
+          usualSelf: timeline.usualSelf,
+          entries: refinableEntries.map((e) => ({
+            description: e.description,
+            notes: e.notes,
+            stoppedWhen: e.stoppedWhen,
+          })),
+        },
       });
+      const refinedEntries = refined.timeline?.entries;
+      const sameCount = refinedEntries?.length === refinableEntries.length;
+      const refinedById = new Map(
+        sameCount ? refinableEntries.map((e, i) => [e.id, refinedEntries![i]] as const) : []
+      );
 
       setForm((f) => ({
         ...f,
@@ -122,6 +155,22 @@ export default function AppointmentPrep() {
                 text,
               }))
             : f.questions,
+        // Wording only: types, dates, and every answer stay exactly as chosen.
+        // If the reply doesn't line up one-to-one, the entries are left alone.
+        timeline: {
+          ...(f.timeline ?? emptyTimeline()),
+          usualSelf: refined.timeline?.usualSelf ?? (f.timeline?.usualSelf ?? ""),
+          entries: (f.timeline?.entries ?? []).map((e) => {
+            const r = refinedById.get(e.id);
+            if (!r) return e;
+            return {
+              ...e,
+              description: r.description?.trim() ? r.description : e.description,
+              notes: typeof r.notes === "string" ? r.notes : e.notes,
+              stoppedWhen: typeof r.stoppedWhen === "string" ? r.stoppedWhen : e.stoppedWhen,
+            };
+          }),
+        },
       }));
     } catch (err: unknown) {
       setRefineError(
@@ -205,6 +254,12 @@ export default function AppointmentPrep() {
       medications: entry.form.medications.map((x) => ({ ...x, id: newId() })),
       ruledOut: entry.form.ruledOut.map((x) => ({ ...x, id: newId() })),
       questions: entry.form.questions.map((x) => ({ ...x, id: newId() })),
+      timeline: entry.form.timeline
+        ? {
+            ...entry.form.timeline,
+            entries: entry.form.timeline.entries.map((x) => ({ ...x, id: newId() })),
+          }
+        : emptyTimeline(),
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -329,6 +384,11 @@ export default function AppointmentPrep() {
             </EntryCard>
           ))}
         </ListSection>
+
+        <SymptomTimeline
+          value={timeline}
+          onChange={(t: Timeline) => setForm((f) => ({ ...f, timeline: t }))}
+        />
 
         <MyVoiceSection
           checkIn={savedCheckIn}
@@ -709,6 +769,10 @@ function SummaryView({
   const meds = form.medications.filter((m) => m.name.trim());
   const ruledOut = form.ruledOut.filter((r) => r.description.trim());
   const questions = form.questions.filter((q) => q.text.trim());
+  const usualSelf = form.timeline?.usualSelf.trim() ?? "";
+  const timelineEntries = filledEntries(form.timeline);
+  const near = nearbyEntries(timelineEntries);
+  const bigChanges = sortEntries(timelineEntries.filter(isBigChange), true);
 
   return (
     <div className="btd-container py-10 max-w-2xl btd-print-root">
@@ -795,6 +859,43 @@ function SummaryView({
             </div>
           )}
 
+          {usualSelf && (
+            <Section title="Their usual self, on a good day">
+              <p className="text-sm leading-relaxed text-body whitespace-pre-wrap">{usualSelf}</p>
+            </Section>
+          )}
+
+          {bigChanges.length > 0 && (
+            <Section title="Biggest changes">
+              <ul className="space-y-3">
+                {bigChanges.map((e) => (
+                  <TimelineSummaryItem key={e.id} entry={e} detail={timelineDetail(e)} />
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {timelineEntries.length > 0 && (
+            <Section title="Timeline, oldest first">
+              <div className="space-y-4">
+                {groupByMonth(timelineEntries).map((group) => (
+                  <div key={group.month}>
+                    <p className="mb-2 text-13 font-bold text-navy">{group.month}</p>
+                    <ul className="space-y-3">
+                      {group.entries.map((e) => (
+                        <TimelineSummaryItem
+                          key={e.id}
+                          entry={e}
+                          detail={timelineDetail(e, near.get(e.id))}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
           {meds.length > 0 && (
             <Section title="Current medications">
               <ul className="space-y-3">
@@ -856,6 +957,22 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <div className="mt-1.5 mb-3 h-px bg-sky" />
       {children}
     </section>
+  );
+}
+
+/** A timeline entry on the summary: its type in words (and an icon), then the
+ *  same detail line the PDF prints. */
+function TimelineSummaryItem({ entry, detail }: { entry: TimelineEntryT; detail: string }) {
+  const type = timelineType(entry.type);
+  return (
+    <li className="btd-avoid-break border-l-[3px] border-sky pl-3">
+      <p className="text-sm font-semibold text-navy">{entry.description}</p>
+      <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-sky-tint px-2 py-0.5 text-11 font-bold uppercase tracking-[0.06em] text-navy">
+        <Icon name={type.icon} size={13} />
+        {type.short}
+      </p>
+      {detail && <p className="mt-0.5 text-12 text-muted">{detail}</p>}
+    </li>
   );
 }
 

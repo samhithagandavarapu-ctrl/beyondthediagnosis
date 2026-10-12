@@ -1,6 +1,18 @@
 import { jsPDF } from "jspdf";
 import { CheckIn, checkInLines } from "./myVoice";
 import { usePdfFont } from "./pdfFonts";
+import {
+  Timeline,
+  TimelineEntry,
+  dateLabel,
+  entryDetails,
+  filledEntries,
+  groupByMonth,
+  isBigChange,
+  nearbyEntries,
+  sortEntries,
+  timelineType,
+} from "./timeline";
 
 // The PDF a family hands across a desk. It gets about thirty seconds of a
 // clinician's attention, so the layout does the arguing: a titled header, one
@@ -41,6 +53,9 @@ export type AppointmentForm = {
   ruledOut: RuledOutItem[];
   accommodations: string;
   questions: Question[];
+  /** Optional so drafts and history saved before the timeline existed still
+   *  load; a missing timeline is the same as an empty one. */
+  timeline?: Timeline;
 };
 
 // Voiced palette, as jsPDF wants it.
@@ -212,8 +227,19 @@ function item(ctx: Ctx, title: string, detail?: string, tag?: Tag) {
     ? doc.splitTextToSize(detail.trim(), width)
     : [];
 
-  // A tag with no detail line still needs a row to sit on.
-  const detailRows = detailLines.length || (tag ? 1 : 0);
+  // The tag rides the end of the first detail line when there's room, and
+  // otherwise gets a row of its own above the detail.
+  let tagOwnRow = Boolean(tag) && detailLines.length === 0;
+  if (tag && detailLines.length) {
+    doc.setFont(ctx.font, "normal");
+    doc.setFontSize(9.5);
+    const lineW = doc.getTextWidth(detailLines[0]);
+    doc.setFont(ctx.font, "bold");
+    doc.setFontSize(7.5);
+    const tagW = doc.getTextWidth(tag.text) + 16;
+    if (lineW + 12 + tagW > width) tagOwnRow = true;
+  }
+  const detailRows = detailLines.length + (tagOwnRow ? 1 : 0);
   const blockHeight = titleLines.length * 15 + detailRows * 14 + 10;
   ensure(ctx, blockHeight);
 
@@ -229,6 +255,11 @@ function item(ctx: Ctx, title: string, detail?: string, tag?: Tag) {
     ctx.y += 15;
   });
 
+  if (tag && tagOwnRow) {
+    pill(ctx, indent, ctx.y - 3, tag.text, tag.fill, tag.ink);
+    ctx.y += 14;
+  }
+
   if (detailLines.length) {
     doc.setFont(ctx.font, "normal");
     doc.setFontSize(9.5);
@@ -237,7 +268,7 @@ function item(ctx: Ctx, title: string, detail?: string, tag?: Tag) {
       doc.text(line, indent, ctx.y);
       // The tag rides the end of the first detail line, or its own row when
       // there's no detail at all.
-      if (tag && i === 0) {
+      if (tag && !tagOwnRow && i === 0) {
         pill(ctx, indent + doc.getTextWidth(line) + 12, ctx.y - 3, tag.text, tag.fill, tag.ink);
         doc.setFont(ctx.font, "normal");
         doc.setFontSize(9.5);
@@ -245,9 +276,6 @@ function item(ctx: Ctx, title: string, detail?: string, tag?: Tag) {
       }
       ctx.y += 14;
     });
-  } else if (tag) {
-    pill(ctx, indent, ctx.y - 3, tag.text, tag.fill, tag.ink);
-    ctx.y += 14;
   }
   ctx.y += 10;
 }
@@ -357,6 +385,66 @@ export function symptomDetail(s: Symptom): string {
     .join("   ·   ");
 }
 
+/** Everything about one timeline entry that fits on a single muted line. */
+export function timelineDetail(e: TimelineEntry, near?: TimelineEntry[]): string {
+  return [
+    dateLabel(e),
+    ...entryDetails(e),
+    near?.length
+      ? `Around the same time as: ${near.map((n) => n.description.trim()).join("; ")}`
+      : "",
+    e.notes.trim() ? `Notes: ${e.notes.trim()}` : "",
+  ]
+    .filter(Boolean)
+    .join("   ·   ");
+}
+
+function monthLabel(ctx: Ctx, text: string) {
+  const { doc } = ctx;
+  ensure(ctx, 40);
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...NAVY);
+  doc.text(text, MARGIN, ctx.y);
+  ctx.y += 16;
+}
+
+const typeTag = (e: TimelineEntry): Tag => ({
+  text: timelineType(e.type).short.toUpperCase(),
+  fill: SKY_TINT,
+  ink: NAVY,
+});
+
+/** Their usual self, then the biggest changes, then everything by month.
+ *  Draws nothing at all for an empty timeline. */
+function timelineSections(ctx: Ctx, timeline: Timeline | undefined) {
+  const entries = filledEntries(timeline);
+  const near = nearbyEntries(entries);
+
+  if (timeline?.usualSelf.trim()) {
+    sectionHeading(ctx, "Their usual self, on a good day");
+    paragraph(ctx, timeline.usualSelf);
+  }
+
+  const big = sortEntries(entries.filter(isBigChange), true);
+  if (big.length) {
+    sectionHeading(ctx, "Biggest changes");
+    big.forEach((e) => item(ctx, e.description, timelineDetail(e), typeTag(e)));
+    ctx.y += 4;
+  }
+
+  if (entries.length) {
+    sectionHeading(ctx, "Timeline, oldest first");
+    groupByMonth(entries).forEach((group) => {
+      monthLabel(ctx, group.month);
+      group.entries.forEach((e) =>
+        item(ctx, e.description, timelineDetail(e, near.get(e.id)), typeTag(e))
+      );
+    });
+    ctx.y += 4;
+  }
+}
+
 export async function buildAppointmentPdf(
   form: AppointmentForm,
   myVoice: CheckIn | null,
@@ -390,6 +478,8 @@ export async function buildAppointmentPdf(
   }
 
   if (myVoice) myVoicePanel(ctx, myVoice);
+
+  timelineSections(ctx, form.timeline);
 
   const meds = form.medications.filter((m) => m.name.trim());
   if (meds.length) {

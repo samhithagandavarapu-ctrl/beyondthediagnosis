@@ -42,7 +42,16 @@ export type IconName =
   | "breath"
   | "bell"
   | "eye"
-  | "eye-off";
+  | "eye-off"
+  | "chat"
+  | "send"
+  // Symptom Timeline entry types
+  | "tl-change"
+  | "tl-skill"
+  | "tl-medication"
+  | "tl-illness"
+  | "tl-test"
+  | "tl-life";
 
 type Props = {
   name: IconName;
@@ -321,6 +330,59 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M2.6 12 C5 7.4 8.4 5.2 12 5.2 S19 7.4 21.4 12 C19 16.6 15.6 18.8 12 18.8 S5 16.6 2.6 12 Z" />
       <circle cx="12" cy="12" r="3" />
       <path d="M4 3.6 L20 20.4" />
+    </>
+  ),
+  chat: (
+    <>
+      <path d="M4 5.6 a1.8 1.8 0 0 1 1.8 -1.8 h12.4 a1.8 1.8 0 0 1 1.8 1.8 v8.8 a1.8 1.8 0 0 1 -1.8 1.8 H10 l-4.4 3.8 v-3.8 h0.2 A1.8 1.8 0 0 1 4 14.4 Z" />
+      <path d="M8 8.6 h8M8 11.8 h5" />
+    </>
+  ),
+  send: (
+    <>
+      <path d="M3.4 11.6 L20.4 4 L14.6 20.6 L11.4 13 Z" />
+      <path d="M11.4 13 L20.4 4" />
+    </>
+  ),
+
+  // ---- Symptom Timeline ----
+  // A pulse line: something changed.
+  "tl-change": <path d="M2.8 12.6 h4.2 l2.2 -5.4 l3.6 10.6 l2.4 -6.8 l1.6 1.6 h4.4" />,
+  // A step with a downward arrow: an ability that slipped.
+  "tl-skill": (
+    <>
+      <path d="M3.6 20 h5 v-4.6 h5 v-4.6 h5 V6" />
+      <path d="M6.4 4.4 v6.8M3.8 8.6 l2.6 2.6 l2.6 -2.6" />
+    </>
+  ),
+  // A capsule.
+  "tl-medication": (
+    <>
+      <rect x="2.8" y="8.6" width="18.4" height="6.8" rx="3.4" transform="rotate(-40 12 12)" />
+      <path d="M9.4 9.2 L14.6 14.8" />
+    </>
+  ),
+  // A first-aid cross in a rounded square.
+  "tl-illness": (
+    <>
+      <rect x="3.6" y="3.6" width="16.8" height="16.8" rx="3.6" />
+      <path d="M12 7.8 v8.4M7.8 12 h8.4" />
+    </>
+  ),
+  // A clipboard with a tick.
+  "tl-test": (
+    <>
+      <rect x="5" y="4.6" width="14" height="16.2" rx="2.2" />
+      <path d="M9.2 4.6 V3.4 h5.6 v1.2" />
+      <path d="M8.8 13 L11 15.2 L15.4 10.6" />
+    </>
+  ),
+  // A house.
+  "tl-life": (
+    <>
+      <path d="M3.6 11 L12 4 L20.4 11" />
+      <path d="M6 9.4 V20 h12 V9.4" />
+      <path d="M10 20 v-5.4 h4 V20" />
     </>
   ),
 };
