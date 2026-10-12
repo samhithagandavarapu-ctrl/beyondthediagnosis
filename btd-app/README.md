@@ -13,7 +13,11 @@ families, and their clinicians. Built from the DECA Innovation Plan project doc.
   emergencies to 911, person-first language, etc).
 - **Appointment Prep Tool** (`/appointment-prep`) — structured form that generates a
   real downloadable PDF summary, with a "✨ Refine with AI" button that tightens and
-  clarifies your wording without inventing new facts.
+  clarifies your wording without inventing new facts. What you type is saved on the
+  device as you go, and every summary you generate goes into an appointment history
+  you can reopen, reprint, or reuse — kept in the browser, never uploaded.
+- **Notifications** (`/notifications`) — tells you when a story you sent in is
+  published, with a link to see it.
 - **My Voice** (`/my-voice`) — the self-advocacy side of the app, built for the person
   with Down syndrome to use themselves rather than for a caregiver: a tappable body
   outline and five-face scale for a check-in, a tap-to-build "tell my doctor" sentence,
@@ -188,6 +192,17 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
 
 Without it, the button explains that deletion isn't set up and to email instead.
+
+### Story-published notifications
+
+The **Notifications** tab (bell in the top bar) tells people when a story they
+sent in has been approved, with a link straight to it on Community Stories. It
+needs one column added to the `stories` table: open Supabase → **SQL Editor**,
+paste in [`supabase/stories-notifications.sql`](supabase/stories-notifications.sql),
+and run it. Until then everything still works — the tab just stays empty.
+
+Only stories sent in while signed in, after the SQL is run, are linked to an
+account; older ones have no owner to notify.
 
 ### 3. Turn on "Continue with Google" (optional, free)
 

@@ -39,7 +39,10 @@ export type IconName =
   | "check"
   | "save"
   | "refine"
-  | "breath";
+  | "breath"
+  | "bell"
+  | "eye"
+  | "eye-off";
 
 type Props = {
   name: IconName;
@@ -298,6 +301,26 @@ const PATHS: Record<IconName, JSX.Element> = {
       <circle cx="12" cy="12" r="3.4" />
       <circle cx="12" cy="12" r="7.6" opacity="0.55" />
       <circle cx="12" cy="12" r="11" opacity="0.28" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M6 16.4 V11 a6 6 0 0 1 12 0 v5.4 l1.6 1.8 H4.4 Z" />
+      <path d="M10 20.4 a2.2 2.2 0 0 0 4 0" />
+    </>
+  ),
+  // Show / hide a password: an open eye, and the same eye struck through.
+  eye: (
+    <>
+      <path d="M2.6 12 C5 7.4 8.4 5.2 12 5.2 S19 7.4 21.4 12 C19 16.6 15.6 18.8 12 18.8 S5 16.6 2.6 12 Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  "eye-off": (
+    <>
+      <path d="M2.6 12 C5 7.4 8.4 5.2 12 5.2 S19 7.4 21.4 12 C19 16.6 15.6 18.8 12 18.8 S5 16.6 2.6 12 Z" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M4 3.6 L20 20.4" />
     </>
   ),
 };

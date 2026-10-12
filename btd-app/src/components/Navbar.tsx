@@ -1,5 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationsContext";
+import Icon from "./icons/Icon";
 import { CTA_LABEL } from "../data/site";
 
 const links = [
@@ -15,16 +17,9 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "bg-navy text-mist" : "text-body hover:bg-sky/30 hover:text-navy"
   }`;
 
-/** First letter of the account, for the avatar dot. Falls back to a dot rather
- *  than a letter for phone-only accounts, which have no name to draw from. */
-function initialFor(email?: string | null, phone?: string | null) {
-  const source = (email || "").trim();
-  if (source) return source[0]!.toUpperCase();
-  return phone ? "#" : "?";
-}
-
 export default function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
 
   return (
     <header className="sticky top-0 z-40 border-b border-navy/10 bg-mist/[0.92] backdrop-blur-[10px]">
@@ -59,16 +54,30 @@ export default function Navbar() {
               {/* A named destination, not a bare email address: "My profile" says
                   where the link goes, and the account it belongs to is a hint
                   underneath rather than the label itself. */}
-              <NavLink to="/profile" className={linkClass} title={user.email || user.phone || undefined}>
-                <span className="flex items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-navy text-[0.6875rem] font-bold text-mist"
-                  >
-                    {initialFor(user.email, user.phone)}
-                  </span>
-                  My profile
+              <NavLink
+                to="/notifications"
+                className={linkClass}
+                aria-label={
+                  unreadCount > 0
+                    ? `Notifications, ${unreadCount} new`
+                    : "Notifications"
+                }
+              >
+                <span className="flex items-center gap-1.5">
+                  <Icon name="bell" size={18} />
+                  <span className="hidden lg:inline">Notifications</span>
+                  {unreadCount > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="grid h-5 min-w-[20px] place-items-center rounded-full bg-coral-hover px-1.5 text-11 font-bold text-coral-ink"
+                    >
+                      {unreadCount}
+                    </span>
+                  )}
                 </span>
+              </NavLink>
+              <NavLink to="/profile" className={linkClass} title={user.email || user.phone || undefined}>
+                My profile
               </NavLink>
               <button
                 onClick={() => signOut()}

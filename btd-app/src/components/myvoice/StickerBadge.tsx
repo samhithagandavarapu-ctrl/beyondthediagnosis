@@ -6,7 +6,10 @@ import { StickerId, stickerKind } from "../../lib/myVoice";
  *  The badge is decorative — every place it appears also names the sticker in
  *  real text — but the curved lettering is set in navy rather than white so it
  *  stays readable on all three ring colours. White on butter is about 1.4:1,
- *  which is not a thing to hand someone who is here because reading is work. */
+ *  which is not a thing to hand someone who is here because reading is work.
+ *
+ *  A sticker that hasn't been earned yet is grey all over; earning it is what
+ *  fills it with colour, so the difference reads at a glance, before any words. */
 
 type Props = {
   id: StickerId;
@@ -24,6 +27,10 @@ const RING: Record<StickerId, string> = {
 };
 
 const NAVY = "#213244";
+
+/** Not-yet-earned: one flat grey for the ring and a lighter one for the mark. */
+const GREY_RING = "#D3D9DF";
+const GREY_MARK = "#B4BDC6";
 
 /** Filled marks, drawn to sit inside the white disc (radius 70 about 100,100). */
 const GLYPHS: Record<StickerId, (color: string) => JSX.Element> = {
@@ -77,7 +84,7 @@ const GLYPHS: Record<StickerId, (color: string) => JSX.Element> = {
 
 export default function StickerBadge({ id, earned, size = 132, className = "" }: Props) {
   const kind = stickerKind(id);
-  const ring = RING[id];
+  const ring = earned ? RING[id] : GREY_RING;
   const label = kind.label.toUpperCase();
   const state = earned ? "EARNED" : "NOT YET EARNED";
 
@@ -104,14 +111,18 @@ export default function StickerBadge({ id, earned, size = 132, className = "" }:
         <path id={bottomArc} d="M 18 100 A 82 82 0 0 0 182 100" fill="none" />
       </defs>
 
-      <circle cx="100" cy="100" r="96" fill={ring} opacity={earned ? 1 : 0.55} />
+      <circle cx="100" cy="100" r="96" fill={ring} />
       <circle cx="100" cy="100" r="70" fill="#fff" />
 
-      {/* The mark in the middle, in the ring's own colour. */}
-      <g opacity={earned ? 1 : 0.45}>{GLYPHS[id](ring)}</g>
+      {/* The mark in the middle, in the ring's own colour — or grey, with the
+          calendar's one red day greyed too, until it's earned. */}
+      <g style={earned ? undefined : { filter: "grayscale(1)" }}>
+        {GLYPHS[id](earned ? ring : GREY_MARK)}
+      </g>
 
       <text
         fill={NAVY}
+        opacity={earned ? 1 : 0.7}
         fontSize={labelSize}
         fontWeight="700"
         letterSpacing="1.4"
@@ -127,7 +138,7 @@ export default function StickerBadge({ id, earned, size = 132, className = "" }:
         fontWeight="700"
         letterSpacing="1.6"
         textAnchor="middle"
-        opacity="0.75"
+        opacity={earned ? 0.75 : 0.6}
       >
         <textPath href={`#${bottomArc}`} startOffset="50%">
           {state}

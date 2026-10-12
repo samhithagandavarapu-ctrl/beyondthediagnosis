@@ -7,6 +7,7 @@ import { AccessibilityProvider } from "./context/AccessibilityContext";
 import { AuthProvider } from "./context/AuthContext";
 import { PracticeModeProvider } from "./context/PracticeModeContext";
 import { MyVoiceProvider } from "./context/MyVoiceContext";
+import { NotificationsProvider } from "./context/NotificationsContext";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -19,7 +20,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <AccessibilityProvider>
             <PracticeModeProvider>
               <MyVoiceProvider>
-                <App />
+                <NotificationsProvider>
+                  <App />
+                </NotificationsProvider>
               </MyVoiceProvider>
             </PracticeModeProvider>
           </AccessibilityProvider>

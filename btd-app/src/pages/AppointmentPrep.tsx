@@ -1,7 +1,19 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { refineAppointmentForm } from "../lib/api";
 import { useMyVoice } from "../context/MyVoiceContext";
+import { usePracticeMode } from "../context/PracticeModeContext";
+import {
+  HistoryEntry,
+  addToHistory,
+  clearDraft,
+  formIsEmpty,
+  historyTitle,
+  loadDraft,
+  loadHistory,
+  removeFromHistory,
+  saveDraft,
+} from "../lib/appointmentHistory";
 import { CheckIn, checkInLines } from "../lib/myVoice";
 import Icon from "../components/icons/Icon";
 import {
@@ -43,7 +55,12 @@ const emptyForm = (): AppointmentForm => ({
 
 export default function AppointmentPrep() {
   const { savedCheckIn, clearCheckIn } = useMyVoice();
-  const [form, setForm] = useState<AppointmentForm>(emptyForm());
+  const { practice } = usePracticeMode();
+  // Pick up where you left off: whatever was typed last time is still here.
+  const [form, setForm] = useState<AppointmentForm>(() => loadDraft() ?? emptyForm());
+  const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
+  // A past summary being looked at, rather than the one being written now.
+  const [viewing, setViewing] = useState<HistoryEntry | null>(null);
   // Opt-in on purpose: the check-in belongs to the person who made it, so it
   // only reaches the provider summary if someone says yes here.
   const [includeMyVoice, setIncludeMyVoice] = useState(true);
@@ -148,7 +165,73 @@ export default function AppointmentPrep() {
     }));
   }
 
+  // The profile's "see all" links to /appointment-prep#history; the app
+  // scrolls to the top on every page change, so go there after that.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash !== "#history") return;
+    requestAnimationFrame(() =>
+      document.getElementById("history")?.scrollIntoView({ block: "start" })
+    );
+  }, [hash]);
+
+  // Saved as you type. Practice mode is a rehearsal, so it keeps nothing — the
+  // real draft is left exactly as it was.
+  useEffect(() => {
+    if (practice) return;
+    if (formIsEmpty(form)) clearDraft();
+    else saveDraft(form);
+  }, [form, practice]);
+
+  function startFresh() {
+    if (!window.confirm("Clear this form and start a new one? Summaries you've already made stay in your history.")) {
+      return;
+    }
+    setForm(emptyForm());
+    setRefineError(null);
+  }
+
+  function reuseEntry(entry: HistoryEntry) {
+    if (
+      !formIsEmpty(form) &&
+      !window.confirm("Replace what's in the form now with this past visit?")
+    ) {
+      return;
+    }
+    // Fresh ids, so the copy and the history entry never share list keys.
+    setForm({
+      ...entry.form,
+      symptoms: entry.form.symptoms.map((x) => ({ ...x, id: newId() })),
+      medications: entry.form.medications.map((x) => ({ ...x, id: newId() })),
+      ruledOut: entry.form.ruledOut.map((x) => ({ ...x, id: newId() })),
+      questions: entry.form.questions.map((x) => ({ ...x, id: newId() })),
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function deleteEntry(entry: HistoryEntry) {
+    if (!window.confirm(`Delete "${historyTitle(entry.form)}" from your history?`)) return;
+    setHistory(removeFromHistory(entry.id));
+  }
+
   const myVoice = includeMyVoice ? savedCheckIn : null;
+
+  if (viewing) {
+    return (
+      <SummaryView
+        form={viewing.form}
+        myVoice={viewing.myVoice}
+        date={viewing.savedAt}
+        backLabel="← Back to your history"
+        onBack={() => {
+          setViewing(null);
+          requestAnimationFrame(() =>
+            document.getElementById("history")?.scrollIntoView({ block: "start" })
+          );
+        }}
+      />
+    );
+  }
 
   if (showSummary) {
     return <SummaryView form={form} myVoice={myVoice} onBack={() => setShowSummary(false)} />;
@@ -157,15 +240,32 @@ export default function AppointmentPrep() {
   return (
     <div className="btd-container py-10 max-w-2xl">
       <h1 className="text-3xl font-display font-semibold mb-2">Appointment Prep Tool</h1>
-      <p className="text-slate mb-8">
+      <p className="text-slate mb-4">
         Fill this out before your visit. It generates a clean, downloadable one-page
         summary you can bring straight to your provider — so nothing gets lost in a
         rushed appointment.
       </p>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-tile bg-sky-tint px-4 py-3 text-13 text-sky-ink">
+        <span>
+          {practice
+            ? "Practice mode: nothing you type here is saved, and it won't go in your history."
+            : "What you type is saved on this device as you go, so you can come back to it. It's never uploaded."}
+        </span>
+        {!formIsEmpty(form) && (
+          <button
+            type="button"
+            onClick={startFresh}
+            className="font-semibold text-link hover:underline"
+          >
+            Start a new form
+          </button>
+        )}
+      </div>
 
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          if (!practice && !formIsEmpty(form)) setHistory(addToHistory(form, myVoice));
           setShowSummary(true);
         }}
         className="space-y-8"
@@ -363,7 +463,80 @@ export default function AppointmentPrep() {
           </button>
         </div>
       </form>
+
+      <HistorySection
+        entries={history}
+        onView={setViewing}
+        onReuse={reuseEntry}
+        onDelete={deleteEntry}
+      />
     </div>
+  );
+}
+
+function HistorySection({
+  entries,
+  onView,
+  onReuse,
+  onDelete,
+}: {
+  entries: HistoryEntry[];
+  onView: (entry: HistoryEntry) => void;
+  onReuse: (entry: HistoryEntry) => void;
+  onDelete: (entry: HistoryEntry) => void;
+}) {
+  return (
+    <section id="history" className="mt-14 scroll-mt-24">
+      <h2 className="text-23 font-extrabold text-navy">Appointment history</h2>
+      <p className="mt-1.5 text-sm text-slate">
+        Every summary you generate is kept here, on this device, newest first. Open one to
+        see or print it again, or use it as the starting point for your next visit.
+      </p>
+
+      {entries.length === 0 ? (
+        <p className="mt-4 rounded-tile border border-dashed border-navy/20 bg-mist p-4 text-sm text-slate">
+          Nothing yet. When you press "Generate summary", a copy is saved here.
+        </p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {entries.map((entry) => (
+            <li key={entry.id} className="btd-card p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-light font-semibold">
+                {new Date(entry.savedAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+              <p className="mt-1 font-semibold text-ink break-words">{historyTitle(entry.form)}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                <button
+                  type="button"
+                  onClick={() => onView(entry)}
+                  className="px-3 py-1.5 rounded bg-ink text-paper font-semibold"
+                >
+                  Open summary
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReuse(entry)}
+                  className="font-semibold text-gold-dark hover:underline"
+                >
+                  Use as starting point
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(entry)}
+                  className="text-xs text-clay hover:underline sm:ml-auto"
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -500,10 +673,15 @@ function SummaryView({
   form,
   myVoice,
   onBack,
+  date,
+  backLabel = "← Back to edit",
 }: {
   form: AppointmentForm;
   myVoice: CheckIn | null;
   onBack: () => void;
+  /** When the summary was made; today, unless it's one from the history. */
+  date?: string;
+  backLabel?: string;
 }) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -514,7 +692,7 @@ function SummaryView({
     setDownloading(true);
     setDownloadError(null);
     try {
-      const doc = await buildAppointmentPdf(form, myVoice);
+      const doc = await buildAppointmentPdf(form, myVoice, date);
       const namePart = form.patientName.trim()
         ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
         : "visit-summary";
@@ -536,7 +714,7 @@ function SummaryView({
     <div className="btd-container py-10 max-w-2xl btd-print-root">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 print:hidden">
         <button onClick={onBack} className="text-sm text-slate hover:underline">
-          ← Back to edit
+          {backLabel}
         </button>
         <div className="flex gap-2">
           <button
@@ -570,7 +748,7 @@ function SummaryView({
               {form.patientName.trim() || "Visit summary"}
             </h1>
             <p className="text-13 text-mist/80">
-              {new Date().toLocaleDateString(undefined, {
+              {(date ? new Date(date) : new Date()).toLocaleDateString(undefined, {
                 year: "numeric",
                 month: "long",
                 day: "numeric",

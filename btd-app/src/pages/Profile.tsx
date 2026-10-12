@@ -6,6 +6,7 @@ import { useMyVoice } from "../context/MyVoiceContext";
 import { fetchProfile, upsertProfile } from "../lib/profile";
 import { submitStory } from "../lib/stories";
 import { authEnabled } from "../lib/supabaseClient";
+import { historyTitle, loadHistory } from "../lib/appointmentHistory";
 import {
   READING_LEVELS,
   STICKER_KINDS,
@@ -17,6 +18,7 @@ import Icon from "../components/icons/Icon";
 import StickerBadge from "../components/myvoice/StickerBadge";
 import PageHero from "../components/PageHero";
 import PageLoading from "../components/PageLoading";
+import PasswordInput from "../components/PasswordInput";
 
 /** A short, human date: "today", "yesterday", or "12 Mar". Avoids a relative
  *  "3 days ago" that goes stale while the tab sits open. */
@@ -208,7 +210,7 @@ function StoryPanel({ defaultName }: { defaultName: string }) {
             </label>
             <input
               id="s-title"
-              required
+  required
               className="btd-input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -240,7 +242,7 @@ function StoryPanel({ defaultName }: { defaultName: string }) {
             </label>
             <textarea
               id="s-excerpt"
-              required
+  required
               rows={5}
               className="btd-input"
               value={excerpt}
@@ -409,13 +411,11 @@ function AccountPanel() {
           <label htmlFor="a-password" className="sr-only">
             New password
           </label>
-          <input
+          <PasswordInput
             id="a-password"
-            type="password"
             required
             minLength={6}
             autoComplete="new-password"
-            className="btd-input"
             placeholder="New password (at least 6 characters)"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -423,13 +423,11 @@ function AccountPanel() {
           <label htmlFor="a-password2" className="sr-only">
             Type the new password again
           </label>
-          <input
+          <PasswordInput
             id="a-password2"
-            type="password"
             required
             minLength={6}
             autoComplete="new-password"
-            className="btd-input"
             placeholder="Type it again"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -458,8 +456,8 @@ function AccountPanel() {
           <h3 className="text-base font-bold text-coral-ink">Delete account</h3>
           <p className="text-13 leading-[1.5] text-body">
             Permanently removes your sign-in and your saved profile details. This can't be
-            undone. Stories you've already sent in aren't linked to your account, so email
-            us if you want one taken down.
+            undone. Stories you've already sent in stay where they are, so email us if you
+            want one taken down.
           </p>
           {!confirmDelete ? (
             <button
@@ -533,6 +531,8 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const { hash } = useLocation();
+  // Read once: the history only changes on the Appointment Prep page.
+  const [appointments] = useState(loadHistory);
 
   useEffect(() => {
     if (!user) {
@@ -620,13 +620,13 @@ export default function Profile() {
               Stickers earned
             </span>
             <span className="mt-2 block text-28 font-extrabold leading-none text-navy">
-              {stickers.length} of {STICKER_KINDS.length}
+              {earnedIds.size} of {STICKER_KINDS.length}
             </span>
-            <StickerMeter earned={stickers.length} />
+            <StickerMeter earned={earnedIds.size} />
             <span className="mt-1.5 block text-13 leading-[1.5] text-muted">
-              {stickers.length === STICKER_KINDS.length
+              {earnedIds.size === STICKER_KINDS.length
                 ? "All of them. Nothing left to collect."
-                : `${STICKER_KINDS.length - stickers.length} still to collect, whenever you want to.`}
+                : `${STICKER_KINDS.length - earnedIds.size} still to collect, whenever you want to.`}
             </span>
           </div>
           <StatTile
@@ -872,20 +872,49 @@ export default function Profile() {
               </div>
             </Panel>
 
-            <section className="rounded-card border border-navy/12 bg-sky-tint p-7">
-              <h2 className="text-21 font-extrabold text-sky-ink">What isn't kept here</h2>
-              <p className="mt-2 text-15 leading-[1.65] text-sky-ink">
-                Appointment summaries and voice notes are never uploaded — they live in the
-                tab you made them in, and you download the summary yourself. So there's no
-                appointment history on this page to show you, by design.
-              </p>
+            <Panel
+              title="Appointment history"
+              intro="Summaries you've made in Appointment Prep. They're kept on this device only — never uploaded — so they won't show on another device."
+            >
+              {appointments.length === 0 ? (
+                <p className="text-sm text-body">
+                  None yet. Each time you generate a summary in{" "}
+                  <Link to="/appointment-prep" className="font-semibold text-link hover:underline">
+                    Appointment Prep
+                  </Link>
+                  , a copy is saved here.
+                </p>
+              ) : (
+                <>
+                  <ul className="grid gap-2">
+                    {appointments.slice(0, 3).map((entry) => (
+                      <li key={entry.id} className="rounded-tile bg-sky-tint px-4 py-3">
+                        <span className="block text-12 font-bold uppercase tracking-[0.1em] text-muted">
+                          {shortDate(entry.savedAt)}
+                        </span>
+                        <span className="block text-sm font-bold text-navy break-words">
+                          {historyTitle(entry.form)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/appointment-prep#history"
+                    className="mt-3 inline-block text-13 font-semibold text-link hover:underline"
+                  >
+                    {appointments.length > 3
+                      ? `See all ${appointments.length} →`
+                      : "Open, print, or reuse them →"}
+                  </Link>
+                </>
+              )}
               <Link
                 to="/privacy"
-                className="mt-3 inline-block text-13 font-semibold text-link hover:underline"
+                className="mt-3 block text-13 font-semibold text-link hover:underline"
               >
                 What we store, in plain language →
               </Link>
-            </section>
+            </Panel>
 
             <AccountPanel />
           </div>

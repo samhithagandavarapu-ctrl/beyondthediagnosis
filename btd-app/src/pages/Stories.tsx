@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import PageHero from "../components/PageHero";
 import { STORIES } from "../data/stories";
 import { fetchApprovedStories, StoryRow } from "../lib/stories";
@@ -11,9 +11,31 @@ export default function Stories() {
   const [audience, setAudience] = useState<(typeof AUDIENCES)[number]>("All");
   const [submitted, setSubmitted] = useState<StoryRow[]>([]);
 
+  const [loaded, setLoaded] = useState(false);
+  const { hash } = useLocation();
+  // "See your story" from a notification links to /stories#story-<id>.
+  const target = hash.startsWith("#story-") ? hash.slice("#story-".length) : null;
+
   useEffect(() => {
-    fetchApprovedStories().then(setSubmitted);
+    fetchApprovedStories().then((rows) => {
+      setSubmitted(rows);
+      setLoaded(true);
+    });
   }, []);
+
+  // Submitted stories arrive after the first render, so the browser's own jump
+  // to the hash has already missed; scroll once they're in. Clear any filter
+  // first, so the story being linked to can't be hidden by one.
+  useEffect(() => {
+    if (!target || !loaded) return;
+    setAudience("All");
+    setQuery("");
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`story-${target}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [target, loaded]);
 
   const allStories = useMemo(
     () => [
@@ -82,7 +104,16 @@ export default function Stories() {
 
         <div className="grid gap-5 grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))]">
           {filtered.map((s) => (
-            <article key={s.id} className="btd-card p-[26px]">
+            <article
+              key={s.id}
+              id={`story-${s.id}`}
+              className={`btd-card p-[26px] scroll-mt-24 ${
+                s.id === target ? "border-2 border-sky ring-4 ring-sky/40" : ""
+              }`}
+            >
+              {s.id === target && (
+                <span className="btd-tag mb-2 mr-2 bg-butter">Your story</span>
+              )}
               <span className="text-11 font-bold uppercase tracking-[0.1em] text-link">
                 {s.audience}
               </span>
