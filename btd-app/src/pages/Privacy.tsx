@@ -103,8 +103,8 @@ export default function Privacy() {
         <h2 className="text-xl font-display font-semibold mb-2">Contact</h2>
         <p className="text-sm text-ink leading-relaxed">
           Questions about this policy or your data? Reach out at{" "}
-          <a href="mailto:info.verityhealth@gmail.com" className="text-gold-dark font-semibold hover:underline">
-            info.verityhealth@gmail.com
+          <a href="mailto:withvoiced@gmail.com" className="text-gold-dark font-semibold hover:underline">
+            withvoiced@gmail.com
           </a>
           .
         </p>

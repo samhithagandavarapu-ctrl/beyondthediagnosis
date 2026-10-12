@@ -25,6 +25,18 @@ const plans = [
       "Family-submitted notes, moderated before publishing",
     ],
   },
+  {
+    tag: "Exploring",
+    tagBg: "bg-sky",
+    title: "Clinician–patient messaging",
+    desc: "A private chat where clinicians can talk with their patients directly — so the person with Down syndrome is part of the conversation between visits, not talked about around.",
+    items: [
+      "Messages written to the patient, in plain language",
+      "Picture and read-aloud support, the same as My Voice",
+      "Caregivers included only when the patient wants them there",
+      "Never a replacement for urgent care — emergencies still go to 911",
+    ],
+  },
 ];
 
 export default function Future() {

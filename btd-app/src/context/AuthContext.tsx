@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase, authEnabled } from "../lib/supabaseClient";
+import { supabase, authEnabled, cameFromPasswordResetLink } from "../lib/supabaseClient";
 import { API_BASE } from "../lib/api";
 
 type AuthState = {
@@ -38,7 +38,7 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
+  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(cameFromPasswordResetLink);
 
   useEffect(() => {
     if (!authEnabled) {
@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .getSession()
       .then(({ data }: any) => {
         setUser(data.session?.user ?? null);
+        if (cameFromPasswordResetLink()) setPasswordRecoveryMode(true);
       })
       .catch((error: unknown) => {
         console.error("Could not read the saved session:", error);
