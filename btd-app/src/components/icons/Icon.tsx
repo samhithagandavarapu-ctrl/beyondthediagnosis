@@ -45,6 +45,7 @@ export type IconName =
   | "eye-off"
   | "chat"
   | "send"
+  | "person"
   // Symptom Timeline entry types
   | "tl-change"
   | "tl-skill"
@@ -336,6 +337,12 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <path d="M4 5.6 a1.8 1.8 0 0 1 1.8 -1.8 h12.4 a1.8 1.8 0 0 1 1.8 1.8 v8.8 a1.8 1.8 0 0 1 -1.8 1.8 H10 l-4.4 3.8 v-3.8 h0.2 A1.8 1.8 0 0 1 4 14.4 Z" />
       <path d="M8 8.6 h8M8 11.8 h5" />
+    </>
+  ),
+  person: (
+    <>
+      <circle cx="12" cy="8.2" r="3.8" />
+      <path d="M4.6 20.2 a7.4 7.4 0 0 1 14.8 0" />
     </>
   ),
   send: (
