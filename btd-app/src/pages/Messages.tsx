@@ -1,15 +1,21 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import { fetchProfile } from "../lib/profile";
 import {
   Message,
+  ThreadState,
+  clearMyThread,
   fetchThread,
+  fetchThreadStates,
   markSeen,
+  markThreadRead,
+  markThreadUnread,
   mergeMessages,
-  sendMessage,
+  sendWithFiles,
   subscribeToMessages,
+  unsendMessage,
 } from "../lib/messages";
 import ChatView from "../components/ChatView";
 import PageHero from "../components/PageHero";
@@ -23,11 +29,29 @@ export default function Messages() {
   const { user, isAdmin, loading } = useAuth();
   const { refresh: refreshNotifications } = useNotifications();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [state, setState] = useState<ThreadState | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
   const [name, setName] = useState("");
+  // After "Mark as unread", don't immediately mark it read again just because
+  // the page is still open. Leaving and coming back, or sending, resets it.
+  const holdUnread = useRef(false);
 
   const userId = user?.id ?? null;
+
+  const load = useCallback(async () => {
+    if (!userId) return;
+    const [{ messages, error }, { states }] = await Promise.all([
+      fetchThread(userId),
+      fetchThreadStates(userId),
+    ]);
+    setError(error);
+    // Replace rather than merge, so unsent and deleted messages update too.
+    setMessages(messages);
+    setState(states.get(userId));
+    setFetching(false);
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -35,18 +59,14 @@ export default function Messages() {
       return;
     }
     let cancelled = false;
-    const load = () =>
-      fetchThread(userId).then(({ messages, error }) => {
-        if (cancelled) return;
-        setError(error);
-        setMessages((prev) => mergeMessages(prev, messages));
-        setFetching(false);
-      });
     load();
     fetchProfile(userId).then((p) => {
       if (!cancelled) setName(p?.full_name?.trim() || p?.username?.trim() || "");
     });
-    const stop = subscribeToMessages(userId, (m) => setMessages((prev) => mergeMessages(prev, [m])));
+    const stop = subscribeToMessages(userId, (m) => {
+      if (m) setMessages((prev) => mergeMessages(prev, [m]));
+      load();
+    });
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") load();
     }, POLL_MS);
@@ -55,15 +75,16 @@ export default function Messages() {
       stop();
       window.clearInterval(timer);
     };
-  }, [userId]);
+  }, [userId, load]);
 
-  // Being on this page means everything here has been seen.
-  const newest = messages[messages.length - 1]?.created_at;
+  // Being on this page means everything here has been read.
+  const newestFromTeam = [...messages].reverse().find((m) => m.from_admin)?.created_at;
   useEffect(() => {
-    if (!userId || !newest) return;
-    markSeen(userId, userId, newest);
-    refreshNotifications();
-  }, [userId, newest, refreshNotifications]);
+    if (!userId || !newestFromTeam) return;
+    if (holdUnread.current) return;
+    markSeen(userId, userId, newestFromTeam);
+    markThreadRead(userId).then(refreshNotifications);
+  }, [userId, newestFromTeam, refreshNotifications]);
 
   if (loading || fetching) return <PageLoading label="Loading your messages…" />;
 
@@ -84,13 +105,48 @@ export default function Messages() {
     );
   }
 
+  // Cleared on this side: only show what came after.
+  const clearedAt = state?.user_cleared_at ? Date.parse(state.user_cleared_at) : 0;
+  const visible = messages.filter((m) => Date.parse(m.created_at) > clearedAt);
+
+  async function markUnread() {
+    if (!userId) return;
+    holdUnread.current = true;
+    const err = await markThreadUnread(userId);
+    if (err) {
+      holdUnread.current = false;
+      setNotice(err);
+      return;
+    }
+    setNotice("Marked as unread.");
+    refreshNotifications();
+  }
+
+  async function deleteChat() {
+    if (
+      !window.confirm(
+        "Delete this chat? The messages disappear from your screen. The Voiced team keeps its copy, so they can still help you."
+      )
+    ) {
+      return;
+    }
+    const err = await clearMyThread();
+    if (err) {
+      setNotice(err);
+      return;
+    }
+    setNotice("Chat deleted. You can start a new one any time.");
+    load();
+    refreshNotifications();
+  }
+
   return (
     <div>
       <PageHero
         tone="navy"
         eyebrow="Messages"
         title="Message the Voiced team"
-        lede="Ask a question, tell us about a problem with the site, or ask about a story you sent in. You can add a photo or file too. A real person reads every message."
+        lede="Ask a question, tell us about a problem with the site, or ask about a story you sent in. You can add photos or files too. A real person reads every message."
       />
       <div className="btd-container max-w-3xl pt-10 pb-20">
         <p className="mb-4 rounded-tile bg-coral px-4 py-3 text-sm font-semibold text-coral-ink">
@@ -114,21 +170,47 @@ export default function Messages() {
           </p>
         ) : (
           <div className="btd-card p-4 sm:p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-bold text-navy">Voiced team</h2>
+              {visible.length > 0 && (
+                <div className="flex flex-wrap gap-3 text-13 font-semibold">
+                  <button type="button" onClick={markUnread} className="text-link hover:underline">
+                    Mark as unread
+                  </button>
+                  <button type="button" onClick={deleteChat} className="text-coral-ink hover:underline">
+                    Delete chat
+                  </button>
+                </div>
+              )}
+            </div>
+            {notice && (
+              <p role="status" className="mb-3 rounded bg-sky-tint px-3 py-2 text-13 text-sky-ink">
+                {notice}
+              </p>
+            )}
             <ChatView
-              messages={messages}
+              messages={visible}
               viewerIsAdmin={false}
               theirName="Voiced team"
+              otherLastReadAt={state?.admin_last_read_at ?? null}
               emptyText="No messages yet. Say hello — we usually reply within a few days."
-              onSend={async (body, file) => {
-                const { message, error } = await sendMessage({
+              onSend={async (body, files) => {
+                holdUnread.current = false;
+                setNotice(null);
+                const { sent, error } = await sendWithFiles({
                   threadUserId: user.id,
                   body,
                   fromAdmin: false,
                   senderName: name,
-                  file,
+                  files,
                 });
-                if (message) setMessages((prev) => mergeMessages(prev, [message]));
+                if (sent.length) setMessages((prev) => mergeMessages(prev, sent));
                 return error;
+              }}
+              onUnsend={async (m) => {
+                const err = await unsendMessage(m.id);
+                if (!err) load();
+                return err;
               }}
             />
           </div>

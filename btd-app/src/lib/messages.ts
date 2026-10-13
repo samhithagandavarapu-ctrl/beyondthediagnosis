@@ -18,6 +18,18 @@ export type Message = {
   attachment_name?: string | null;
   attachment_type?: string | null;
   attachment_size?: number | null;
+  /** Set when the sender unsent it; the text and file are gone. */
+  unsent_at?: string | null;
+};
+
+/** Read state of one conversation (see messages-v2.sql). */
+export type ThreadState = {
+  user_id: string;
+  user_last_read_at: string | null;
+  admin_last_read_at: string | null;
+  user_marked_unread: boolean;
+  admin_marked_unread: boolean;
+  user_cleared_at: string | null;
 };
 
 // ---- Attachments ----
@@ -51,12 +63,36 @@ const ALLOWED_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]);
 
+// Some phones and computers hand over files with no type at all (HEIC photos,
+// older Word files). Work it out from the name, so storage accepts it.
+const TYPE_BY_EXT: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".heic": "image/heic",
+  ".heif": "image/heif",
+  ".pdf": "application/pdf",
+  ".txt": "text/plain",
+  ".doc": "application/msword",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".xls": "application/vnd.ms-excel",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
+
+const extOf = (name: string) => (name.match(/\.[a-z0-9]{1,8}$/i)?.[0] ?? "").toLowerCase();
+
+export function fileType(file: File): string {
+  return file.type || TYPE_BY_EXT[extOf(file.name)] || "";
+}
+
 /** A reason this file can't be sent, written for a person — or null if fine. */
 export function checkFile(file: File): string | null {
   if (file.size > MAX_FILE_BYTES) {
     return `"${file.name}" is ${formatBytes(file.size)}. Files can be up to 10 MB.`;
   }
-  if (file.type && !ALLOWED_TYPES.has(file.type)) {
+  if (!ALLOWED_TYPES.has(fileType(file))) {
     return `"${file.name}" can't be sent. You can send photos, PDFs, Word or Excel files, and text files.`;
   }
   return null;
@@ -72,6 +108,7 @@ export const isImage = (type?: string | null) => Boolean(type && type.startsWith
 
 /** The text that stands in for a message that is only a file. */
 export function messagePreview(m: Message): string {
+  if (m.unsent_at) return "Message unsent";
   if (m.body.trim()) return m.body;
   if (m.attachment_path) return isImage(m.attachment_type) ? "Sent a photo" : `Sent a file: ${m.attachment_name ?? ""}`.trim();
   return "";
@@ -81,10 +118,9 @@ async function uploadAttachment(threadUserId: string, file: File) {
   // The folder is the conversation; the file gets a random name so two
   // uploads called "photo.jpg" never collide, and the real name is kept on
   // the message for display.
-  const ext = (file.name.match(/\.[a-z0-9]{1,8}$/i)?.[0] ?? "").toLowerCase();
-  const path = `${threadUserId}/${crypto.randomUUID()}${ext}`;
+  const path = `${threadUserId}/${crypto.randomUUID()}${extOf(file.name)}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: file.type || undefined,
+    contentType: fileType(file) || undefined,
     upsert: false,
   });
   return { path, error };
@@ -111,6 +147,8 @@ export type Thread = {
   latest: Message;
   /** Their newest message, for the admin's unread marker. */
   latestFromThem: Message | null;
+  /** All their (not unsent) messages, newest first, for unread counts. */
+  fromThem: Message[];
 };
 
 export const NOT_SET_UP =
@@ -155,17 +193,24 @@ export async function sendMessage(input: {
     if (problem) return { message: null, error: problem };
     const { path, error } = await uploadAttachment(input.threadUserId, input.file);
     if (error) {
+      const msg = error.message ?? "";
       return {
         message: null,
-        error: /bucket not found/i.test(error.message)
+        error: /bucket not found/i.test(msg)
           ? FILES_NOT_SET_UP
-          : `Couldn't upload "${input.file.name}": ${error.message}`,
+          : /row-level security|unauthorized|403/i.test(msg)
+          ? `${FILES_NOT_SET_UP} (Storage refused the upload: ${msg})`
+          : /mime|content type/i.test(msg)
+          ? `"${input.file.name}" is a type of file that can't be sent. Try a photo, PDF, Word, Excel, or text file.`
+          : /size|too large|exceed/i.test(msg)
+          ? `"${input.file.name}" is too big. Files can be up to 10 MB.`
+          : `Couldn't upload "${input.file.name}": ${msg}`,
       };
     }
     attachment = {
       attachment_path: path,
       attachment_name: input.file.name,
-      attachment_type: input.file.type || null,
+      attachment_type: fileType(input.file) || null,
       attachment_size: input.file.size,
     };
   }
@@ -183,10 +228,41 @@ export async function sendMessage(input: {
     })
     .select()
     .single();
-  if (error && input.file && /attachment_|column/i.test(error.message)) {
-    return { message: null, error: FILES_NOT_SET_UP };
+  if (error && input.file) {
+    // The file is up but the message didn't save; don't leave it orphaned.
+    const path = attachment.attachment_path as string;
+    supabase.storage.from(BUCKET).remove([path]).catch(() => {});
+    if (/attachment_|column|messages_body/i.test(error.message)) {
+      return { message: null, error: FILES_NOT_SET_UP };
+    }
   }
   return { message: data ?? null, error: describe(error) };
+}
+
+/** Send text and any number of files: the text rides with the first file,
+ *  and each further file is its own message. Stops at the first failure and
+ *  says which file it was. */
+export async function sendWithFiles(input: {
+  threadUserId: string;
+  body: string;
+  fromAdmin: boolean;
+  senderName: string;
+  files: File[];
+}): Promise<{ sent: Message[]; error: string | null }> {
+  const sent: Message[] = [];
+  const queue: (File | null)[] = input.files.length ? input.files : [null];
+  for (let i = 0; i < queue.length; i++) {
+    const { message, error } = await sendMessage({
+      threadUserId: input.threadUserId,
+      body: i === 0 ? input.body : "",
+      fromAdmin: input.fromAdmin,
+      senderName: input.senderName,
+      file: queue[i],
+    });
+    if (message) sent.push(message);
+    if (error) return { sent, error };
+  }
+  return { sent, error: null };
 }
 
 /** Admin only: every conversation, newest first. */
@@ -203,11 +279,14 @@ export async function fetchInbox(): Promise<{ threads: Thread[]; error: string |
   for (const m of (data ?? []) as Message[]) {
     let t = byUser.get(m.thread_user_id);
     if (!t) {
-      t = { userId: m.thread_user_id, name: "", email: "", latest: m, latestFromThem: null };
+      t = { userId: m.thread_user_id, name: "", email: "", latest: m, latestFromThem: null, fromThem: [] };
       byUser.set(m.thread_user_id, t);
     }
     if (!m.from_admin) {
-      if (!t.latestFromThem) t.latestFromThem = m;
+      if (!m.unsent_at) {
+        if (!t.latestFromThem) t.latestFromThem = m;
+        t.fromThem.push(m);
+      }
       if (!t.name && m.sender_name) t.name = m.sender_name;
       if (!t.email && m.sender_email) t.email = m.sender_email;
     }
@@ -233,20 +312,30 @@ export async function fetchIncoming(asAdmin: boolean): Promise<Message[]> {
  *  simply never fires, and the pages fall back to checking every so often. */
 export function subscribeToMessages(
   threadUserId: string | null,
-  onInsert: (m: Message) => void
+  onChange: (m: Message | null) => void
 ): () => void {
   if (!authEnabled) return () => {};
+  const filter = threadUserId ? { filter: `thread_user_id=eq.${threadUserId}` } : {};
   const channel = supabase
     .channel(`messages:${threadUserId ?? "all"}:${Math.random().toString(36).slice(2)}`)
+    // New messages and unsends. (A deleted conversation arrives as DELETE,
+    // with no row to merge — callers just reload.)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "messages", ...filter },
+      (payload: { eventType: string; new: Message }) =>
+        onChange(payload.eventType === "DELETE" ? null : payload.new)
+    )
+    // Read receipts and "mark as unread".
     .on(
       "postgres_changes",
       {
-        event: "INSERT",
+        event: "*",
         schema: "public",
-        table: "messages",
-        ...(threadUserId ? { filter: `thread_user_id=eq.${threadUserId}` } : {}),
+        table: "message_threads",
+        ...(threadUserId ? { filter: `user_id=eq.${threadUserId}` } : {}),
       },
-      (payload: { new: Message }) => onInsert(payload.new)
+      () => onChange(null)
     )
     .subscribe();
   return () => {
@@ -254,7 +343,104 @@ export function subscribeToMessages(
   };
 }
 
-// ---- Read markers ----
+// ---- Read state, unsend, delete (messages-v2.sql) ----
+
+export const V2_NOT_SET_UP =
+  "This isn't switched on yet — the site owner needs to run supabase/messages-v2.sql in Supabase.";
+
+const missingFunction = (e: { message?: string; code?: string } | null) =>
+  Boolean(e && (e.code === "PGRST202" || e.code === "42883" || /could not find the function|does not exist/i.test(e.message ?? "")));
+
+/** The read state of one conversation, or of every conversation for an admin.
+ *  Empty if messages-v2.sql hasn't been run; callers then fall back to the
+ *  read markers kept in this browser. */
+export async function fetchThreadStates(threadUserId?: string): Promise<{ states: Map<string, ThreadState>; available: boolean }> {
+  if (!authEnabled) return { states: new Map(), available: false };
+  let q = supabase.from("message_threads").select("*");
+  if (threadUserId) q = q.eq("user_id", threadUserId);
+  const { data, error } = await q;
+  if (error) return { states: new Map(), available: false };
+  return {
+    states: new Map((data as ThreadState[]).map((t) => [t.user_id, t])),
+    available: true,
+  };
+}
+
+export async function markThreadRead(threadUserId: string) {
+  if (!authEnabled) return;
+  await supabase.rpc("mark_thread_read", { p_thread: threadUserId });
+}
+
+export async function markThreadUnread(threadUserId: string): Promise<string | null> {
+  if (!authEnabled) return "Login isn't set up on this site yet.";
+  const { error } = await supabase.rpc("mark_thread_unread", { p_thread: threadUserId });
+  if (missingFunction(error)) return V2_NOT_SET_UP;
+  return error?.message ?? null;
+}
+
+/** Unsend one of your own messages, and remove its file. */
+export async function unsendMessage(messageId: string): Promise<string | null> {
+  if (!authEnabled) return "Login isn't set up on this site yet.";
+  const { data, error } = await supabase.rpc("unsend_message", { p_message: messageId });
+  if (missingFunction(error)) return V2_NOT_SET_UP;
+  if (error) return error.message;
+  if (typeof data === "string" && data) {
+    await supabase.storage.from(BUCKET).remove([data]).catch(() => {});
+  }
+  return null;
+}
+
+/** The person clears the chat on their side (the team keeps its copy). */
+export async function clearMyThread(): Promise<string | null> {
+  if (!authEnabled) return "Login isn't set up on this site yet.";
+  const { error } = await supabase.rpc("clear_my_thread");
+  if (missingFunction(error)) return V2_NOT_SET_UP;
+  return error?.message ?? null;
+}
+
+/** Admin only: delete a whole conversation, and its files, for everyone. */
+export async function deleteThread(threadUserId: string): Promise<string | null> {
+  if (!authEnabled) return "Login isn't set up on this site yet.";
+  const { data, error } = await supabase.rpc("delete_thread", { p_thread: threadUserId });
+  if (missingFunction(error)) return V2_NOT_SET_UP;
+  if (error) return error.message;
+  // The files the messages pointed at, plus anything else left in the folder
+  // (from unsent messages, or an upload that never became a message).
+  const paths = new Set<string>(((data as (string | null)[]) ?? []).filter(Boolean) as string[]);
+  const listed = await supabase.storage.from(BUCKET).list(threadUserId, { limit: 1000 });
+  (listed.data ?? []).forEach((f: { name: string }) => paths.add(`${threadUserId}/${f.name}`));
+  const all = [...paths];
+  for (let i = 0; i < all.length; i += 100) {
+    await supabase.storage.from(BUCKET).remove(all.slice(i, i + 100)).catch(() => {});
+  }
+  return null;
+}
+
+/** Is there something in this conversation the viewer hasn't read? */
+export function isUnread(opts: {
+  latestFromThem: Message | null;
+  state: ThreadState | undefined;
+  viewerIsAdmin: boolean;
+  /** Fallback read marker from this browser, when there's no server state. */
+  localSeen: string;
+}): boolean {
+  const { latestFromThem, state, viewerIsAdmin, localSeen } = opts;
+  if (state && (viewerIsAdmin ? state.admin_marked_unread : state.user_marked_unread)) return true;
+  if (!latestFromThem) return false;
+  const lastRead = state ? (viewerIsAdmin ? state.admin_last_read_at : state.user_last_read_at) : null;
+  const since = lastRead ?? localSeen;
+  return !since || Date.parse(latestFromThem.created_at) > Date.parse(since);
+}
+
+/** How many of their messages arrived after the viewer last read. */
+export function unreadCount(messages: Message[], state: ThreadState | undefined, viewerIsAdmin: boolean, localSeen: string) {
+  const lastRead = state ? (viewerIsAdmin ? state.admin_last_read_at : state.user_last_read_at) : null;
+  const since = lastRead ?? localSeen;
+  const t = since ? Date.parse(since) : 0;
+  return messages.filter((m) => m.from_admin !== viewerIsAdmin && !m.unsent_at && Date.parse(m.created_at) > t).length;
+}
+
+// ---- Read markers (fallback) ----
 // When someone last looked at a conversation, kept in this browser per
 // account. Good enough for "new" dots and notifications; nothing is uploaded.
 
@@ -271,7 +457,8 @@ export function lastSeen(viewerId: string, threadUserId: string): string {
 
 export function markSeen(viewerId: string, threadUserId: string, at: string) {
   try {
-    if (at > lastSeen(viewerId, threadUserId)) localStorage.setItem(seenKey(viewerId, threadUserId), at);
+    const prev = lastSeen(viewerId, threadUserId);
+    if (!prev || Date.parse(at) > Date.parse(prev)) localStorage.setItem(seenKey(viewerId, threadUserId), at);
   } catch {
     // ignore
   }

@@ -226,6 +226,13 @@ To let people send **photos and files** in Messages, also run
 in a private storage bucket (`message-files`, up to 10 MB each: photos, PDFs,
 Word, Excel, and text files) that only the person and admins can open.
 
+Then run [`supabase/messages-v2.sql`](supabase/messages-v2.sql) for the rest of
+the messaging features: "Seen" read receipts, **Mark as unread**, **Unsend** (from
+the ⋯ menu on your own messages), **Delete chat** (a person clears it on their
+side; the team keeps its copy) and **Delete conversation** (an admin removes it,
+and its files, for everyone). It also makes story approval use the same admin
+list. Each SQL file is safe to run more than once; run them in this order.
+
 The SQL decides who counts as an admin for messages (`is_voiced_admin()`). Keep
 its email list the same as the app's admin emails (`DEFAULT_ADMIN_EMAILS` in
 `src/context/AuthContext.tsx` plus `VITE_ADMIN_EMAILS`).
