@@ -289,12 +289,16 @@ export default function Profile() {
   // Read once: the history only changes on the Appointment Prep page.
   const [appointments] = useState(loadHistory);
 
+  // Keyed on the account id, not the user object: Supabase hands over a new
+  // object on every token refresh, and refetching then would overwrite
+  // whatever someone is in the middle of typing with the last saved copy.
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setFetching(false);
       return;
     }
-    fetchProfile(user.id).then((profile) => {
+    fetchProfile(userId).then((profile) => {
       if (profile) {
         setFullName(profile.full_name ?? "");
         setUsername(profile.username ?? "");
@@ -302,7 +306,7 @@ export default function Profile() {
       }
       setFetching(false);
     });
-  }, [user]);
+  }, [userId]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
