@@ -12,7 +12,7 @@ const hotspots = [
   ["Alzheimer's disease", "Risk is higher and onset earlier, but true symptoms are rare before 40. Changes in younger adults get assumed to be Alzheimer's when the real cause may be treatable."],
   ["Differences treated as fixed", "Immune or kidney differences get treated as unchangeable facts rather than things to actively manage — consistent hydration, for one, meaningfully helps."],
   ["Autism", "More common alongside Down syndrome than in the general population, but overlapping traits make it easy to miss — delaying therapies that help."],
-  ["Even after death", "Death-certificate research finds Down syndrome is more likely to be listed as the cause on its own, with less investigation of other contributing factors."],
+  ["How it shows up in medical records", "Death-certificate research finds Down syndrome is more likely to be listed as the cause on its own, with less investigation of other contributing factors."],
 ];
 
 const sources = [
@@ -31,8 +31,8 @@ export default function Understanding() {
         title="Understanding diagnostic overshadowing"
         lede="A plain-language guide to the pattern this platform exists to fight — drawn from clinical sources at CARE Down Syndrome, an initiative of the National Down Syndrome Society."
       />
-      <section className="btd-container pt-14 pb-20 grid gap-6 items-start md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="grid gap-7">
+      <section className="btd-container pt-14 pb-20">
+        <div className="mx-auto grid max-w-[720px] gap-7">
           <div>
             <h2 className="mb-2.5 text-30 font-extrabold">What it is</h2>
             <p className={`${bodyText} mb-3`}>
@@ -84,6 +84,13 @@ export default function Understanding() {
             </div>
           </div>
 
+          <p className="text-base leading-[1.6] text-body">
+            Real experiences from self-advocates, families, and clinicians{" "}
+            <Link to="/stories" className="font-bold text-link underline underline-offset-[3px] hover:text-navy">
+              Read community stories →
+            </Link>
+          </p>
+
           <div>
             <h2 className="mb-3 text-[1.375rem] font-bold">Sources</h2>
             <ul className="list-disc pl-5 grid gap-2 text-15 leading-[1.6]">
@@ -102,35 +109,6 @@ export default function Understanding() {
             </ul>
           </div>
         </div>
-
-        <aside className="grid gap-4 md:sticky md:top-24">
-          <div className="rounded-card bg-sky p-6">
-            <p className="mb-2.5 text-12 font-bold uppercase tracking-[0.12em] text-sky-ink">
-              Community stories
-            </p>
-            <p className="text-base leading-[1.6]">
-              Real experiences from self-advocates, families, and clinicians — including
-              moments where advocacy changed an outcome.
-            </p>
-            <Link to="/stories" className="btd-btn mt-4 min-h-[46px] bg-white px-5 py-[13px] text-15">
-              Read the stories →
-            </Link>
-          </div>
-          <figure className="btd-card p-[22px]">
-            <blockquote className="text-base leading-[1.6]">
-              "It took eight months to find out it was her thyroid."
-            </blockquote>
-            <figcaption className="mt-2.5 text-13 font-bold uppercase tracking-[0.08em] text-link">
-              Parent
-            </figcaption>
-          </figure>
-          <div className="rounded-card bg-coral p-[22px]">
-            <p className="text-base leading-[1.6] text-coral-ink">
-              <strong>A change in health deserves a real look</strong> — not an assumption.
-              That's the whole premise behind our tools.
-            </p>
-          </div>
-        </aside>
       </section>
     </div>
   );

@@ -8,6 +8,7 @@ import FaceScale from "../components/myvoice/FaceScale";
 import SentenceBuilder from "../components/myvoice/SentenceBuilder";
 import SpeakButton from "../components/myvoice/SpeakButton";
 import StickerBook from "../components/myvoice/StickerBook";
+import { LastCheckInPanel, StickerBookPanel } from "../components/myvoice/ProgressPanels";
 import VisitWalkthrough from "../components/myvoice/VisitWalkthrough";
 import VoiceRecorder from "../components/myvoice/VoiceRecorder";
 import Icon, { IconName } from "../components/icons/Icon";
@@ -71,6 +72,16 @@ export default function MyVoice() {
             {section === "stickers" && <StickerSection />}
           </div>
         )}
+
+        <div className="grid gap-6">
+          <StickerBookPanel />
+          <LastCheckInPanel
+            onStartCheckIn={() => {
+              setSection("check-in");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+        </div>
       </section>
     </div>
   );
