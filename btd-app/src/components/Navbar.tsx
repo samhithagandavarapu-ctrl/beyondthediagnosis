@@ -6,10 +6,8 @@ import Icon from "./icons/Icon";
 import { CTA_LABEL } from "../data/site";
 
 const links = [
-  { to: "/tools", label: "The Tools" },
-  { to: "/my-voice", label: "My Voice" },
+  { to: "/tools", label: "Tools" },
   { to: "/understanding-overshadowing", label: "The Problem" },
-  { to: "/future", label: "Future Work" },
   { to: "/provider-education", label: "For Providers" },
 ];
 
