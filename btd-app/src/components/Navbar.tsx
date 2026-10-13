@@ -10,6 +10,7 @@ const links = [
   { to: "/tools", label: "Tools" },
   { to: "/understanding-overshadowing", label: "The Problem" },
   { to: "/provider-education", label: "For Providers" },
+  { to: "/mission", label: "Mission" },
 ];
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
