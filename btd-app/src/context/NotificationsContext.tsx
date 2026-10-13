@@ -1,7 +1,16 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { fetchMyReviewedStories, StoryRow } from "../lib/stories";
-import { Message, fetchIncoming, lastSeen, messagePreview, subscribeToMessages } from "../lib/messages";
+import {
+  Message,
+  ThreadState,
+  fetchIncoming,
+  fetchThreadStates,
+  isUnread,
+  lastSeen,
+  messagePreview,
+  subscribeToMessages,
+} from "../lib/messages";
 
 // Notifications are worked out, not stored: each one is a fact about the
 // person's account ("a story you sent in was published", "you have a new
@@ -93,24 +102,42 @@ function storyNotification(s: StoryRow): Raw {
 
 /** One notification per conversation with something new in it: the newest
  *  message from the other side. A newer message makes a new notification. */
-function messageNotifications(incoming: Message[], viewerId: string, asAdmin: boolean): Raw[] {
+function messageNotifications(
+  incoming: Message[],
+  states: Map<string, ThreadState>,
+  viewerId: string,
+  asAdmin: boolean
+): Raw[] {
   const newestPerThread = new Map<string, Message>();
   for (const m of incoming) {
+    if (m.unsent_at) continue;
+    // Someone who deleted their chat isn't told about what was in it.
+    const cleared = states.get(m.thread_user_id)?.user_cleared_at;
+    if (!asAdmin && cleared && Date.parse(m.created_at) <= Date.parse(cleared)) continue;
     if (!newestPerThread.has(m.thread_user_id)) newestPerThread.set(m.thread_user_id, m);
   }
   return [...newestPerThread.values()].map((m) => {
     const who = asAdmin ? m.sender_name?.trim() || m.sender_email || "someone" : "the Voiced team";
     const text = messagePreview(m);
     const preview = text.length > 140 ? `${text.slice(0, 140).trimEnd()}…` : text;
+    const state = states.get(m.thread_user_id);
+    const markedUnread = asAdmin ? state?.admin_marked_unread : state?.user_marked_unread;
     return {
-      id: `message:${m.id}`,
+      // "Mark as unread" gives it a fresh id, so it shows as new again even
+      // if this notification was dismissed before.
+      id: `message:${m.id}${markedUnread ? ":unread" : ""}`,
       kind: "message",
       title: `New message from ${who}`,
       body: preview,
       href: asAdmin ? `/admin/messages?user=${m.thread_user_id}` : "/messages",
       action: "Read and reply",
       at: m.created_at,
-      autoRead: lastSeen(viewerId, m.thread_user_id) >= m.created_at,
+      autoRead: !isUnread({
+        latestFromThem: m,
+        state,
+        viewerIsAdmin: asAdmin,
+        localSeen: lastSeen(viewerId, m.thread_user_id),
+      }),
     };
   });
 }
@@ -132,12 +159,16 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   const refresh = useCallback(() => {
     if (!userId) return;
-    Promise.all([fetchMyReviewedStories(userId), fetchIncoming(isAdmin)]).then(
-      ([stories, incoming]) => {
+    Promise.all([
+      fetchMyReviewedStories(userId),
+      fetchIncoming(isAdmin),
+      fetchThreadStates(isAdmin ? undefined : userId),
+    ]).then(
+      ([stories, incoming, { states }]) => {
         if (currentUser.current !== userId) return;
         const items = [
           ...stories.map(storyNotification),
-          ...messageNotifications(incoming, userId, isAdmin),
+          ...messageNotifications(incoming, states, userId, isAdmin),
         ].sort((a, b) => b.at.localeCompare(a.at));
         setRaw(items);
       }
