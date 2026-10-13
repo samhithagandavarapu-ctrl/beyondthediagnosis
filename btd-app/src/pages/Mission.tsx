@@ -48,7 +48,7 @@ export default function Mission() {
               width={900}
               height={1600}
               loading="lazy"
-              className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
+              className="absolute inset-0 h-full w-full object-cover object-[center_48%]"
             />
           </div>
           <figcaption className="px-5 py-3.5 text-sm text-body">
