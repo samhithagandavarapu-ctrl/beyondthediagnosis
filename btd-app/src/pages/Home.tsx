@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { STORIES } from "../data/stories";
 import { CTA_LABEL } from "../data/site";
 
 const tools = [
@@ -21,13 +20,6 @@ const tools = [
     desc: "Trusted resources filtered by life stage — prenatal, child, teen, adult, caregiver, or provider.",
     cta: "Browse resources →",
   },
-];
-
-// Quote accents on the navy "problem" band, in order.
-const accents = [
-  { border: "border-sky", text: "text-sky" },
-  { border: "border-butter", text: "text-butter" },
-  { border: "border-coral", text: "text-coral" },
 ];
 
 const cardGrid = "grid gap-5 mt-[34px]";
@@ -120,25 +112,15 @@ export default function Home() {
                 Read the full breakdown →
               </Link>
             </div>
-            {/* Placeholder quotes from data/stories.ts — swap for consented real submissions. */}
-            <div className="grid gap-4">
+            <div className="rounded-r-2xl border-l-[3px] border-sky bg-mist/7 px-6 py-[22px]">
               <p className="text-15 font-bold text-mist/85">What families and clinicians describe:</p>
-              {STORIES.map((s, i) => {
-                const a = accents[i % accents.length];
-                return (
-                  <figure
-                    key={s.id}
-                    className={`rounded-r-2xl border-l-[3px] ${a.border} bg-mist/7 px-6 py-[22px]`}
-                  >
-                    <blockquote className="text-17 leading-[1.6]">"{s.excerpt}"</blockquote>
-                    <figcaption
-                      className={`mt-3 text-13 font-bold ${a.text}`}
-                    >
-                      Example — {s.audience.toLowerCase()}
-                    </figcaption>
-                  </figure>
-                );
-              })}
+              <p className="mt-2 text-17 leading-[1.6]">None so far.</p>
+              <Link
+                to="/stories#share"
+                className="mt-3 inline-block text-sm font-bold text-sky underline underline-offset-[3px] hover:text-mist"
+              >
+                Share your story →
+              </Link>
             </div>
           </div>
         </div>
