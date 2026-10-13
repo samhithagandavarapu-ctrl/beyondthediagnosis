@@ -47,7 +47,7 @@ export default function ProviderEducation() {
             build it with you.
           </p>
           <a
-            href="mailto:info.verityhealth@gmail.com?subject=Provider%20Education%20pilot"
+            href="mailto:withvoiced@gmail.com?subject=Provider%20Education%20pilot"
             className="btd-btn-coral min-h-[50px] px-6 py-[15px] text-base"
           >
             Talk about a pilot →

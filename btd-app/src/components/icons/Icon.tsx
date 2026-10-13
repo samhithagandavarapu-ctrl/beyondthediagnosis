@@ -48,6 +48,7 @@ export type IconName =
   | "person"
   | "file"
   | "paperclip"
+  | "search"
   // Symptom Timeline entry types
   | "tl-change"
   | "tl-skill"
@@ -355,6 +356,12 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <circle cx="12" cy="8.2" r="3.8" />
       <path d="M4.6 20.2 a7.4 7.4 0 0 1 14.8 0" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="10.6" cy="10.6" r="6.4" />
+      <path d="M15.4 15.4 L20.4 20.4" />
     </>
   ),
   send: (

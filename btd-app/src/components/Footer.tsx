@@ -11,8 +11,19 @@ export default function Footer() {
           </p>
           <p>
             Contact:{" "}
-            <a href="mailto:info.verityhealth@gmail.com" className="text-sky hover:underline">
-              info.verityhealth@gmail.com
+            <a href="mailto:withvoiced@gmail.com" className="text-sky hover:underline">
+              withvoiced@gmail.com
+            </a>
+          </p>
+          <p>
+            Instagram:{" "}
+            <a
+              href="https://www.instagram.com/withvoiced/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky hover:underline"
+            >
+              @withvoiced
             </a>
           </p>
           <p>© 2026 Voiced</p>

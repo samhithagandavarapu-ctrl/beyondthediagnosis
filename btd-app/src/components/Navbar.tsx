@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import Icon from "./icons/Icon";
+import SiteSearch from "./SiteSearch";
 import { CTA_LABEL } from "../data/site";
 
 const links = [
@@ -135,6 +136,7 @@ export default function Navbar() {
                 {l.label}
               </NavLink>
             ))}
+            <SiteSearch className="ml-2 w-44 xl:w-56" />
           </div>
           <Link
             to="/assistant"
@@ -173,6 +175,9 @@ export default function Navbar() {
         </nav>
       </div>
       {/* mobile nav */}
+      <div className="lg:hidden btd-container pb-2.5">
+        <SiteSearch />
+      </div>
       <nav aria-label="Sections" className="lg:hidden btd-container flex flex-wrap gap-2 pb-3">
         {links.map((l) => (
           <NavLink
