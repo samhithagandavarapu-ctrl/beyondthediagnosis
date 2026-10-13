@@ -22,6 +22,13 @@ import {
   checkInHasContent,
   emptyCheckIn,
 } from "../lib/myVoice";
+import {
+  PRACTICE_KEYS,
+  PlannedVisit,
+  countdownText,
+  daysUntil,
+  readJson,
+} from "../lib/practiceVisit";
 
 type Section = "home" | "check-in" | "tell" | "visit" | "stickers";
 
@@ -202,6 +209,8 @@ function Home({ onPick, hasSaved }: { onPick: (s: Section) => void; hasSaved: bo
         }}
       />
 
+      <PracticeVisitCard />
+
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))]">
         {TILES.map((tile) => {
           const label = forLevel(readingLevel, tile.copy);
@@ -238,6 +247,43 @@ function Home({ onPick, hasSaved }: { onPick: (s: Section) => void; hasSaved: bo
         </div>
       )}
     </div>
+  );
+}
+
+/** The way into Practice My Visit, with the countdown as a reminder to
+ *  practice when a visit date has been set. */
+function PracticeVisitCard() {
+  const { readingLevel, say } = useMyVoice();
+  const plan = readJson<PlannedVisit | null>(PRACTICE_KEYS.plan, null);
+  const days = plan ? daysUntil(plan.date) : null;
+  const upcoming = days !== null && days >= 0;
+  const label = forLevel(readingLevel, {
+    icon: "Practice my visit",
+    short: "Practice my visit",
+    full: "Practice my visit before I go",
+  });
+
+  return (
+    <Link
+      to="/my-voice/practice"
+      onClick={() => say(label)}
+      className="btd-card btd-card-hover flex flex-wrap items-center gap-4 border-2 border-coral p-5"
+    >
+      <span className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full bg-coral/30 text-navy">
+        <Icon name="hub-visit" size={32} />
+      </span>
+      <span className="min-w-0 flex-1 basis-[180px]">
+        <span className="block text-21 font-display font-extrabold text-navy">{label}</span>
+        {readingLevel !== "icon" && (
+          <span className="mt-0.5 block text-15 text-body">
+            {upcoming
+              ? `${countdownText(days as number)}. Want to practice?`
+              : "Go through the visit step by step, and practice what I will say."}
+          </span>
+        )}
+      </span>
+      <span className="btd-btn-coral min-h-[48px] px-5 text-sm">Start →</span>
+    </Link>
   );
 }
 

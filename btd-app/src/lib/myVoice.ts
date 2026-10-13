@@ -148,6 +148,9 @@ export type CheckIn = {
   /** True if they recorded a voice note. The audio itself stays in the tab
    *  and is never persisted. */
   hasVoiceNote: boolean;
+  /** Sentences from Practice My Visit that the person said yes to putting on
+   *  their doctor sheet. Printed as-is, first, in place of the built sentence. */
+  ownWords?: string[];
 };
 
 export function emptyCheckIn(): CheckIn {
@@ -162,7 +165,7 @@ export function emptyCheckIn(): CheckIn {
 }
 
 export function checkInHasContent(c: CheckIn): boolean {
-  return !!c.overall || c.bodyParts.length > 0 || !!c.since || !!c.note.trim() || c.hasVoiceNote;
+  return !!c.ownWords?.length || !!c.overall || c.bodyParts.length > 0 || !!c.since || !!c.note.trim() || c.hasVoiceNote;
 }
 
 function listOut(items: string[]): string {
@@ -186,8 +189,12 @@ export function buildSentence(c: CheckIn): string {
 /** Everything the check-in knows, as lines the PDF/summary can print. */
 export function checkInLines(c: CheckIn): string[] {
   const lines: string[] = [];
-  const sentence = buildSentence(c);
-  if (sentence) lines.push(sentence);
+  if (c.ownWords?.length) {
+    lines.push(...c.ownWords);
+  } else {
+    const sentence = buildSentence(c);
+    if (sentence) lines.push(sentence);
+  }
   if (c.overall) lines.push(`Overall today: ${feeling(c.overall).label.replace(/^I feel /, "")}.`);
   if (c.note.trim()) lines.push(c.note.trim());
   if (c.hasVoiceNote) lines.push("They also recorded a voice note about this.");
@@ -266,7 +273,12 @@ export function walkthroughCards(level: ReadingLevel): WalkthroughCard[] {
 
 // ---- Stickers ----
 
-export type StickerId = "told-my-doctor" | "said-how-i-feel" | "knows-the-visit" | "used-my-voice";
+export type StickerId =
+  | "told-my-doctor"
+  | "said-how-i-feel"
+  | "knows-the-visit"
+  | "used-my-voice"
+  | "practiced-my-visit";
 
 export type StickerKind = {
   id: StickerId;
@@ -300,6 +312,12 @@ export const STICKER_KINDS: StickerKind[] = [
     art: "sticker-voice",
     label: "I used my own voice",
     earnedFor: "You recorded your voice instead of typing.",
+  },
+  {
+    id: "practiced-my-visit",
+    art: "sticker-map",
+    label: "I practiced my visit",
+    earnedFor: "You practiced your visit from start to finish.",
   },
 ];
 

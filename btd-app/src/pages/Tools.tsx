@@ -90,9 +90,14 @@ export default function Tools() {
               </div>
             ))}
           </div>
-          <Link to="/my-voice" className="btd-btn-coral mt-5 min-h-[46px] px-[22px] py-3 text-15">
-            Open My Voice →
-          </Link>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link to="/my-voice" className="btd-btn-coral min-h-[46px] px-[22px] py-3 text-15">
+              Open My Voice →
+            </Link>
+            <Link to="/my-voice/practice" className="btd-btn-outline min-h-[46px] px-[22px] py-3 text-15">
+              Practice My Visit →
+            </Link>
+          </div>
         </article>
 
         <article className="btd-card p-[30px]">

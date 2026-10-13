@@ -1,0 +1,122 @@
+{
+  "id": "hearing",
+  "label": "Hearing check",
+  "icon": "ear",
+  "steps": [
+    {
+      "id": "arrive",
+      "icon": "door",
+      "short": "I arrive",
+      "title": "I arrive at the office.",
+      "body": "I walk in with my helper. It might be busy.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a front desk"
+        },
+        {
+          "kind": "hear",
+          "text": "people talking"
+        }
+      ]
+    },
+    {
+      "id": "check-in",
+      "icon": "clipboard",
+      "short": "I check in",
+      "title": "I check in at the front desk.",
+      "body": "I say my name. They may ask for my card.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a computer"
+        },
+        {
+          "kind": "feel",
+          "text": "a little nervous. That is okay."
+        }
+      ]
+    },
+    {
+      "id": "wait",
+      "icon": "chair",
+      "short": "I wait",
+      "title": "I wait in the waiting room.",
+      "body": "I sit and wait for my name. I can bring something I like.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "other people waiting"
+        },
+        {
+          "kind": "hear",
+          "text": "someone calls my name"
+        }
+      ]
+    },
+    {
+      "id": "room",
+      "icon": "door",
+      "short": "A quiet room",
+      "title": "I go into a quiet room.",
+      "body": "The room is very quiet. The door closes. My helper can wait close by.",
+      "notice": [
+        {
+          "kind": "hear",
+          "text": "almost nothing"
+        },
+        {
+          "kind": "know",
+          "text": "I can ask to leave the door open a bit."
+        }
+      ]
+    },
+    {
+      "id": "ears",
+      "icon": "light",
+      "short": "They look in my ears",
+      "title": "They look in my ears.",
+      "body": "They use a small light. It does not hurt.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "something at my ear"
+        },
+        {
+          "kind": "see",
+          "text": "a small light"
+        }
+      ]
+    },
+    {
+      "id": "beeps",
+      "icon": "headphones",
+      "short": "I listen for beeps",
+      "title": "I listen for beeps.",
+      "body": "I wear headphones. When I hear a beep, I raise my hand or press a button.",
+      "notice": [
+        {
+          "kind": "hear",
+          "text": "soft beeps"
+        },
+        {
+          "kind": "know",
+          "text": "There are no wrong answers."
+        }
+      ]
+    },
+    {
+      "id": "leave",
+      "icon": "celebrate",
+      "short": "I'm done",
+      "title": "I'm done. I can go home.",
+      "body": "We say goodbye. I did it!",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "proud"
+        }
+      ]
+    }
+  ]
+}

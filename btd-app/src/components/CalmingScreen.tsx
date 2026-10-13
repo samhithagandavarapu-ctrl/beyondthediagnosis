@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import Icon from "./icons/Icon";
 
 // Standalone calming screen: a floating button that is available on every
@@ -27,9 +28,26 @@ const PHASE_TEXT: Record<Phase, string> = {
 
 const BUTTON_GAP = 20;
 
+const OPEN_EVENT = "voiced:open-calm";
+
+/** Open the calming overlay from anywhere — e.g. an "I need a break" button.
+ *  It sits on top of the page, so closing it lands back on the same step. */
+export function openCalmingScreen() {
+  window.dispatchEvent(new Event(OPEN_EVENT));
+}
+
 export default function CalmingScreen() {
   const [open, setOpen] = useState(false);
   const [bottom, setBottom] = useState(BUTTON_GAP);
+  // Practice My Visit has its own "I need a break" button on every screen, and
+  // the floating one would sit on top of that page's main action on a phone.
+  const hideButton = useLocation().pathname.startsWith("/my-voice/practice");
+
+  useEffect(() => {
+    const open = () => setOpen(true);
+    window.addEventListener(OPEN_EVENT, open);
+    return () => window.removeEventListener(OPEN_EVENT, open);
+  }, []);
 
   // Rise above the footer as it scrolls into view, so the button never sits
   // on top of the disclaimer, contact details or emergency line.
@@ -54,15 +72,17 @@ export default function CalmingScreen() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        style={{ bottom }}
-        className="fixed right-5 z-40 flex min-h-[56px] items-center gap-2 rounded-full bg-sky px-5 py-3 font-bold text-navy shadow-[0_6px_20px_rgba(33,50,68,0.25)] transition-colors hover:bg-sky-hover print:hidden"
-      >
-        <Icon name="breath" size={22} />
-        <span className="text-sm">Calm</span>
-      </button>
+      {!hideButton && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          style={{ bottom }}
+          className="fixed right-5 z-40 flex min-h-[56px] items-center gap-2 rounded-full bg-sky px-5 py-3 font-bold text-navy shadow-[0_6px_20px_rgba(33,50,68,0.25)] transition-colors hover:bg-sky-hover print:hidden"
+        >
+          <Icon name="breath" size={22} />
+          <span className="text-sm">Calm</span>
+        </button>
+      )}
       {open && <CalmOverlay onClose={() => setOpen(false)} />}
     </>
   );

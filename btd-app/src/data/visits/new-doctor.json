@@ -1,0 +1,126 @@
+{
+  "id": "new-doctor",
+  "label": "New doctor",
+  "icon": "person-plus",
+  "steps": [
+    {
+      "id": "arrive",
+      "icon": "door",
+      "short": "I arrive",
+      "title": "I arrive at the office.",
+      "body": "I walk in with my helper. It might be busy.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a front desk"
+        },
+        {
+          "kind": "hear",
+          "text": "people talking"
+        }
+      ]
+    },
+    {
+      "id": "check-in",
+      "icon": "clipboard",
+      "short": "I check in",
+      "title": "I check in at the front desk.",
+      "body": "I say my name. There may be forms. My helper can help me fill them in.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a computer"
+        },
+        {
+          "kind": "feel",
+          "text": "a little nervous. That is okay."
+        }
+      ]
+    },
+    {
+      "id": "wait",
+      "icon": "chair",
+      "short": "I wait",
+      "title": "I wait in the waiting room.",
+      "body": "I sit and wait for my name. I can bring something I like.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "other people waiting"
+        },
+        {
+          "kind": "hear",
+          "text": "someone calls my name"
+        }
+      ]
+    },
+    {
+      "id": "vitals",
+      "icon": "cuff",
+      "short": "Blood pressure",
+      "title": "The nurse checks my blood pressure.",
+      "body": "A band goes on my arm. It squeezes tight for a few seconds. Then it lets go.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "a squeeze"
+        },
+        {
+          "kind": "hear",
+          "text": "a buzz"
+        },
+        {
+          "kind": "know",
+          "text": "It is quick."
+        }
+      ]
+    },
+    {
+      "id": "meet",
+      "icon": "person-plus",
+      "short": "I meet the doctor",
+      "title": "I meet my new doctor.",
+      "body": "They do not know me yet. I can tell them what is normal for me. I can tell them what is new.",
+      "notice": [
+        {
+          "kind": "hear",
+          "text": "lots of questions"
+        },
+        {
+          "kind": "know",
+          "text": "It is okay to take my time."
+        }
+      ]
+    },
+    {
+      "id": "exam",
+      "icon": "stethoscope",
+      "short": "The doctor checks me",
+      "title": "The doctor checks my body.",
+      "body": "They listen to my heart. They look in my ears and my mouth.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "a cold stethoscope"
+        },
+        {
+          "kind": "know",
+          "text": "I can say stop."
+        }
+      ]
+    },
+    {
+      "id": "leave",
+      "icon": "celebrate",
+      "short": "I'm done",
+      "title": "I'm done. I can go home.",
+      "body": "We say goodbye. I did it!",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "proud"
+        }
+      ]
+    }
+  ]
+}

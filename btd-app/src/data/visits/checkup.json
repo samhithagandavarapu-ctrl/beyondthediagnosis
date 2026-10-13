@@ -1,0 +1,130 @@
+{
+  "id": "checkup",
+  "label": "Checkup",
+  "icon": "stethoscope",
+  "steps": [
+    {
+      "id": "arrive",
+      "icon": "door",
+      "short": "I arrive",
+      "title": "I arrive at the office.",
+      "body": "I walk in with my helper. It might be busy.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a front desk"
+        },
+        {
+          "kind": "hear",
+          "text": "people talking"
+        }
+      ]
+    },
+    {
+      "id": "check-in",
+      "icon": "clipboard",
+      "short": "I check in",
+      "title": "I check in at the front desk.",
+      "body": "I say my name. They may ask for my card.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a computer"
+        },
+        {
+          "kind": "feel",
+          "text": "a little nervous. That is okay."
+        }
+      ]
+    },
+    {
+      "id": "wait",
+      "icon": "chair",
+      "short": "I wait",
+      "title": "I wait in the waiting room.",
+      "body": "I sit and wait for my name. I can bring something I like.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "other people waiting"
+        },
+        {
+          "kind": "hear",
+          "text": "someone calls my name"
+        }
+      ]
+    },
+    {
+      "id": "vitals",
+      "icon": "cuff",
+      "short": "Blood pressure",
+      "title": "The nurse checks my blood pressure.",
+      "body": "A band goes on my arm. It squeezes tight for a few seconds. Then it lets go.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "a squeeze"
+        },
+        {
+          "kind": "hear",
+          "text": "a buzz"
+        },
+        {
+          "kind": "know",
+          "text": "It is quick."
+        }
+      ]
+    },
+    {
+      "id": "talk",
+      "icon": "talk",
+      "short": "I talk",
+      "title": "I talk with the doctor.",
+      "body": "The doctor asks how I feel. I can tell them myself. I can show them my phone.",
+      "notice": [
+        {
+          "kind": "hear",
+          "text": "\"How are you feeling today?\""
+        },
+        {
+          "kind": "know",
+          "text": "I can ask them to slow down."
+        }
+      ]
+    },
+    {
+      "id": "exam",
+      "icon": "stethoscope",
+      "short": "The doctor checks me",
+      "title": "The doctor checks my body.",
+      "body": "They listen to my heart. They look in my ears and my mouth.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "a cold stethoscope"
+        },
+        {
+          "kind": "see",
+          "text": "a small light"
+        },
+        {
+          "kind": "know",
+          "text": "I can say stop."
+        }
+      ]
+    },
+    {
+      "id": "leave",
+      "icon": "celebrate",
+      "short": "I'm done",
+      "title": "I'm done. I can go home.",
+      "body": "We say goodbye. I did it!",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "proud"
+        }
+      ]
+    }
+  ]
+}
