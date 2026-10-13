@@ -1,16 +1,24 @@
-import PageHero from "../components/PageHero";
+import { Link } from "react-router-dom";
+import { CTA_LABEL } from "../data/site";
+
+// One centered column for the whole page, so every section shares its edges.
+const column = "mx-auto w-full max-w-[760px] px-6";
 
 export default function Mission() {
   return (
     <div>
-      <PageHero
-        eyebrow="About Voiced"
-        title="Our Mission"
-        lede="Voiced exists so that people with Down syndrome are heard, not overlooked, in healthcare."
-      />
+      <section className="bg-sky-tint border-b border-navy/[0.08]">
+        <div className={`${column} pt-16 pb-14`}>
+          <h1 className="btd-page-h1">Our Mission</h1>
+          <p className="mt-[18px] text-lg leading-[1.65] text-body">
+            Voiced exists so that people with Down syndrome are heard, not overlooked, in
+            healthcare.
+          </p>
+        </div>
+      </section>
 
-      <section className="btd-container pt-12">
-        <p className="max-w-[46em] text-lg leading-[1.75] text-body">
+      <section className={`${column} pt-14`}>
+        <p className="text-lg leading-[1.75] text-body">
           Too often, a new symptom in someone with Down syndrome gets blamed on “just the
           Down syndrome” instead of being investigated. This is called diagnostic
           overshadowing, and it means real conditions like thyroid problems, hearing loss,
@@ -20,47 +28,58 @@ export default function Mission() {
         </p>
       </section>
 
-      <section className="btd-container pt-10">
-        <blockquote className="btd-dark rounded-card px-7 py-8 text-center">
-          <p className="font-display text-26 font-extrabold text-butter">
+      <section className={`${column} py-16`}>
+        <blockquote className="border-y-2 border-coral py-10 text-center">
+          <p className="font-display text-[clamp(1.75rem,4.5vw,2.25rem)] font-extrabold leading-[1.2] text-navy">
             Nothing for me, without me.
           </p>
         </blockquote>
       </section>
 
-      <section className="btd-container pt-14 pb-20 grid gap-10 items-start md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
-        <figure className="btd-card overflow-hidden p-0 max-w-sm mx-auto md:mx-0 md:max-w-none">
+      <section className={column}>
+        <h2 className="btd-section-h2">Why I started Voiced</h2>
+        <figure className="btd-card mt-7 overflow-hidden">
           <img
             src="/images/samhitha-camp-shine.jpg"
             alt="Samhitha smiling in a gym, giving a piggyback ride to a young camper in an orange shirt"
             width={900}
             height={1600}
             loading="lazy"
-            className="block w-full h-auto"
+            className="block aspect-[16/10] w-full object-cover object-[center_35%]"
           />
           <figcaption className="px-5 py-3.5 text-sm text-body">
             Samhitha at NCDSA’s Camp SHINE
           </figcaption>
         </figure>
+        <div className="mt-8 grid gap-5 text-lg leading-[1.75] text-body">
+          <p>
+            I’m Samhitha, and I want to become a doctor. I never pictured myself working
+            with people with disabilities until the summer after my freshman year, when I
+            volunteered at NCDSA’s Camp SHINE with my best friend. What I thought would be a
+            few weeks of summer volunteering turned into the thing I care about most.
+          </p>
+          <p>
+            At camp, I saw how much the people I worked with had to say, and how easily they
+            could be talked over. I want to become a neurologist and research how Down
+            syndrome affects the whole body, so that care treats the full person, not just
+            the diagnosis. Voiced is where that starts: helping people with Down syndrome and
+            their families walk into clinics prepared, confident, and heard.
+          </p>
+        </div>
+      </section>
 
-        <div>
-          <span className="btd-eyebrow">The founder</span>
-          <h2 className="btd-section-h2 mt-3 mb-5">Why I started Voiced</h2>
-          <div className="grid gap-5 text-lg leading-[1.75] text-body">
-            <p>
-              I’m Samhitha, and I want to become a doctor. I never pictured myself working
-              with people with disabilities until the summer after my freshman year, when I
-              volunteered at NCDSA’s Camp SHINE with my best friend. What I thought would be
-              a few weeks of summer volunteering turned into the thing I care about most.
-            </p>
-            <p>
-              At camp, I saw how much the people I worked with had to say, and how easily
-              they could be talked over. I want to become a neurologist and research how
-              Down syndrome affects the whole body, so that care treats the full person, not
-              just the diagnosis. Voiced is where that starts: helping people with Down
-              syndrome and their families walk into clinics prepared, confident, and heard.
-            </p>
-          </div>
+      <section className={`${column} pt-14 pb-14`}>
+        <h2 className="btd-section-h2">See what Voiced can do</h2>
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Link to="/assistant" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
+            {CTA_LABEL}
+          </Link>
+          <a
+            href="mailto:withvoiced@gmail.com"
+            className="btd-btn-outline min-h-[52px] px-[26px] py-3.5 text-17"
+          >
+            Get in touch
+          </a>
         </div>
       </section>
     </div>
