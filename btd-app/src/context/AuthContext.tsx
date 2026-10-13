@@ -35,6 +35,32 @@ function emailRedirectTo(next: string) {
   return `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 }
 
+/** Supabase only accepts numbers in international form (+15555555555). People
+ *  type "555-555-5555" or "(555) 555 5555", so tidy that up first; a bare
+ *  10-digit number is taken as US/Canada, which is who the site serves today. */
+export function toE164(raw: string): string | null {
+  const trimmed = raw.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  if (trimmed.startsWith("+")) return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return null;
+}
+
+/** Supabase's phone errors are written for developers. Say what it means. */
+function phoneError(message: string): string {
+  if (/provider|sms|twilio|not enabled|unsupported/i.test(message)) {
+    return "Signing in with a phone number isn't turned on yet. Please use email or Google for now.";
+  }
+  if (/expired|invalid.*(otp|token)|token.*(expired|invalid)/i.test(message)) {
+    return "That code didn't work. It may have expired. Send a new code and try again.";
+  }
+  if (/rate|too many|security purposes/i.test(message)) {
+    return "Too many codes were sent. Wait a minute, then try again.";
+  }
+  return message;
+}
+
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -138,15 +164,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async signInWithPhone(phone) {
       const disabled = guardDisabled();
       if (disabled) return disabled;
-      const { error } = await supabase.auth.signInWithOtp({ phone });
-      return { error: error?.message ?? null };
+      const number = toE164(phone);
+      if (!number) {
+        return { error: "Please enter a full phone number with area code, like 555 555 5555." };
+      }
+      // No account for this number yet? This creates one, so the same screen
+      // is both sign-in and sign-up.
+      const { error } = await supabase.auth.signInWithOtp({ phone: number });
+      return { error: error ? phoneError(error.message) : null };
     },
 
     async verifyPhoneOtp(phone, token) {
       const disabled = guardDisabled();
       if (disabled) return disabled;
-      const { error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
-      return { error: error?.message ?? null };
+      const number = toE164(phone);
+      if (!number) return { error: "Please go back and check the phone number." };
+      const { error } = await supabase.auth.verifyOtp({
+        phone: number,
+        token: token.replace(/\s/g, ""),
+        type: "sms",
+      });
+      return { error: error ? phoneError(error.message) : null };
     },
 
     async sendPasswordReset(email) {

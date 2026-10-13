@@ -4,6 +4,11 @@ import { useAuth } from "../context/AuthContext";
 import { authEnabled } from "../lib/supabaseClient";
 import PasswordInput from "../components/PasswordInput";
 
+// Phone sign-in needs a paid SMS provider connected in Supabase (README,
+// "Turn on phone number sign-in"). Until VITE_PHONE_SIGNIN=true says that's
+// done, say so plainly instead of offering a button that can only fail.
+const PHONE_SIGNIN_READY = import.meta.env.VITE_PHONE_SIGNIN === "true";
+
 type Mode = "signin" | "signup" | "phone" | "phone-code" | "forgot" | "forgot-sent";
 
 export default function Login() {
@@ -183,13 +188,19 @@ export default function Login() {
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setMode("phone")}
-              className="w-full text-xs text-slate hover:underline"
-            >
-              Use your phone number instead
-            </button>
+            {PHONE_SIGNIN_READY ? (
+              <button
+                type="button"
+                onClick={() => setMode("phone")}
+                className="w-full text-xs text-slate hover:underline"
+              >
+                Sign in or sign up with your phone number
+              </button>
+            ) : (
+              <p className="rounded-lg bg-butter/40 px-3 py-2 text-center text-xs text-navy">
+                Signing up with a phone number isn't set up yet. Use email or Google for now.
+              </p>
+            )}
           </>
         )}
 
@@ -202,12 +213,15 @@ export default function Login() {
             className="space-y-3"
           >
             <p className="text-sm text-slate">
-              Enter your number and we'll text you a one-time code.
+              Enter your number and we'll text you a one-time code. New here? The code creates
+              your account. No password needed.
             </p>
             <input
               type="tel"
-  required
-              placeholder="+1 555 555 5555"
+              required
+              autoComplete="tel"
+              aria-label="Phone number"
+              placeholder="555 555 5555"
               className="btd-input"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -240,8 +254,10 @@ export default function Login() {
             <p className="text-sm text-slate">Enter the code sent to {phone}.</p>
             <input
               type="text"
-  required
+              required
               inputMode="numeric"
+              autoComplete="one-time-code"
+              aria-label="Code from the text message"
               placeholder="6-digit code"
               className="btd-input"
               value={code}
@@ -254,6 +270,31 @@ export default function Login() {
             >
               Verify and sign in
             </button>
+            <div className="flex items-center justify-between text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setCode("");
+                  setMode("phone");
+                }}
+                className="text-slate hover:underline"
+              >
+                ← Change number
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  run(
+                    () => signInWithPhone(phone),
+                    () => setNotice("A new code is on its way.")
+                  )
+                }
+                className="text-gold-dark font-semibold hover:underline disabled:opacity-50"
+              >
+                Send a new code
+              </button>
+            </div>
           </form>
         )}
 

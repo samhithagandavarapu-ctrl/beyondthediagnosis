@@ -17,6 +17,10 @@
   p {
     text-wrap: pretty;
   }
+  ::selection {
+    background: #FFDE9E;
+    color: #213244;
+  }
   :focus-visible {
     outline: 3px solid #1B5C8F;
     outline-offset: 3px;
@@ -32,6 +36,15 @@
 }
 
 @layer components {
+  /* The brand's two warm colours as a short stripe: a quiet accent under
+     headings and along the footer. Decorative only — never carries meaning. */
+  .btd-accent-bar {
+    display: block;
+    height: 6px;
+    width: 72px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #FFA694 0 55%, #FFDE9E 55% 100%);
+  }
   .btd-container {
     @apply mx-auto max-w-[1180px] px-6;
   }

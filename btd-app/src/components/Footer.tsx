@@ -3,7 +3,14 @@ import { Link } from "react-router-dom";
 export default function Footer() {
   return (
     <footer className="btd-dark text-mist/75">
-      <div className="btd-container py-10 flex flex-wrap gap-5 items-start justify-between">
+      {/* Sits a few pixels into the navy so it still reads against a yellow
+          section above it. */}
+      <div aria-hidden="true" className="flex h-1.5 translate-y-1.5">
+        <span className="flex-[3] bg-coral" />
+        <span className="flex-[2] bg-butter" />
+        <span className="flex-1 bg-sky" />
+      </div>
+      <div className="btd-container pt-11 pb-10 flex flex-wrap gap-5 items-start justify-between">
         <div className="grid gap-2 text-sm leading-[1.65]">
           <p className="max-w-[40em]">
             Voiced is an education and advocacy tool. It does not diagnose,
