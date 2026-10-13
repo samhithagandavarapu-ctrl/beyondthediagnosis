@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PageHero from "../components/PageHero";
+import StoryPanel from "../components/StoryPanel";
+import { useAuth } from "../context/AuthContext";
 import { STORIES } from "../data/stories";
+import { fetchProfile } from "../lib/profile";
 import { fetchApprovedStories, StoryRow } from "../lib/stories";
 
 const AUDIENCES = ["All", "Self-advocate", "Parent", "Caregiver", "Clinician"] as const;
@@ -12,6 +15,9 @@ export default function Stories() {
   const [submitted, setSubmitted] = useState<StoryRow[]>([]);
 
   const [loaded, setLoaded] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  // Credited the same way the form on the profile used to: full name, else username.
+  const [submitterName, setSubmitterName] = useState("");
   const { hash } = useLocation();
   // "See your story" from a notification links to /stories#story-<id>.
   const target = hash.startsWith("#story-") ? hash.slice("#story-".length) : null;
@@ -22,6 +28,16 @@ export default function Stories() {
       setLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setSubmitterName("");
+      return;
+    }
+    fetchProfile(user.id).then((profile) => {
+      setSubmitterName(profile?.full_name?.trim() || profile?.username?.trim() || "");
+    });
+  }, [user]);
 
   // Submitted stories arrive after the first render, so the browser's own jump
   // to the hash has already missed; scroll once they're in. Clear any filter
@@ -69,12 +85,30 @@ export default function Stories() {
         title="The pattern, in people's own words"
         lede="Every story is published with explicit permission from the person who lived it. Placeholders below stand in until real submissions are consented and reviewed."
       >
-        <Link to="/stories/submit" className="btd-btn-coral min-h-[50px] px-6 py-[15px] text-base">
+        <a href="#share" className="btd-btn-coral min-h-[50px] px-6 py-[15px] text-base">
           Share your story
-        </Link>
+        </a>
       </PageHero>
 
       <section className="btd-container pt-12 pb-20">
+        <div className="mb-12 max-w-[720px]">
+          {user ? (
+            <StoryPanel defaultName={submitterName} />
+          ) : (
+            !authLoading && (
+              <div id="share" className="btd-card p-7 scroll-mt-24">
+                <h2 className="text-23 font-extrabold text-navy">Share your story</h2>
+                <p className="mt-1.5 text-15 leading-[1.6] text-body">
+                  Sign in to share your story.{" "}
+                  <Link to="/login" className="font-semibold text-link hover:underline">
+                    Sign in →
+                  </Link>
+                </p>
+              </div>
+            )
+          )}
+        </div>
+
         <div className="mb-7 flex flex-wrap items-center gap-2.5">
           {AUDIENCES.map((a) => (
             <button
