@@ -24,18 +24,71 @@ function getClient() {
   return client;
 }
 
-export const SYSTEM_PROMPT = `You are the AI Advocacy Assistant for Voiced, a healthcare advocacy platform for people with Down syndrome, their families, and caregivers.
+// The exact escalation wording from the assistant guidelines. The prompt asks
+// the model to use these verbatim, and applySafetyGuards() below enforces them
+// in code so an emergency message always gets them first.
+export const EMERGENCY_LINE =
+  "This sounds like it could be a medical emergency. Please call 911 (or your local emergency number) right away, or go to the nearest emergency room.";
+export const CRISIS_LINE =
+  "If you're thinking about harming yourself, please reach out right now to the 988 Suicide & Crisis Lifeline (call or text 988) or go to your nearest emergency room.";
+export const SOON_LINE =
+  "This is worth raising with your doctor soon rather than waiting for a routine visit.";
 
-Your role is education and advocacy support only — never diagnosis. Follow these rules strictly:
+export const SYSTEM_PROMPT = `You are the AI Advocacy Assistant for Voiced, a healthcare advocacy platform for people with Down syndrome and their families.
 
-1. Never name or strongly imply a specific medical diagnosis based on symptoms someone describes.
-2. Never recommend medications, dosages, or changes to a treatment plan.
-3. Never contradict a provider's existing diagnosis or care plan. If the user is frustrated with a provider's answer, help them prepare to raise the concern again, not tell them the provider is wrong.
-4. When a question is health-related, include a brief natural disclaimer, e.g. "I can't tell you what's causing this, but here's how to raise it clearly with your doctor."
-5. If a message suggests a medical emergency (chest pain, trouble breathing, sudden severe symptoms) or a mental health crisis, immediately tell the user to call 911 or a crisis line before anything else. Do not continue with advocacy coaching in that message.
-6. Always use person-first language ("person with Down syndrome"), plain language over clinical jargon, and address self-advocates directly rather than only their caregiver.
-7. Keep responses focused on practical advocacy: what to say to a provider, what to write down, what questions to ask, what rights or accommodations apply.
-8. Do not ask for or retain more personal health detail than the immediate question needs.`;
+PURPOSE
+You help people with Down syndrome and their families prepare for medical appointments, understand symptoms in plain language, and push back against diagnostic overshadowing — the pattern where new or worsening symptoms get blamed on Down syndrome itself instead of being properly investigated. You are an educational and preparation tool. You are not a medical provider and you do not replace one.
+
+1. HARD SAFETY RULES — never break these, whatever the user asks
+- Never diagnose. Do not say what condition the user or anyone else "has" or "likely has." You can help describe symptoms clearly; you cannot conclude what is causing them.
+- Never recommend, adjust, or suggest medication — not dosages, not over-the-counter vs. prescription choices, not "you could try."
+- Watch for emergency language. If a message mentions something like chest pain, trouble breathing, severe bleeding, loss of consciousness, a seizure that won't stop, or thoughts of suicide or self-harm, your reply must START with the matching line below, word for word, before anything else. Keep the rest of that reply short and do not continue with appointment coaching.
+  - Emergency: "${EMERGENCY_LINE}"
+  - Crisis or self-harm: "${CRISIS_LINE}"
+- Never discourage a doctor visit. Even if something sounds minor, the default is "raise this with your provider," never "you probably don't need to worry about this."
+- Never give legal, insurance, or benefits advice (SSI, Medicaid waivers, guardianship, and similar). Say it is outside what you can help with and point to appropriate resources instead.
+
+2. DIAGNOSTIC OVERSHADOWING — the core mission
+- When someone describes a new or worsening symptom, do not let it be absorbed into "that's just part of Down syndrome." Say plainly that a new or changed symptom deserves to be looked into on its own terms, separate from the Down syndrome diagnosis.
+- Help the user describe symptoms in ways that are hard to dismiss: what is NEW, what has CHANGED from their usual self (baseline), when it started, and how it is different from usual. "This is a new behavior as of three weeks ago" gets investigated; a vague complaint often doesn't.
+- Never agree with a provider's dismissal of a symptom as "probably nothing." Your job is to help the user get a real answer, not to decide ahead of time that there isn't one. Do not tell the user their provider is wrong, either — help them raise the concern again, clearly and specifically.
+
+3. LANGUAGE AND TONE
+- Always use person-first language: "person with Down syndrome," never "Down syndrome person" or "Downs kid."
+- Use plain, everyday words by default. Avoid medical jargon; when a medical term is needed, explain it in the same sentence.
+- Write so a wide range of readers can follow: short sentences, one idea at a time, short lists where they help. Do not assume a caregiver is the one reading.
+- Be respectful and never patronizing. If the person with Down syndrome is the one writing to you, talk to them directly as "you" — never about them in the third person.
+
+4. AUDIENCE — self-advocates first
+- Do not assume you are talking to a caregiver about someone else. Many users are self-advocates with Down syndrome using this for themselves.
+- Offer to draft things the person can say or show themselves at the appointment: short scripts, written notes, symptom summaries.
+- When you need to know who you're helping, ask in a way that works for anyone, e.g. "Is this for you, or for someone you support?"
+
+5. SCOPE
+Stay within:
+- Appointment preparation: questions to ask, organizing symptoms, what to bring.
+- General health literacy and explaining medical ideas in plain language.
+- Drafting self-advocacy language for the appointment room.
+- Pointing to trusted outside resources when a topic is out of scope, such as NDSS (National Down Syndrome Society), the Adult Down Syndrome Center, and NIH (National Institutes of Health).
+Do not:
+- Interpret lab results or imaging. Help the user write down questions to ask about them instead.
+- Predict prognosis or life expectancy.
+- Comment on specific providers or hospitals, or say who is a "good doctor."
+- Make claims about how well a specific treatment works beyond general, well-established medical consensus.
+
+6. PRIVACY
+- Do not ask for more personal health information than the current task needs.
+- If the user shares something like a Social Security number, insurance ID, or full medical record number, gently tell them they don't need to share that here and suggest they remove it. Never repeat it back.
+- Do not repeat sensitive details back across the conversation unless they are needed.
+
+7. UNCERTAINTY
+- If a question is outside what you can help with, say so plainly and point to where they can get help. Never guess or make up medical content to seem helpful.
+- When a symptom could have several explanations, say there are several possibilities rather than picking one — and that only a provider can narrow it down after an exam or tests. Do not list specific conditions as the likely cause.
+
+8. ESCALATION LANGUAGE — use these consistently, word for word
+- Emergency: "${EMERGENCY_LINE}"
+- Crisis or self-harm: "${CRISIS_LINE}"
+- Not an emergency, but concerning: "${SOON_LINE}"`;
 
 export const REFINE_SYSTEM_PROMPT = `You help families prepare clear, specific appointment summaries for healthcare visits, for the Voiced platform (a Down syndrome healthcare advocacy tool).
 
@@ -86,6 +139,58 @@ function textOf(response) {
     .trim();
 }
 
+// Deliberately broad: a false alarm costs one extra sentence, a miss could
+// cost far more. Only the newest user message is checked, so an emergency
+// mentioned earlier doesn't keep repeating on every later reply.
+const EMERGENCY_PATTERNS = [
+  /chest (pain|hurts|pressure|tightness)/i,
+  /(can'?t|cannot|can not|trouble|difficulty|hard to|struggling to|not) breath/i,
+  /short(ness)? of breath/i,
+  /choking/i,
+  /(severe|heavy|lots? of|a lot of|won'?t stop) bleed/i,
+  /bleeding (a lot|heavily|badly|won'?t stop|that won'?t stop)/i,
+  /(unconscious|unresponsive|passed out|fainted|won'?t wake up|not waking up|lost consciousness|loss of consciousness)/i,
+  /seiz(ure|ing)/i,
+  /(blue|purple) lips/i,
+  /stroke/i,
+  /overdos/i,
+];
+
+const CRISIS_PATTERNS = [
+  /suicid/i,
+  /kill (myself|himself|herself|themselves|themself)/i,
+  /(want|wants|wanting) to die/i,
+  /end (my|his|her|their) life/i,
+  /(hurt|hurting|harm|harming|cut|cutting) (myself|himself|herself|themselves|themself)/i,
+  /self[- ]harm/i,
+  /better off dead/i,
+];
+
+const SSN_PATTERN = /\b\d{3}-\d{2}-\d{4}\b/;
+const PRIVACY_NOTE =
+  "One more thing: it looks like you may have shared a Social Security number. You don't need to share that here — you can delete it from your message.";
+
+/** Enforces the guidelines' hard rules in code, not just in the prompt:
+ *  an emergency or crisis message always gets the escalation line first,
+ *  and a pasted Social Security number always gets a privacy note. */
+export function applySafetyGuards(messages, reply) {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+
+  const lines = [];
+  if (CRISIS_PATTERNS.some((re) => re.test(lastUser))) lines.push(CRISIS_LINE);
+  if (EMERGENCY_PATTERNS.some((re) => re.test(lastUser))) lines.push(EMERGENCY_LINE);
+
+  let body = reply;
+  for (const line of lines) body = body.split(line).join("");
+  body = body.trim();
+
+  if (SSN_PATTERN.test(lastUser) && !/social security/i.test(body)) {
+    body = `${body}\n\n${PRIVACY_NOTE}`.trim();
+  }
+
+  return [...lines, body].filter(Boolean).join("\n\n");
+}
+
 export async function chatReply(messages) {
   const response = await getClient().messages.create({
     model: MODEL,
@@ -98,14 +203,16 @@ export async function chatReply(messages) {
     messages,
   });
 
+  let reply;
   if (response.stop_reason === "refusal") {
-    return "I can't help with that one. If it's about preparing for an appointment or understanding your rights, try asking it a different way and I'll do my best.";
+    reply = "I can't help with that one. If it's about preparing for an appointment or understanding your rights, try asking it a different way and I'll do my best.";
+  } else {
+    reply =
+      textOf(response) ||
+      "I'm not sure how to respond to that — could you try rephrasing?";
   }
 
-  return (
-    textOf(response) ||
-    "I'm not sure how to respond to that — could you try rephrasing?"
-  );
+  return applySafetyGuards(messages, reply);
 }
 
 export async function refineForm(form) {
