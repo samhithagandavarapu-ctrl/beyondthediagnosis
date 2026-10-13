@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { CTA_LABEL } from "../data/site";
 
 // One centered column for the whole page, so every section shares its edges.
-const column = "mx-auto w-full max-w-[760px] px-6";
+const column = "mx-auto w-full max-w-[1000px] px-6";
 
 export default function Mission() {
   return (
@@ -17,7 +17,7 @@ export default function Mission() {
         </div>
       </section>
 
-      <section className={`${column} pt-14`}>
+      <section className={`${column} pt-12`}>
         <p className="text-lg leading-[1.75] text-body">
           Too often, a new symptom in someone with Down syndrome gets blamed on “just the
           Down syndrome” instead of being investigated. This is called diagnostic
@@ -28,7 +28,7 @@ export default function Mission() {
         </p>
       </section>
 
-      <section className={`${column} py-16`}>
+      <section className={`${column} py-8`}>
         <blockquote className="border-y-2 border-coral py-10 text-center">
           <p className="font-display text-[clamp(1.75rem,4.5vw,2.25rem)] font-extrabold leading-[1.2] text-navy">
             Nothing for me, without me.
@@ -36,41 +36,48 @@ export default function Mission() {
         </blockquote>
       </section>
 
-      <section className={column}>
-        <h2 className="btd-section-h2">Why I started Voiced</h2>
-        <figure className="btd-card mt-7 overflow-hidden">
-          <img
-            src="/images/samhitha-camp-shine.jpg"
-            alt="Samhitha smiling in a gym, giving a piggyback ride to a young camper in an orange shirt"
-            width={900}
-            height={1600}
-            loading="lazy"
-            className="block aspect-[16/10] w-full object-cover object-[center_35%]"
-          />
+      <section
+        className={`${column} grid items-stretch gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-10`}
+      >
+        {/* The text column sets the height; the photo fills it and crops. */}
+        <figure className="btd-card flex flex-col overflow-hidden">
+          <div className="relative aspect-[16/10] md:aspect-auto md:flex-1">
+            <img
+              src="/images/samhitha-camp-shine.jpg"
+              alt="Samhitha smiling in a gym, giving a piggyback ride to a young camper in an orange shirt"
+              width={900}
+              height={1600}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
+            />
+          </div>
           <figcaption className="px-5 py-3.5 text-sm text-body">
             Samhitha at NCDSA’s Camp SHINE
           </figcaption>
         </figure>
-        <div className="mt-8 grid gap-5 text-lg leading-[1.75] text-body">
-          <p>
-            I’m Samhitha, and I want to become a doctor. I never pictured myself working
-            with people with disabilities until the summer after my freshman year, when I
-            volunteered at NCDSA’s Camp SHINE with my best friend. What I thought would be a
-            few weeks of summer volunteering turned into the thing I care about most.
-          </p>
-          <p>
-            At camp, I saw how much the people I worked with had to say, and how easily they
-            could be talked over. I want to become a neurologist and research how Down
-            syndrome affects the whole body, so that care treats the full person, not just
-            the diagnosis. Voiced is where that starts: helping people with Down syndrome and
-            their families walk into clinics prepared, confident, and heard.
-          </p>
+        <div>
+          <h2 className="btd-section-h2">Why I started Voiced</h2>
+          <div className="mt-6 grid gap-5 text-lg leading-[1.75] text-body">
+            <p>
+              I’m Samhitha, and I want to become a doctor. I never pictured myself working
+              with people with disabilities until the summer after my freshman year, when I
+              volunteered at NCDSA’s Camp SHINE with my best friend. What I thought would be
+              a few weeks of summer volunteering turned into the thing I care about most.
+            </p>
+            <p>
+              At camp, I saw how much the people I worked with had to say, and how easily
+              they could be talked over. I want to become a neurologist and research how
+              Down syndrome affects the whole body, so that care treats the full person, not
+              just the diagnosis. Voiced is where that starts: helping people with Down
+              syndrome and their families walk into clinics prepared, confident, and heard.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className={`${column} pt-14 pb-14`}>
+      <section className={`${column} py-12 text-center`}>
         <h2 className="btd-section-h2">See what Voiced can do</h2>
-        <div className="mt-7 flex flex-wrap gap-3">
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Link to="/assistant" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
             {CTA_LABEL}
           </Link>
