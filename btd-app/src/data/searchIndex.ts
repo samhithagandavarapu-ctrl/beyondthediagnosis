@@ -69,6 +69,13 @@ const PAGES: SearchEntry[] = [
     kind: "Page",
   },
   {
+    to: "/mission",
+    title: "Our Mission",
+    description: "Why Voiced exists, and why its founder started it.",
+    keywords: "about founder samhitha camp shine story why",
+    kind: "Page",
+  },
+  {
     to: "/privacy",
     title: "Privacy Policy",
     description: "What we store, in plain language.",
