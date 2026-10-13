@@ -4,6 +4,11 @@ import { useAuth } from "../context/AuthContext";
 import { authEnabled } from "../lib/supabaseClient";
 import PasswordInput from "../components/PasswordInput";
 
+// Phone sign-in needs a paid SMS provider connected in Supabase (README,
+// "Turn on phone number sign-in"). Until VITE_PHONE_SIGNIN=true says that's
+// done, say so plainly instead of offering a button that can only fail.
+const PHONE_SIGNIN_READY = import.meta.env.VITE_PHONE_SIGNIN === "true";
+
 type Mode = "signin" | "signup" | "phone" | "phone-code" | "forgot" | "forgot-sent";
 
 export default function Login() {
@@ -183,13 +188,19 @@ export default function Login() {
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setMode("phone")}
-              className="w-full text-xs text-slate hover:underline"
-            >
-              Sign in or sign up with your phone number
-            </button>
+            {PHONE_SIGNIN_READY ? (
+              <button
+                type="button"
+                onClick={() => setMode("phone")}
+                className="w-full text-xs text-slate hover:underline"
+              >
+                Sign in or sign up with your phone number
+              </button>
+            ) : (
+              <p className="rounded-lg bg-butter/40 px-3 py-2 text-center text-xs text-navy">
+                Signing up with a phone number isn't set up yet. Use email or Google for now.
+              </p>
+            )}
           </>
         )}
 

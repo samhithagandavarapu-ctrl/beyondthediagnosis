@@ -56,6 +56,7 @@ export default function Mission() {
           </figcaption>
         </figure>
         <div>
+          <span aria-hidden="true" className="btd-accent-bar mb-4" />
           <h2 className="btd-section-h2">Why I started Voiced</h2>
           <div className="mt-6 grid gap-5 text-lg leading-[1.75] text-body">
             <p>
@@ -76,6 +77,7 @@ export default function Mission() {
       </section>
 
       <section className={`${column} py-12 text-center`}>
+        <span aria-hidden="true" className="btd-accent-bar mx-auto mb-4" />
         <h2 className="btd-section-h2">See what Voiced can do</h2>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Link to="/assistant" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
