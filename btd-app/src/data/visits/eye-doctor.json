@@ -1,0 +1,122 @@
+{
+  "id": "eye-doctor",
+  "label": "Eye doctor",
+  "icon": "eye",
+  "steps": [
+    {
+      "id": "arrive",
+      "icon": "door",
+      "short": "I arrive",
+      "title": "I arrive at the office.",
+      "body": "I walk in with my helper. It might be busy.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a front desk"
+        },
+        {
+          "kind": "hear",
+          "text": "people talking"
+        }
+      ]
+    },
+    {
+      "id": "check-in",
+      "icon": "clipboard",
+      "short": "I check in",
+      "title": "I check in at the front desk.",
+      "body": "I say my name. They may ask for my card.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a computer"
+        },
+        {
+          "kind": "feel",
+          "text": "a little nervous. That is okay."
+        }
+      ]
+    },
+    {
+      "id": "wait",
+      "icon": "chair",
+      "short": "I wait",
+      "title": "I wait in the waiting room.",
+      "body": "I sit and wait for my name. I can bring something I like.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "other people waiting"
+        },
+        {
+          "kind": "hear",
+          "text": "someone calls my name"
+        }
+      ]
+    },
+    {
+      "id": "chart",
+      "icon": "eye-chart",
+      "short": "I read letters",
+      "title": "I look at a chart.",
+      "body": "I cover one eye. I say the letters or pictures I see. Nothing is graded.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "big and small letters"
+        },
+        {
+          "kind": "know",
+          "text": "I can say \"I don't know.\""
+        }
+      ]
+    },
+    {
+      "id": "machine",
+      "icon": "eye",
+      "short": "A machine",
+      "title": "I look into a machine.",
+      "body": "I put my chin on a rest. I look at a light. Some machines blow a little puff of air.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "a puff of air"
+        },
+        {
+          "kind": "see",
+          "text": "a light"
+        }
+      ]
+    },
+    {
+      "id": "drops",
+      "icon": "eye-drops",
+      "short": "Maybe eye drops",
+      "title": "I might get eye drops.",
+      "body": "The drops may sting a little. My eyes may be blurry for a while. That goes away.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "wet eyes"
+        },
+        {
+          "kind": "know",
+          "text": "I can ask before they start."
+        }
+      ]
+    },
+    {
+      "id": "leave",
+      "icon": "celebrate",
+      "short": "I'm done",
+      "title": "I'm done. I can go home.",
+      "body": "We say goodbye. I did it!",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "proud"
+        }
+      ]
+    }
+  ]
+}

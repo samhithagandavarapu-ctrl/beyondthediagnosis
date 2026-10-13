@@ -24,6 +24,7 @@ import Profile from "./pages/Profile";
 import Privacy from "./pages/Privacy";
 import Mission from "./pages/Mission";
 import MyVoice from "./pages/MyVoice";
+import PracticeVisit from "./pages/PracticeVisit";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import AdminMessages from "./pages/AdminMessages";
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/appointment-prep" element={<AppointmentPrep />} />
           <Route path="/my-voice" element={<MyVoice />} />
+          <Route path="/my-voice/practice" element={<PracticeVisit />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/provider-education" element={<ProviderEducation />} />
           <Route path="/stories" element={<Stories />} />

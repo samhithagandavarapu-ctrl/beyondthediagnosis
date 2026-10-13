@@ -1,0 +1,130 @@
+{
+  "id": "blood-test",
+  "label": "Blood test",
+  "icon": "drop",
+  "steps": [
+    {
+      "id": "arrive",
+      "icon": "door",
+      "short": "I arrive",
+      "title": "I arrive at the office.",
+      "body": "I walk in with my helper. It might be busy.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a front desk"
+        },
+        {
+          "kind": "hear",
+          "text": "people talking"
+        }
+      ]
+    },
+    {
+      "id": "check-in",
+      "icon": "clipboard",
+      "short": "I check in",
+      "title": "I check in at the front desk.",
+      "body": "I say my name. They may ask for my card.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a computer"
+        },
+        {
+          "kind": "feel",
+          "text": "a little nervous. That is okay."
+        }
+      ]
+    },
+    {
+      "id": "wait",
+      "icon": "chair",
+      "short": "I wait",
+      "title": "I wait in the waiting room.",
+      "body": "I sit and wait for my name. I can bring something I like.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "other people waiting"
+        },
+        {
+          "kind": "hear",
+          "text": "someone calls my name"
+        }
+      ]
+    },
+    {
+      "id": "chair",
+      "icon": "chair",
+      "short": "I sit down",
+      "title": "I sit in a special chair.",
+      "body": "The chair has a place for my arm. I can sit how I feel safe.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "small tubes"
+        },
+        {
+          "kind": "know",
+          "text": "My helper can stay with me."
+        }
+      ]
+    },
+    {
+      "id": "band",
+      "icon": "cuff",
+      "short": "A band on my arm",
+      "title": "A band goes on my arm.",
+      "body": "It feels tight for a little while. They clean my arm. It feels cold and wet.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "tight and cold"
+        },
+        {
+          "kind": "know",
+          "text": "I can ask what comes next."
+        }
+      ]
+    },
+    {
+      "id": "needle",
+      "icon": "needle",
+      "short": "A quick pinch",
+      "title": "I feel a quick pinch.",
+      "body": "A small needle takes some blood. I can look away. I can ask them to count to three.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "a pinch"
+        },
+        {
+          "kind": "see",
+          "text": "blood in a tube"
+        },
+        {
+          "kind": "know",
+          "text": "It is quick."
+        }
+      ]
+    },
+    {
+      "id": "leave",
+      "icon": "bandage",
+      "short": "Bandage, then done",
+      "title": "I get a bandage. Then I'm done.",
+      "body": "They put a bandage on my arm. We say goodbye. I did it!",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "proud"
+        },
+        {
+          "kind": "know",
+          "text": "I keep the bandage on for a while."
+        }
+      ]
+    }
+  ]
+}

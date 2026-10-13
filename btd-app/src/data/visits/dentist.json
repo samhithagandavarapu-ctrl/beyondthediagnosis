@@ -1,0 +1,126 @@
+{
+  "id": "dentist",
+  "label": "Dentist",
+  "icon": "tooth",
+  "steps": [
+    {
+      "id": "arrive",
+      "icon": "door",
+      "short": "I arrive",
+      "title": "I arrive at the office.",
+      "body": "I walk in with my helper. It might be busy.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a front desk"
+        },
+        {
+          "kind": "hear",
+          "text": "people talking"
+        }
+      ]
+    },
+    {
+      "id": "check-in",
+      "icon": "clipboard",
+      "short": "I check in",
+      "title": "I check in at the front desk.",
+      "body": "I say my name. They may ask for my card.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a computer"
+        },
+        {
+          "kind": "feel",
+          "text": "a little nervous. That is okay."
+        }
+      ]
+    },
+    {
+      "id": "wait",
+      "icon": "chair",
+      "short": "I wait",
+      "title": "I wait in the waiting room.",
+      "body": "I sit and wait for my name. I can bring something I like.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "other people waiting"
+        },
+        {
+          "kind": "hear",
+          "text": "someone calls my name"
+        }
+      ]
+    },
+    {
+      "id": "chair",
+      "icon": "chair",
+      "short": "The big chair",
+      "title": "I sit in the big chair.",
+      "body": "The chair moves back slowly. A bright light shines above me.",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "the chair moving"
+        },
+        {
+          "kind": "see",
+          "text": "a bright light"
+        },
+        {
+          "kind": "know",
+          "text": "I can wear sunglasses."
+        }
+      ]
+    },
+    {
+      "id": "look",
+      "icon": "light",
+      "short": "They look",
+      "title": "The dentist looks at my teeth.",
+      "body": "They use a small mirror. They count my teeth. I keep my mouth open.",
+      "notice": [
+        {
+          "kind": "see",
+          "text": "a small mirror"
+        },
+        {
+          "kind": "know",
+          "text": "I can raise my hand for a break."
+        }
+      ]
+    },
+    {
+      "id": "clean",
+      "icon": "tooth",
+      "short": "They clean",
+      "title": "They clean my teeth.",
+      "body": "A small brush buzzes on my teeth. Water sprays. A straw takes the water away.",
+      "notice": [
+        {
+          "kind": "hear",
+          "text": "a buzz and a slurp"
+        },
+        {
+          "kind": "feel",
+          "text": "tickles and water"
+        }
+      ]
+    },
+    {
+      "id": "leave",
+      "icon": "celebrate",
+      "short": "I'm done",
+      "title": "I'm done. I can go home.",
+      "body": "We say goodbye. My teeth feel clean. I did it!",
+      "notice": [
+        {
+          "kind": "feel",
+          "text": "proud"
+        }
+      ]
+    }
+  ]
+}

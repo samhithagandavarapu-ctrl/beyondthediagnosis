@@ -41,6 +41,13 @@ const PAGES: SearchEntry[] = [
     kind: "Page",
   },
   {
+    to: "/my-voice/practice",
+    title: "Practice My Visit",
+    description: "Rehearse a doctor visit step by step, practice what to say, and keep speak-up cards ready.",
+    keywords: "practice visit rehearse doctor checkup blood test dentist eye hearing speak up cards walkthrough",
+    kind: "Page",
+  },
+  {
     to: "/resources",
     title: "Resource Navigator",
     description: "Trusted resources filtered by life stage.",

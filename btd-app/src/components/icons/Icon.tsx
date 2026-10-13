@@ -55,7 +55,22 @@ export type IconName =
   | "tl-medication"
   | "tl-illness"
   | "tl-test"
-  | "tl-life";
+  | "tl-life"
+  // Practice My Visit: visit types, steps and "what I might notice"
+  | "clipboard"
+  | "drop"
+  | "tooth"
+  | "ear"
+  | "person-plus"
+  | "cuff"
+  | "needle"
+  | "bandage"
+  | "light"
+  | "eye-chart"
+  | "eye-drops"
+  | "headphones"
+  | "hand"
+  | "card";
 
 type Props = {
   name: IconName;
@@ -409,6 +424,99 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M3.6 11 L12 4 L20.4 11" />
       <path d="M6 9.4 V20 h12 V9.4" />
       <path d="M10 20 v-5.4 h4 V20" />
+    </>
+  ),
+  // ---- Practice My Visit ----
+  // A clipboard with lines: the check-in form.
+  clipboard: (
+    <>
+      <rect x="5" y="4.6" width="14" height="16.2" rx="2.2" />
+      <path d="M9.2 4.6 V3.4 h5.6 v1.2" />
+      <path d="M8.6 10 h6.8M8.6 13.4 h6.8M8.6 16.8 h4" />
+    </>
+  ),
+  // A single drop: a blood test.
+  drop: <path d="M12 3.2 C12 3.2 5.8 10.2 5.8 14.4 a6.2 6.2 0 0 0 12.4 0 C18.2 10.2 12 3.2 12 3.2 Z" />,
+  tooth: (
+    <path d="M7.4 3.8 c-2.4 0 -3.8 2 -3.6 4.6 c0.3 3.4 1.6 4.8 2.2 7.6 c0.5 2.6 1 4.6 2.2 4.6 c1.4 0 1.4 -4.4 3.8 -4.4 s2.4 4.4 3.8 4.4 c1.2 0 1.7 -2 2.2 -4.6 c0.6 -2.8 1.9 -4.2 2.2 -7.6 c0.2 -2.6 -1.2 -4.6 -3.6 -4.6 c-1.8 0 -2.8 1 -4.6 1 s-2.8 -1 -4.6 -1 z" />
+  ),
+  ear: (
+    <>
+      <path d="M7 9.6 a5.4 5.4 0 0 1 10.8 0 c0 3.4 -3 4.4 -3.4 7 c-0.4 2.4 -2 3.8 -4 3.8 a3.2 3.2 0 0 1 -3.2 -3" />
+      <path d="M10 9.8 a2.4 2.4 0 0 1 4.8 0 c0 1.4 -1.6 2 -1.6 3.4" />
+    </>
+  ),
+  "person-plus": (
+    <>
+      <circle cx="10" cy="8.2" r="3.8" />
+      <path d="M2.8 20.2 a7.2 7.2 0 0 1 12.6 -4.8" />
+      <path d="M18.4 13.4 v6.4M15.2 16.6 h6.4" />
+    </>
+  ),
+  // A blood pressure cuff around an arm, with its bulb.
+  cuff: (
+    <>
+      <path d="M2.8 9.4 h18.4M2.8 14.6 h18.4" />
+      <rect x="8" y="7.4" width="8" height="9.2" rx="1.6" />
+      <path d="M12 16.6 v2.2" />
+      <circle cx="12" cy="20.2" r="1.4" />
+    </>
+  ),
+  needle: (
+    <>
+      <path d="M14.6 3.6 L20.4 9.4M17.5 6.5 L9 15 L6.2 15.8 L7 13 L15.5 4.5" />
+      <path d="M6.6 15.4 L3.6 18.4M10.8 9.6 l1.4 1.4M12.6 7.8 l1.4 1.4" />
+    </>
+  ),
+  bandage: (
+    <>
+      <rect x="2.8" y="8.4" width="18.4" height="7.2" rx="3.6" transform="rotate(-30 12 12)" />
+      <rect x="9" y="9.4" width="6" height="5.2" rx="1" transform="rotate(-30 12 12)" />
+    </>
+  ),
+  // A small exam light with its beam.
+  light: (
+    <>
+      <rect x="3.4" y="9.6" width="9" height="4.8" rx="1.6" />
+      <path d="M12.4 10.4 L15 9 v6 l-2.6 -1.4" />
+      <path d="M17.4 8 L20.6 6.4M17.8 12 h3.4M17.4 16 l3.2 1.6" />
+    </>
+  ),
+  // An eye chart: big letter on top, smaller lines below.
+  "eye-chart": (
+    <>
+      <rect x="5" y="3.4" width="14" height="17.2" rx="2" />
+      <path d="M10 6.4 h4M12 6.4 v4" />
+      <path d="M8.6 13.4 h6.8M9.4 16.4 h5.2" />
+    </>
+  ),
+  "eye-drops": (
+    <>
+      <path d="M9.6 2.8 h4.8 v3.4 l1.4 1.8 v6.4 a1.6 1.6 0 0 1 -1.6 1.6 h-4.4 a1.6 1.6 0 0 1 -1.6 -1.6 V8 l1.4 -1.8 z" />
+      <path d="M12 18.2 c0 0 -1.6 1.8 -1.6 2.6 a1.6 1.6 0 0 0 3.2 0 c0 -0.8 -1.6 -2.6 -1.6 -2.6 z" />
+    </>
+  ),
+  headphones: (
+    <>
+      <path d="M4.4 15 v-3 a7.6 7.6 0 0 1 15.2 0 v3" />
+      <rect x="3.2" y="13.6" width="4.4" height="6.6" rx="1.6" />
+      <rect x="16.4" y="13.6" width="4.4" height="6.6" rx="1.6" />
+    </>
+  ),
+  // An open hand: something I might feel.
+  hand: (
+    <>
+      <path d="M8 12.6 V5.4 a1.4 1.4 0 0 1 2.8 0 v6" />
+      <path d="M10.8 11 V4.2 a1.4 1.4 0 0 1 2.8 0 V11" />
+      <path d="M13.6 11.2 V5.6 a1.4 1.4 0 0 1 2.8 0 v6.8" />
+      <path d="M16.4 9.8 a1.4 1.4 0 0 1 2.8 0 v4 a6.8 6.8 0 0 1 -6.8 6.8 h-0.6 a6 6 0 0 1 -4.6 -2.2 l-3 -3.8 a1.4 1.4 0 0 1 2.2 -1.8 L8 14.4" />
+    </>
+  ),
+  // A card held up to show someone.
+  card: (
+    <>
+      <rect x="3.2" y="5.6" width="17.6" height="12.8" rx="2.2" />
+      <path d="M7 10 h10M7 13.6 h6" />
     </>
   ),
 };
