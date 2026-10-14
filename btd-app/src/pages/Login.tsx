@@ -90,8 +90,8 @@ export default function Login() {
 
       {!authEnabled && (
         <div className="btd-card p-4 mb-6 bg-clay/10 border-clay/40 text-sm text-ink">
-          <strong>Login isn't set up yet.</strong> This screen is fully built, but needs a
-          free Supabase project connected — see the README section "Setting up login."
+          <strong>Sign-in isn't available right now.</strong> Everything else on Voiced
+          still works without an account. Questions? Email withvoiced@gmail.com.
         </div>
       )}
 

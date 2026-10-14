@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -17,7 +17,6 @@ import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
-import SubmitStory from "./pages/SubmitStory";
 import AdminStories from "./pages/AdminStories";
 import Understanding from "./pages/Understanding";
 import Profile from "./pages/Profile";
@@ -69,7 +68,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/stories/submit" element={<SubmitStory />} />
+          <Route path="/stories/submit" element={<Navigate to="/stories#share" replace />} />
           <Route path="/admin/stories" element={<AdminStories />} />
           <Route path="/understanding-overshadowing" element={<Understanding />} />
           <Route path="/profile" element={<Profile />} />

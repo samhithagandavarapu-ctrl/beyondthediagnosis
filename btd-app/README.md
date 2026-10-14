@@ -34,7 +34,7 @@ families, and their clinicians. Built from the DECA Innovation Plan project doc.
 - **Calming screen** — a floating "Calm" button on every page opens a breathing guide
   with optional gentle audio. Stateless: no login, nothing saved, usable mid-chat or
   mid-form.
-- **Practice mode** — a global "Practice" / "This is real" switch in the accessibility
+- **Practice mode** — a global "Practice mode" switch in the accessibility
   bar. The UI is identical either way, but practice never saves, never exports, and
   never reaches a real appointment record — for rehearsing the night before a visit.
 - **Login** (`/login`) — email/password, Google sign-in, and phone number, with a

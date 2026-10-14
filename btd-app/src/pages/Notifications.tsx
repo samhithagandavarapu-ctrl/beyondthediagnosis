@@ -83,7 +83,7 @@ export default function Notifications() {
                   , it shows up here.
                 </>
               ) : (
-                "Notifications need the Supabase project connected — see the README."
+                "Notifications aren't available right now. Please check back soon."
               )}
             </p>
           </div>

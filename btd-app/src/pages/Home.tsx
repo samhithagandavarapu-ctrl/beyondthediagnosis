@@ -120,11 +120,16 @@ export default function Home() {
               </Link>
             </div>
             <div className="rounded-r-2xl border-l-[3px] border-coral bg-mist/7 px-6 py-[22px]">
-              <p className="text-15 font-bold text-mist/85">What families and clinicians describe:</p>
-              <p className="mt-2 text-17 leading-[1.6]">None so far.</p>
+              <p className="text-15 font-bold text-mist/85">What it can look like:</p>
+              <ul className="mt-3 grid gap-2.5 text-15 leading-[1.6]">
+                <li>A change in mood or behavior that turns out to be pain, hearing loss, or a thyroid problem.</li>
+                <li>New forgetfulness in a young adult assumed to be Alzheimer's, when the real cause may be treatable.</li>
+                <li>Tiredness or sleep trouble written off as "part of Down syndrome."</li>
+              </ul>
+              <p className="mt-4 text-sm text-mist/85">Has this happened to you or someone you love?</p>
               <Link
                 to="/stories#share"
-                className="mt-3 inline-block text-sm font-bold text-sky underline underline-offset-[3px] hover:text-mist"
+                className="mt-1 inline-block text-sm font-bold text-sky underline underline-offset-[3px] hover:text-mist"
               >
                 Share your story →
               </Link>

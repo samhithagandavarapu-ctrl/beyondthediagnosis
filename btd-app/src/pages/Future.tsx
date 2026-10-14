@@ -82,7 +82,7 @@ export default function Future() {
             to="/provider-education"
             className="btd-btn min-h-[46px] bg-butter px-5 py-[13px] text-15 hover:bg-butter/85"
           >
-            See provider pricing →
+            See provider training →
           </Link>
         </article>
       </section>

@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!authEnabled) {
       return {
         error:
-          "Login isn't set up yet — add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. See README 'Setting up login'.",
+          "Sign-in isn't available right now. Please try again later, or email withvoiced@gmail.com.",
       };
     }
     return null;
