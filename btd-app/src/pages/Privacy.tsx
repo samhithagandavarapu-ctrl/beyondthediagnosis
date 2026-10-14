@@ -56,6 +56,13 @@ export default function Privacy() {
             Easy Read settings, saved so they follow you across devices if you're signed
             in.
           </li>
+          <li>
+            <strong>Talking instead of typing:</strong> the "Talk instead" microphone
+            button uses your web browser's own speech-to-text. Some browsers (such as
+            Chrome) send the sound to their own speech service to turn it into words.
+            Voiced never receives or keeps the recording — only the words that end up in
+            the box, and only if you then send or save them.
+          </li>
         </ul>
       </section>
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { submitStory } from "../lib/stories";
 import { authEnabled } from "../lib/supabaseClient";
+import DictateButton from "../components/DictateButton";
 
 const AUDIENCES = ["Self-advocate", "Parent", "Caregiver", "Clinician"] as const;
 
@@ -103,6 +104,7 @@ export default function SubmitStory() {
             onChange={(e) => setExcerpt(e.target.value)}
             placeholder="What happened, and what would you want another family to know?"
           />
+          <DictateButton value={excerpt} onChange={setExcerpt} label="Your story" />
         </div>
 
         {/* Honeypot field, hidden from real users via CSS, not display:none (bots skip that) */}

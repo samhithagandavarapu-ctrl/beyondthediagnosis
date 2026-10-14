@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "./icons/Icon";
+import DictateButton from "./DictateButton";
 import {
   ACCEPT_FILES,
   Message,
@@ -426,6 +427,7 @@ export default function ChatView({
           }}
           placeholder={placeholder}
         />
+        <DictateButton value={draft} onChange={setDraft} label="your message" />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <input
             ref={fileRef}

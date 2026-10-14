@@ -1,5 +1,6 @@
 import { FormEvent, useRef, useState, useEffect } from "react";
 import { sendChatMessage, ChatMessage } from "../lib/api";
+import DictateButton from "../components/DictateButton";
 
 export const STARTER_PROMPTS = [
   "What are my rights at a doctor's appointment?",
@@ -108,6 +109,7 @@ export default function Assistant() {
             placeholder="Ask about rights, accommodations, or how to raise a concern…"
             className="flex-1 min-w-0 rounded-full border border-navy/16 bg-white px-[18px] py-[13px] text-15 placeholder:text-[#6C8095] focus:border-link focus:outline-none"
           />
+          <DictateButton variant="icon" value={input} onChange={setInput} label="your message" />
           <button
             type="submit"
             disabled={loading || !input.trim()}
