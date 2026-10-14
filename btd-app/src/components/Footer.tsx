@@ -1,16 +1,17 @@
 import { Link } from "react-router-dom";
+import { SURVEY_URL } from "../data/site";
 
 export default function Footer() {
   return (
     <footer className="btd-dark text-mist/75">
       {/* Sits a few pixels into the navy so it still reads against a yellow
           section above it. */}
-      <div aria-hidden="true" className="flex h-1.5 translate-y-1.5">
+      <div aria-hidden="true" className="flex h-1 translate-y-1">
         <span className="flex-[3] bg-coral" />
         <span className="flex-[2] bg-butter" />
         <span className="flex-1 bg-sky" />
       </div>
-      <div className="btd-container pt-11 pb-10 flex flex-wrap gap-5 items-start justify-between">
+      <div className="btd-container pt-10 pb-10 flex flex-wrap gap-5 items-start justify-between">
         <div className="grid gap-2 text-sm leading-[1.65]">
           <p className="max-w-[40em]">
             Voiced is an education and advocacy tool. It does not diagnose,
@@ -36,6 +37,14 @@ export default function Footer() {
           <p>© 2026 Voiced</p>
         </div>
         <div className="flex flex-wrap items-center gap-5 text-sm">
+          <a
+            href={SURVEY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sky hover:underline"
+          >
+            Take our survey
+          </a>
           <Link to="/privacy" className="text-sky hover:underline">
             Privacy Policy
           </Link>

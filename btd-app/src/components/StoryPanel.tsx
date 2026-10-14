@@ -2,6 +2,7 @@ import { useState } from "react";
 import { submitStory } from "../lib/stories";
 import { authEnabled } from "../lib/supabaseClient";
 import Panel from "./Panel";
+import DictateButton from "./DictateButton";
 
 const AUDIENCES = ["Self-advocate", "Parent", "Caregiver", "Clinician"] as const;
 
@@ -115,6 +116,7 @@ export default function StoryPanel({ defaultName }: { defaultName: string }) {
               onChange={(e) => setExcerpt(e.target.value)}
               placeholder="What happened, and what you wish had gone differently."
             />
+            <DictateButton value={excerpt} onChange={setExcerpt} label="Your story" />
             <p className="mt-1 text-13 text-muted">
               Please leave out anything that identifies a provider or clinic by name.
             </p>

@@ -16,6 +16,7 @@ import {
 } from "../lib/appointmentHistory";
 import { CheckIn, checkInLines } from "../lib/myVoice";
 import Icon from "../components/icons/Icon";
+import DictateButton from "../components/DictateButton";
 import SymptomTimeline from "../components/timeline/SymptomTimeline";
 import {
   Timeline,
@@ -341,6 +342,11 @@ export default function AppointmentPrep() {
             onChange={(e) => setForm({ ...form, reasonForVisit: e.target.value })}
             placeholder="One or two sentences on why you're coming in"
           />
+          <DictateButton
+            value={form.reasonForVisit}
+            onChange={(v) => setForm((f) => ({ ...f, reasonForVisit: v }))}
+            label="Reason for visit"
+          />
         </Field>
 
         <ListSection
@@ -469,6 +475,11 @@ export default function AppointmentPrep() {
             value={form.accommodations}
             onChange={(e) => setForm({ ...form, accommodations: e.target.value })}
             placeholder="e.g. extra time to answer, picture-based options, speak directly to the patient first"
+          />
+          <DictateButton
+            value={form.accommodations}
+            onChange={(v) => setForm((f) => ({ ...f, accommodations: v }))}
+            label="Communication or accommodation needs"
           />
         </Field>
 

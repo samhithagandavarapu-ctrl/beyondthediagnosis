@@ -37,11 +37,11 @@
 
 @layer components {
   /* The brand's two warm colours as a short stripe: a quiet accent under
-     headings and along the footer. Decorative only — never carries meaning. */
+     page titles and along the footer. Decorative only — never carries meaning. */
   .btd-accent-bar {
     display: block;
-    height: 6px;
-    width: 72px;
+    height: 4px;
+    width: 56px;
     border-radius: 999px;
     background: linear-gradient(90deg, #FFA694 0 55%, #FFDE9E 55% 100%);
   }

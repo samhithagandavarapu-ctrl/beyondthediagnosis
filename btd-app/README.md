@@ -45,6 +45,10 @@ families, and their clinicians. Built from the DECA Innovation Plan project doc.
 - **Provider Education Hub** (`/provider-education`) — module listing with pricing,
   clearly marked as not active/not a live purchase system yet.
 - **Community Stories** (`/stories`) — searchable/filterable story cards.
+- **Talk instead of typing** — a microphone button on the assistant, Messages,
+  Appointment Prep, and story forms that turns speech into text in the box, using
+  the browser's built-in speech recognition (Chrome, Edge, Safari). Hidden where
+  the browser doesn't support it.
 - **Accessibility bar** on every page — large text, high contrast, and Easy Read
   toggles, saved to the browser so they persist across visits.
 
