@@ -1,5 +1,8 @@
 import { FormEvent, useRef, useState, useEffect } from "react";
-import { sendChatMessage, ChatMessage } from "../lib/api";
+import { Link } from "react-router-dom";
+import { sendChatMessage, prepNotesFromChat, ChatMessage } from "../lib/api";
+import { addNotesToDraft, draftLabel } from "../lib/drafts";
+import { useAuth } from "../context/AuthContext";
 import DictateButton from "../components/DictateButton";
 import { inkLastWord } from "../components/Scribble";
 
@@ -33,6 +36,11 @@ export default function Assistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  // Saving the chat to Appointment Prep.
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -53,6 +61,8 @@ export default function Assistant() {
     setMessages(next);
     setInput("");
     setError(null);
+    setSaved(null);
+    setSaveError(null);
     setLoading(true);
 
     const controller = new AbortController();
@@ -89,6 +99,37 @@ export default function Assistant() {
     } finally {
       abortRef.current = null;
       setLoading(false);
+    }
+  }
+
+  async function handleSaveToPrep(where: "current" | "new") {
+    setSaving(true);
+    setSaved(null);
+    setSaveError(null);
+    try {
+      const notes = await prepNotesFromChat(messages);
+      const found = notes.symptoms.length + notes.questions.length + (notes.reasonForVisit ? 1 : 0);
+      if (found === 0) {
+        setSaveError(
+          "I didn't find any symptoms or questions for your doctor in this chat yet. Tell me what's going on, then try again."
+        );
+        return;
+      }
+      const draft = await addNotesToDraft(user?.id ?? null, notes, where);
+      const parts = [
+        notes.symptoms.length && `${notes.symptoms.length} symptom${notes.symptoms.length > 1 ? "s" : ""}`,
+        notes.questions.length && `${notes.questions.length} question${notes.questions.length > 1 ? "s" : ""}`,
+        notes.reasonForVisit && "the reason for the visit",
+      ].filter(Boolean) as string[];
+      const list =
+        parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}` : parts[0];
+      setSaved(`Added ${list} to "${draftLabel(draft)}".`);
+    } catch (err: unknown) {
+      setSaveError(
+        err instanceof Error && err.message ? err.message : "Couldn't save to Appointment Prep. Please try again."
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -146,6 +187,44 @@ export default function Assistant() {
                 {p}
               </button>
             ))}
+          </div>
+        )}
+
+        {messages.some((m) => m.role === "user") && !loading && (
+          <div className="border-t border-navy/10 px-6 py-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-body">Save this chat to Appointment Prep:</span>
+              <button
+                type="button"
+                onClick={() => handleSaveToPrep("current")}
+                disabled={saving}
+                className="rounded-full border border-navy/16 bg-mist px-3.5 py-[7px] text-13 text-navy transition-colors hover:border-link disabled:opacity-50"
+              >
+                Add to my draft
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveToPrep("new")}
+                disabled={saving}
+                className="rounded-full border border-navy/16 bg-mist px-3.5 py-[7px] text-13 text-navy transition-colors hover:border-link disabled:opacity-50"
+              >
+                Start a new draft
+              </button>
+              {saving && <span className="text-muted">Saving…</span>}
+            </div>
+            {saved && (
+              <p className="mt-2 text-navy" role="status">
+                {saved}{" "}
+                <Link to="/appointment-prep" className="font-semibold text-link underline">
+                  Open Appointment Prep
+                </Link>
+              </p>
+            )}
+            {saveError && (
+              <p className="mt-2 text-coral-ink" role="alert">
+                {saveError}
+              </p>
+            )}
           </div>
         )}
 

@@ -119,6 +119,21 @@ Rules:
   }
 }`;
 
+export const PREP_NOTES_SYSTEM_PROMPT = `You turn a conversation from the Voiced AI Advocacy Assistant (a healthcare advocacy tool for people with Down syndrome and their families) into notes for an appointment-prep form.
+
+Read the whole conversation and return what belongs on the form:
+- "reasonForVisit": one short sentence on why the person wants to see the provider, or "" if that isn't clear.
+- "symptoms": each symptom or change the person themselves described. "description" is one clear sentence in their own words where possible; "onset" is when it started, exactly as they said it, or "".
+- "questions": questions the person wants to ask their provider. Include ones the person asked for help with or agreed to, and questions the assistant suggested asking the provider. Each is one specific question addressed to the provider.
+
+Rules:
+- Only use what is in the conversation. Never invent symptoms, dates, details, or facts.
+- Questions the assistant asked the person (like "When did this start?") are NOT questions for the provider. Use the person's answers to them as symptom details instead.
+- Never add a diagnosis, never guess at a cause, and never mention medication changes the person didn't describe.
+- Leave things out rather than guess. Empty lists are fine.
+- Return ONLY valid JSON, no preamble, no markdown fences, in exactly this shape:
+{ "reasonForVisit": "string", "symptoms": [{ "description": "string", "onset": "string" }], "questions": ["string"] }`;
+
 /** Only ever forward role/content — never extra fields from the client. */
 export function cleanMessages(messages) {
   if (!Array.isArray(messages)) return [];
@@ -303,6 +318,32 @@ export async function refineForm(form) {
 
   const cleaned = textOf(response).replace(/```json|```/g, "").trim();
   return JSON.parse(cleaned);
+}
+
+/** Pulls appointment-prep notes (reason, symptoms, questions) out of an
+ *  assistant conversation. Throws SyntaxError if the reply isn't the JSON
+ *  shape asked for. */
+export async function prepNotesFromChat(messages) {
+  const transcript = messages
+    .map((m) => `${m.role === "user" ? "PERSON" : "ASSISTANT"}: ${m.content}`)
+    .join("\n\n");
+  const response = await getClient().messages.create({
+    model: MODEL,
+    max_tokens: 4096,
+    output_config: { effort: "low" },
+    system: PREP_NOTES_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: `Conversation:\n\n${transcript}` }],
+  });
+
+  const parsed = JSON.parse(textOf(response).replace(/```json|```/g, "").trim());
+  const str = (v) => (typeof v === "string" ? v.trim() : "");
+  return {
+    reasonForVisit: str(parsed.reasonForVisit),
+    symptoms: (Array.isArray(parsed.symptoms) ? parsed.symptoms : [])
+      .map((x) => ({ description: str(x?.description), onset: str(x?.onset) }))
+      .filter((x) => x.description),
+    questions: (Array.isArray(parsed.questions) ? parsed.questions : []).map(str).filter(Boolean),
+  };
 }
 
 /** Turns an SDK error into a status code plus a message safe to show a person.

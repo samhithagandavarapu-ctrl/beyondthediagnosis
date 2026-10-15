@@ -65,6 +65,24 @@ export async function refineAppointmentForm(form: unknown): Promise<RefinedAppoi
   const data = await readJson(res, "The polish request");
   return data.refined as RefinedAppointmentForm;
 }
+export type PrepNotes = {
+  reasonForVisit: string;
+  symptoms: { description: string; onset: string }[];
+  questions: string[];
+};
+
+/** Asks the assistant to pull appointment-prep notes out of a chat. */
+export async function prepNotesFromChat(messages: ChatMessage[]): Promise<PrepNotes> {
+  const res = await fetch(`${API_BASE}/api/prep-from-chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+  });
+
+  const data = await readJson(res, "Saving to Appointment Prep");
+  return data.notes as PrepNotes;
+}
+
 /** Sends the conversation and streams the reply back. `onText` gets the
  *  whole reply so far each time more arrives; the promise resolves with the
  *  finished reply. Aborting `signal` stops the reply partway. */

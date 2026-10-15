@@ -7,6 +7,7 @@ import {
   hasApiKey,
   MISSING_KEY_MESSAGE,
   MODEL,
+  prepNotesFromChat,
   refineForm,
   streamChatReply,
 } from "../api/_lib/claude.js";
@@ -40,6 +41,26 @@ app.post("/api/chat", async (req, res) => {
   try {
     await streamChatReply(messages, res);
   } catch (err) {
+    const { status, message } = describeError(err);
+    res.status(status).json({ error: message });
+  }
+});
+
+app.post("/api/prep-from-chat", async (req, res) => {
+  if (!hasApiKey()) return res.status(500).json({ error: MISSING_KEY_MESSAGE });
+
+  const messages = cleanMessages(req.body?.messages);
+  if (messages.length === 0) {
+    return res.status(400).json({ error: "messages array is required" });
+  }
+
+  try {
+    res.json({ notes: await prepNotesFromChat(messages) });
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      console.error("Couldn't parse the prep notes:", err.message);
+      return res.status(502).json({ error: "Couldn't turn this chat into notes. Please try again." });
+    }
     const { status, message } = describeError(err);
     res.status(status).json({ error: message });
   }
