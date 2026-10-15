@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import PageHero from "../components/PageHero";
-import Mascot, { MascotFace, forLevel } from "../components/Mascot";
+import HelperMessage, { forLevel } from "../components/HelperMessage";
 import PracticeModeToggle from "../components/PracticeModeToggle";
 import BodyMap from "../components/myvoice/BodyMap";
 import FaceScale from "../components/myvoice/FaceScale";
@@ -200,12 +200,11 @@ function Home({ onPick, hasSaved }: { onPick: (s: Section) => void; hasSaved: bo
 
   return (
     <div className="grid gap-7">
-      <Mascot
-        mood="hello"
+      <HelperMessage
         copy={{
-          icon: "Hi! Tap one.",
-          short: "Hi, I'm Vee. Tap one to start.",
-          full: "Hi, I'm Vee. Pick anything below — there's no wrong answer, and you can stop whenever you want.",
+          icon: "Tap one.",
+          short: "Tap one to start.",
+          full: "Pick anything below. There's no wrong answer, and you can stop whenever you want.",
         }}
       />
 
@@ -318,8 +317,7 @@ function CheckInFlow({
   if (done) {
     return (
       <div className="grid gap-6">
-        <Mascot
-          mood="cheer"
+        <HelperMessage
           copy={{
             icon: "All done!",
             short: "All done. Great job!",
@@ -361,8 +359,7 @@ function CheckInFlow({
 
   return (
     <div className="grid gap-8">
-      <Mascot
-        mood="think"
+      <HelperMessage
         copy={{
           icon: "Tap how you feel.",
           short: "Tap the face that fits, then where it hurts.",
@@ -480,8 +477,7 @@ function TellMyDoctor({
 
   return (
     <div className="grid gap-7">
-      <Mascot
-        mood="hello"
+      <HelperMessage
         copy={{
           icon: "Tap to build it.",
           short: "Tap the pictures to build your sentence.",
@@ -535,8 +531,7 @@ function VisitSection({ readingLevel }: { readingLevel: ReadingLevel }) {
   const { earnSticker } = useMyVoice();
   return (
     <div className="grid gap-7">
-      <Mascot
-        mood="calm"
+      <HelperMessage
         copy={{
           icon: "Swipe to see.",
           short: "Swipe to see what happens.",
@@ -556,15 +551,12 @@ function VisitSection({ readingLevel }: { readingLevel: ReadingLevel }) {
 function StickerSection() {
   return (
     <div className="grid gap-7">
-      <div className="flex items-center gap-4">
-        <MascotFace mood="cheer" size={72} />
-        <div>
-          <h2 className="text-28 font-extrabold text-navy">My stickers</h2>
-          <p className="mt-1 max-w-[36em] text-body">
-            You earn a sticker for doing something — telling your doctor, saying how you feel,
-            learning what happens at a visit. There are no streaks here, and no missed days.
-          </p>
-        </div>
+      <div>
+        <h2 className="text-28 font-extrabold text-navy">My stickers</h2>
+        <p className="mt-1 max-w-[36em] text-body">
+          You earn a sticker for doing something — telling your doctor, saying how you feel,
+          learning what happens at a visit. There are no streaks here, and no missed days.
+        </p>
       </div>
       <StickerBook />
     </div>

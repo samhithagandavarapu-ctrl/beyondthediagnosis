@@ -12,7 +12,7 @@ import {
 } from "../lib/myVoice";
 
 // One setting — the reading level — drives the check-in, the walkthrough and
-// the mascot's language. Stickers and the last finished check-in live here
+// the helper messages. Stickers and the last finished check-in live here
 // too so the Appointment Prep export can pick the check-in up without
 // /my-voice being mounted.
 

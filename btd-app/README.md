@@ -26,7 +26,7 @@ families, and their clinicians. Built from the DECA Innovation Plan project doc.
 - **My Voice** (`/my-voice`) — the self-advocacy side of the app, built for the person
   with Down syndrome to use themselves rather than for a caregiver: a tappable body
   outline and five-face scale for a check-in, a tap-to-build "tell my doctor" sentence,
-  a picture walkthrough of a visit, and Vee the mascot with a sticker book that rewards
+  a picture walkthrough of a visit, and a sticker book that rewards
   actions (never streaks, never missed days). Read-aloud on every label, and a single
   reading-level setting — pictures only / pictures and short words / full sentences —
   that drives the whole section. What someone builds here can be printed on the
@@ -128,7 +128,7 @@ btd-app/
   server/index.js          Express API — the only place the API key lives
   src/
     pages/                 One file per route (Home, Assistant, AppointmentPrep, ...)
-    components/            Navbar, Footer, AccessibilityBar, CalmingScreen, Mascot,
+    components/            Navbar, Footer, AccessibilityBar, CalmingScreen, HelperMessage,
                             PracticeModeToggle, myvoice/ (body map, face scale,
                             sentence builder, walkthrough, sticker book)
     context/                AccessibilityContext (large text / high contrast / easy read)
