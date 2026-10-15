@@ -255,6 +255,16 @@ export async function streamChatReply(messages, res) {
   const stream = getClient().messages.stream({ model: MODEL, ...CHAT_PARAMS, messages });
   let body = "";
 
+  // If the person presses Stop (or leaves), stop generating too, so we don't
+  // keep paying for an answer nobody will read.
+  let clientGone = false;
+  res.on("close", () => {
+    if (!res.writableEnded) {
+      clientGone = true;
+      stream.abort();
+    }
+  });
+
   try {
     for await (const event of stream) {
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
@@ -271,6 +281,7 @@ export async function streamChatReply(messages, res) {
       res.write(EMPTY_REPLY);
     }
   } catch (err) {
+    if (clientGone) return;
     if (!res.headersSent) throw err;
     console.error("Chat stream broke partway:", err);
     res.end("\n\n(The reply was cut off. Please try sending your message again.)");

@@ -34,6 +34,7 @@ export default function Assistant() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Keep the newest message in view by scrolling only the chat box, never the
   // page. Skipped while it's just the greeting, so it opens at the top.
@@ -54,14 +55,30 @@ export default function Assistant() {
     setError(null);
     setLoading(true);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let soFar = "";
+
     try {
       // Show the reply as it streams in; "Thinking…" covers the gap before
       // the first words arrive.
-      const reply = await sendChatMessage(next, (soFar) =>
-        setMessages([...next, { role: "assistant", content: soFar }])
+      const reply = await sendChatMessage(
+        next,
+        (text) => {
+          soFar = text;
+          setMessages([...next, { role: "assistant", content: text }]);
+        },
+        controller.signal
       );
       setMessages([...next, { role: "assistant", content: reply }]);
     } catch (err: unknown) {
+      if (controller.signal.aborted) {
+        // Stopped on purpose: keep whatever had arrived, and say it was cut short.
+        if (soFar.trim()) {
+          setMessages([...next, { role: "assistant", content: `${soFar.trimEnd()}\n\n(Stopped)` }]);
+        }
+        return;
+      }
       // Show what actually went wrong. The old text blamed a local dev server,
       // which is misleading anywhere but a developer's own machine.
       setError(
@@ -70,9 +87,17 @@ export default function Assistant() {
           : "The assistant couldn't respond just now. Please try again."
       );
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
   }
+
+  function handleStop() {
+    abortRef.current?.abort();
+  }
+
+  // Leaving the page stops a reply that's still coming.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   return (
     <section className="mx-auto max-w-[900px] px-6 pt-14 pb-20">
@@ -136,13 +161,23 @@ export default function Assistant() {
             className="flex-1 min-w-0 rounded-full border border-navy/16 bg-white px-[18px] py-[13px] text-15 placeholder:text-[#6C8095] focus:border-link focus:outline-none"
           />
           <DictateButton variant="icon" value={input} onChange={setInput} label="your message" />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="btd-btn-coral min-h-[46px] px-[22px] text-15 disabled:opacity-40"
-          >
-            Send
-          </button>
+          {loading ? (
+            <button
+              type="button"
+              onClick={handleStop}
+              className="min-h-[46px] rounded-full border border-navy/30 bg-white px-[22px] text-15 font-semibold text-navy transition-colors hover:border-navy"
+            >
+              Stop
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="btd-btn-coral min-h-[46px] px-[22px] text-15 disabled:opacity-40"
+            >
+              Send
+            </button>
+          )}
         </form>
       </div>
 

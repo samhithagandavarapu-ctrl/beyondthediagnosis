@@ -67,13 +67,15 @@ export async function refineAppointmentForm(form: unknown): Promise<RefinedAppoi
 }
 /** Sends the conversation and streams the reply back. `onText` gets the
  *  whole reply so far each time more arrives; the promise resolves with the
- *  finished reply. */
+ *  finished reply. Aborting `signal` stops the reply partway. */
 export async function sendChatMessage(
   messages: ChatMessage[],
-  onText?: (soFar: string) => void
+  onText?: (soFar: string) => void,
+  signal?: AbortSignal
 ): Promise<string> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
+    signal,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages }),
   });
