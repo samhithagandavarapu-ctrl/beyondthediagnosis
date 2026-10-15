@@ -70,7 +70,11 @@ export type IconName =
   | "eye-drops"
   | "headphones"
   | "hand"
-  | "card";
+  | "card"
+  | "lock"
+  | "sign-out"
+  | "trash"
+  | "chevron-right";
 
 type Props = {
   name: IconName;
@@ -428,6 +432,27 @@ const PATHS: Record<IconName, JSX.Element> = {
   ),
   // ---- Practice My Visit ----
   // A clipboard with lines: the check-in form.
+  lock: (
+    <>
+      <rect x="5" y="10.6" width="14" height="10" rx="2.2" />
+      <path d="M8.4 10.6 V7.6 a3.6 3.6 0 0 1 7.2 0 v3" />
+      <path d="M12 14.6 v2" />
+    </>
+  ),
+  "sign-out": (
+    <>
+      <path d="M13.6 4.4 H6.6 a1.8 1.8 0 0 0 -1.8 1.8 v11.6 a1.8 1.8 0 0 0 1.8 1.8 h7" />
+      <path d="M10.4 12 H20M16.6 8.4 L20.2 12 L16.6 15.6" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M4.6 6.8 h14.8M9.6 6.8 V4.8 h4.8 v2" />
+      <path d="M6.6 6.8 l0.9 12.6 a1.6 1.6 0 0 0 1.6 1.4 h5.8 a1.6 1.6 0 0 0 1.6 -1.4 l0.9 -12.6" />
+      <path d="M10.2 10.6 v6M13.8 10.6 v6" />
+    </>
+  ),
+  "chevron-right": <path d="M9.4 5.6 L15.8 12 L9.4 18.4" />,
   clipboard: (
     <>
       <rect x="5" y="4.6" width="14" height="16.2" rx="2.2" />

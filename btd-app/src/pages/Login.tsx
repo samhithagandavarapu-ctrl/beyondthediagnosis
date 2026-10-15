@@ -55,7 +55,7 @@ export default function Login() {
         <p className="text-slate mb-8">Signed in as {user.email || user.phone || "your account"}.</p>
         <div className="btd-card p-6 space-y-3">
           <Link
-            to="/profile#account"
+            to="/profile?section=security"
             className="block w-full text-center px-4 py-2.5 rounded bg-ink text-paper font-semibold text-sm"
           >
             Manage your account
@@ -160,6 +160,17 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {mode === "signin" && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setMode("forgot")}
+                    className="text-sm font-semibold text-link hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={busy}
@@ -169,7 +180,7 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="flex items-center justify-between text-xs">
+            <div className="text-center text-sm">
               <button
                 type="button"
                 onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
@@ -177,15 +188,6 @@ export default function Login() {
               >
                 {mode === "signin" ? "Create an account" : "Have an account? Sign in"}
               </button>
-              {mode === "signin" && (
-                <button
-                  type="button"
-                  onClick={() => setMode("forgot")}
-                  className="text-slate hover:underline"
-                >
-                  Forgot password?
-                </button>
-              )}
             </div>
 
             {PHONE_SIGNIN_READY ? (

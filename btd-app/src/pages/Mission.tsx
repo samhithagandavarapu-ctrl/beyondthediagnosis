@@ -19,12 +19,10 @@ export default function Mission() {
 
       <section className={`${column} pt-12`}>
         <p className="text-lg leading-[1.75] text-body">
-          Too often, a new symptom in someone with Down syndrome gets blamed on “just the
-          Down syndrome” instead of being investigated. This is called diagnostic
-          overshadowing, and it means real conditions like thyroid problems, hearing loss,
-          or depression get missed. Voiced gives self-advocates and families tools to
-          prepare for appointments, explain what’s normal for them, and speak up, so every
-          visit leads to real answers.
+          Too often, a new symptom in someone with Down syndrome gets written off as “just
+          the Down syndrome.” Voiced gives self-advocates and families tools to prepare for
+          appointments, explain what’s normal for them, and speak up, so every visit leads
+          to real answers.
         </p>
       </section>
 

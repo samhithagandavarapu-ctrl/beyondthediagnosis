@@ -16,7 +16,11 @@ export default function Resources() {
     <div className="btd-container py-10">
       <h1 className="text-3xl font-display font-semibold mb-2">Resource Navigator</h1>
       <p className="text-slate mb-6 max-w-2xl">
-        Trusted resources, filtered by where you are right now.
+        Trusted resources, filtered by where you are right now. Know one we're missing?{" "}
+        <a href="#suggest" className="font-semibold text-link hover:underline">
+          Tell us
+        </a>
+        .
       </p>
 
       <div className="flex flex-wrap gap-2 mb-8">
@@ -56,6 +60,22 @@ export default function Resources() {
           <p className="text-slate col-span-full">No resources in this category yet.</p>
         )}
       </div>
+
+      <section id="suggest" className="btd-card mt-10 max-w-2xl scroll-mt-24 p-7">
+        <h2 className="text-23 font-extrabold text-navy">Think something should be added?</h2>
+        <p className="mt-1.5 text-15 leading-[1.6] text-body">
+          If you know a resource that has helped you, your family, or your patients, we'd
+          love to hear about it. Email us at{" "}
+          <a
+            href="mailto:withvoiced@gmail.com?subject=Resource%20suggestion%20for%20Voiced"
+            className="font-semibold text-link hover:underline"
+          >
+            withvoiced@gmail.com
+          </a>{" "}
+          with a link and a sentence on why it's useful. We check every suggestion before
+          adding it.
+        </p>
+      </section>
     </div>
   );
 }
