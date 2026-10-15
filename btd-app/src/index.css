@@ -272,6 +272,11 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   display: none;
 }
 
+/* The event banner sits on a solid offset shadow, like a flyer pinned up. */
+.btd-event-banner {
+  box-shadow: 6px 7px 0 #213244;
+}
+
 /* Guiding principle: each word fills in as the quote arrives. */
 .btd-quote-word {
   color: rgba(33, 50, 68, 0.25);

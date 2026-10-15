@@ -1,3 +1,4 @@
+import type { User } from "@supabase/supabase-js";
 import { supabase, authEnabled } from "./supabaseClient";
 import type { ReadingLevel } from "./myVoice";
 
@@ -53,4 +54,27 @@ export async function saveReadingLevel(
     .from("profiles")
     .upsert({ id: userId, reading_level: level }, { onConflict: "id" });
   return { stored: !error };
+}
+
+/** What someone wants to be called, as they typed it. Kept on the sign-in
+ *  itself (user metadata), so it needs no database change. */
+export function preferredName(user: User | null): string {
+  return String(user?.user_metadata?.preferred_name ?? "").trim();
+}
+
+export async function savePreferredName(name: string): Promise<{ error: string | null }> {
+  if (!authEnabled) return { error: "Not set up yet." };
+  const { error } = await supabase.auth.updateUser({ data: { preferred_name: name.trim() } });
+  return { error: error?.message ?? null };
+}
+
+/** The name to put on someone's messages: what they asked to be called,
+ *  else their profile name, else the name their Google account gave. */
+export function displayNameFor(user: User | null, profile: Profile | null): string {
+  return (
+    preferredName(user) ||
+    profile?.full_name?.trim() ||
+    profile?.username?.trim() ||
+    String(user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? "").trim()
+  );
 }

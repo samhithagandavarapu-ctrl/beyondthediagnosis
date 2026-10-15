@@ -323,6 +323,13 @@ export default function AdminMessages() {
                   >
                     ← All conversations
                   </button>
+                  {current?.name ? (
+                    <p className="text-11 font-bold uppercase tracking-[0.1em] text-muted">
+                      Wants to be called
+                    </p>
+                  ) : (
+                    <p className="text-12 text-muted">They haven't said what to call them yet.</p>
+                  )}
                   <h2 className="text-lg font-bold text-navy break-words">{currentName}</h2>
                   {currentEmail && currentEmail !== currentName && (
                     <a href={`mailto:${currentEmail}`} className="text-13 text-link hover:underline break-all">

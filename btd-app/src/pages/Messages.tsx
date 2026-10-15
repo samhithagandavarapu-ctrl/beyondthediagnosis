@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
-import { fetchProfile } from "../lib/profile";
+import { Profile, displayNameFor, fetchProfile, savePreferredName } from "../lib/profile";
 import {
   Message,
   ThreadState,
@@ -33,7 +33,10 @@ export default function Messages() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
-  const [name, setName] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  // What they've asked to be called goes on every message, so the team
+  // knows how to address them.
+  const name = displayNameFor(user, profile);
   // After "Mark as unread", don't immediately mark it read again just because
   // the page is still open. Leaving and coming back, or sending, resets it.
   const holdUnread = useRef(false);
@@ -61,7 +64,7 @@ export default function Messages() {
     let cancelled = false;
     load();
     fetchProfile(userId).then((p) => {
-      if (!cancelled) setName(p?.full_name?.trim() || p?.username?.trim() || "");
+      if (!cancelled) setProfile(p);
     });
     const stop = subscribeToMessages(userId, (m) => {
       if (m) setMessages((prev) => mergeMessages(prev, [m]));
@@ -188,6 +191,7 @@ export default function Messages() {
                 {notice}
               </p>
             )}
+            <CallMe current={name} />
             <ChatView
               messages={visible}
               viewerIsAdmin={false}
@@ -217,5 +221,72 @@ export default function Messages() {
         )}
       </div>
     </div>
+  );
+}
+
+/** "What should we call you?" — asked once, right where they write to us,
+ *  then shown as a line they can change. */
+function CallMe({ current }: { current: string }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(current);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!value.trim()) return;
+    setSaving(true);
+    const { error } = await savePreferredName(value);
+    setSaving(false);
+    setError(error);
+    if (!error) setEditing(false);
+  }
+
+  if (current && !editing) {
+    return (
+      <p className="mb-3 text-13 text-body">
+        We'll call you <strong className="text-navy">{current}</strong>.{" "}
+        <button
+          type="button"
+          onClick={() => {
+            setValue(current);
+            setEditing(true);
+          }}
+          className="font-semibold text-link hover:underline"
+        >
+          Change
+        </button>
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={save} className="mb-4 rounded-tile bg-sky-tint p-3">
+      <label htmlFor="call-me" className="block text-sm font-bold text-navy">
+        What should we call you?
+      </label>
+      <div className="mt-1.5 flex flex-wrap gap-2">
+        <input
+          id="call-me"
+          className="btd-input min-w-0 flex-1"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Your name, or a nickname"
+        />
+        <button
+          type="submit"
+          disabled={saving || !value.trim()}
+          className="btd-btn-sky min-h-[40px] px-4 text-sm disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        {current && (
+          <button type="button" onClick={() => setEditing(false)} className="text-13 font-semibold text-link hover:underline">
+            Cancel
+          </button>
+        )}
+      </div>
+      {error && <p className="mt-1.5 text-12 text-coral-ink">{error}</p>}
+    </form>
   );
 }
