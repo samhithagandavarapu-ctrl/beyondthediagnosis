@@ -55,7 +55,7 @@ export default function Login() {
         <p className="text-slate mb-8">Signed in as {user.email || user.phone || "your account"}.</p>
         <div className="btd-card p-6 space-y-3">
           <Link
-            to="/profile#account"
+            to="/profile?section=security"
             className="block w-full text-center px-4 py-2.5 rounded bg-ink text-paper font-semibold text-sm"
           >
             Manage your account
