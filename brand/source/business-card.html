@@ -10,7 +10,7 @@
 @page { size: 3.75in 2.25in; margin: 0; }
 :root {
   --navy: #213244; --mist: #F3F9FE; --sky: #8FCBF2; --butter: #FFDE9E; --body: #3C5266; --link: #1B5C8F;
-  --bleed: 0.125in; --safe: 0.3in; /* bleed + 0.175in breathing room */
+  --bleed: 0.125in; --safe: 0.38in; /* bleed + 0.255in: clears printers whose safe line sits 0.125in inside the trim */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -19,9 +19,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
 /* Front */
 .front { background: var(--navy); color: var(--mist); }
-.front .rings { position: absolute; right: -0.55in; top: -0.5in; width: 2.3in; height: 2.3in; }
+.front .rings { position: absolute; right: -0.45in; top: -0.42in; width: 2.3in; height: 2.3in; }
 .front .logo { position: absolute; left: var(--safe); top: var(--safe); display: flex; align-items: center; gap: 0.09in; font: 800 17pt/1 "Funnel Display", sans-serif; letter-spacing: -0.02em; }
-.front .line { position: absolute; left: var(--safe); bottom: var(--safe); font: 800 13.5pt/1.1 "Funnel Display", sans-serif; letter-spacing: -0.015em; }
+.front .line { position: absolute; left: var(--safe); bottom: calc(var(--safe) + 0.05in); font: 800 13.5pt/1.1 "Funnel Display", sans-serif; letter-spacing: -0.015em; }
 .front .line .turn { color: var(--butter); position: relative; display: inline-block; }
 .front .line svg { position: absolute; left: -3%; width: 106%; bottom: -0.3em; height: 0.36em; overflow: visible; }
 .front .line path { fill: none; stroke: var(--sky); stroke-width: 1.6; stroke-linecap: round; }
