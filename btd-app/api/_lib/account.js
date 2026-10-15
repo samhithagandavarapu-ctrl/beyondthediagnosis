@@ -38,6 +38,14 @@ export async function deleteAccount(authorizationHeader) {
   const { error: profileError } = await admin.from("profiles").delete().eq("id", user.id);
   if (profileError) console.error("Couldn't delete profile row:", profileError.message);
 
+  // Drafts cascade with the account, but clear them explicitly too in case
+  // the table was made without that. A missing table is fine.
+  const { error: draftsError } = await admin
+    .from("appointment_drafts")
+    .delete()
+    .eq("user_id", user.id);
+  if (draftsError) console.error("Couldn't delete drafts:", draftsError.message);
+
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
   if (deleteError) {
     console.error("Couldn't delete user:", deleteError.message);

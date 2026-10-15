@@ -13,9 +13,10 @@ families, and their clinicians. Built from the DECA Innovation Plan project doc.
   emergencies to 911, person-first language, etc).
 - **Appointment Prep Tool** (`/appointment-prep`) — structured form that generates a
   real downloadable PDF summary, with a "✨ Refine with AI" button that tightens and
-  clarifies your wording without inventing new facts. What you type is saved on the
-  device as you go, and every summary you generate goes into an appointment history
-  you can reopen, reprint, or reuse — kept in the browser, never uploaded.
+  clarifies your wording without inventing new facts. What you type saves as you go
+  into named drafts you can switch between — to your account when signed in (any
+  device), or this browser when not. Every summary you generate goes into an
+  appointment history you can reopen, reprint, or reuse, kept in the browser.
 - **Symptom Timeline** — inside Appointment Prep: a baseline ("their usual self"),
   then dated changes, medications, illnesses, tests, and life changes, with
   anything close together marked "around the same time". Printed on the PDF.
@@ -201,6 +202,15 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
 
 Without it, the button explains that deletion isn't set up and to email instead.
+
+### Saving Appointment Prep drafts to accounts
+
+Signed in, Appointment Prep drafts (and the My Voice sentence on each) save to
+the person's account so they're on every device. That needs one table: open
+Supabase → **SQL Editor**, paste in
+[`supabase/appointment-drafts.sql`](supabase/appointment-drafts.sql), and run
+it. Until then drafts stay in the browser they were made in, and the page says
+so. Only the owner can read their drafts; deleting the account deletes them.
 
 ### Story-published notifications
 

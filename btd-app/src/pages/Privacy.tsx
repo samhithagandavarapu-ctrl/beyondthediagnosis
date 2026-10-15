@@ -26,10 +26,13 @@ export default function Privacy() {
             you type into the Appointment Prep Tool. These are used only to generate
             your downloadable PDF — they are not sent to or stored by our AI provider
             beyond what's needed for the optional "Refine with AI" feature, and are not
-            shared with any third party. Your draft and your appointment history are
-            saved in your own browser on this device so you don't lose them; they are
-            never uploaded to our servers, and you can delete any of them from the
-            Appointment Prep page.
+            shared with any third party. If you're signed in, your Appointment Prep
+            drafts (and any My Voice sentence you put on one) are saved to your account
+            so you can pick them up on any device; only you can see them. If you're not
+            signed in, drafts stay in your own browser on this device and are never
+            uploaded. Your appointment history (summaries you've generated) stays in
+            your browser either way. You can delete any draft or summary from the
+            Appointment Prep page, and deleting your account deletes your drafts.
           </li>
           <li>
             <strong>AI Assistant conversations:</strong> messages you send to the AI
