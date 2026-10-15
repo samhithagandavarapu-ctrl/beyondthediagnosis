@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { CTA_LABEL, SURVEY_URL } from "../data/site";
+import Reveal from "../components/Reveal";
+import Scribble from "../components/Scribble";
 
 const tools = [
   {
@@ -24,21 +26,50 @@ const tools = [
 
 const cardGrid = "grid gap-5 mt-[34px]";
 
+// The headline sets down a word at a time; "label." gets underlined last.
+const RISE_STEP = 70; // ms between words
+const headline = "Every symptom deserves a real look —".split(" ");
+const headlineTurn = "not a shrug and a".split(" ");
+const turnDelay = (i: number) => (headline.length + i) * RISE_STEP + 250;
+const labelDelay = turnDelay(headlineTurn.length);
+
 export default function Home() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-mist to-sky-tint border-b border-navy/[0.08]">
+      <section className="btd-grain bg-gradient-to-b from-mist to-sky-tint border-b border-navy/[0.08]">
         <div className="btd-container pt-[88px] pb-[76px]">
           <div>
             <h1 className="btd-hero-h1 max-w-[16em]">
-              Every symptom deserves a real look —
-              <span className="text-link"> not a shrug and a label.</span>
+              {headline.map((w, i) => (
+                <span key={i}>
+                  <span className="btd-rise" style={{ animationDelay: `${i * RISE_STEP}ms` }}>
+                    {w}
+                  </span>{" "}
+                </span>
+              ))}
+              <span className="text-link">
+                {headlineTurn.map((w, i) => (
+                  <span key={i}>
+                    <span className="btd-rise" style={{ animationDelay: `${turnDelay(i)}ms` }}>
+                      {w}
+                    </span>{" "}
+                  </span>
+                ))}
+                <span className="btd-rise" style={{ animationDelay: `${labelDelay}ms` }}>
+                  <Scribble delay={labelDelay + 450} className="text-link [&_svg]:text-sky">
+                    label.
+                  </Scribble>
+                </span>
+              </span>
             </h1>
             <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
               Voiced helps people with Down syndrome, their families, and their
               clinicians catch what diagnostic overshadowing hides — when a real,
-              treatable symptom gets waved off as "just Down syndrome."
+              treatable symptom gets waved off as{" "}
+              <Scribble kind="circle" delay={labelDelay + 1300} className="[&_svg]:text-coral/70">
+                "just Down syndrome."
+              </Scribble>
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/assistant" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
@@ -77,11 +108,17 @@ export default function Home() {
           </Link>
         </div>
         <div className={`${cardGrid} md:grid-cols-3`}>
-          {tools.map((t) => (
-            <Link key={t.to} to={t.to} className="btd-card btd-card-hover p-[26px] grid gap-2.5 content-start">
+          {tools.map((t, i) => (
+            <Link
+              key={t.to}
+              to={t.to}
+              className={`btd-card btd-lift btd-lift-${["sky", "coral", "butter"][i % 3]} p-[26px] grid gap-2.5 content-start`}
+            >
               <h3 className="text-23 font-bold">{t.title}</h3>
               <p className="text-15 leading-[1.65] text-body">{t.desc}</p>
-              <span className="text-sm font-bold text-link">{t.cta}</span>
+              <span className="text-sm font-bold text-link">
+                {t.cta.replace(/ →$/, "")} <span className="btd-arrow">→</span>
+              </span>
             </Link>
           ))}
         </div>
@@ -150,13 +187,24 @@ export default function Home() {
       </section>
 
       {/* Principle band */}
-      <section className="bg-sky">
-        <div className="mx-auto max-w-[900px] px-6 py-[72px] text-center">
+      <section className="btd-grain bg-sky">
+        <Reveal className="mx-auto max-w-[900px] px-6 py-[72px] text-center">
           <p className="text-12 font-bold uppercase tracking-[0.14em] text-sky-ink">
             Our guiding principle
           </p>
           <blockquote className="mt-[18px] font-display text-[clamp(1.75rem,4vw,2.875rem)] leading-[1.2] tracking-[-0.02em]">
-            "Nothing for me, without me."
+            {["\"Nothing", "for", "me,"].map((w, i) => (
+              <span key={i}>
+                <span className="btd-quote-word" style={{ transitionDelay: `${200 + i * 150}ms` }}>
+                  {w}
+                </span>{" "}
+              </span>
+            ))}
+            <span className="btd-quote-word" style={{ transitionDelay: "650ms" }}>
+              <Scribble onReveal delay={1000} className="[&_svg]:text-white">
+                without me."
+              </Scribble>
+            </span>
           </blockquote>
           <p className="mx-auto mt-[18px] max-w-[46em] text-base leading-[1.7] text-sky-ink">
             Built by listening directly to self-advocates and families first — not
@@ -165,7 +213,7 @@ export default function Home() {
           <Link to="/assistant" className="btd-btn-coral mt-[30px] min-h-[52px] px-[30px] py-4 text-17">
             {CTA_LABEL}
           </Link>
-        </div>
+        </Reveal>
       </section>
     </div>
   );

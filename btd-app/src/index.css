@@ -17,6 +17,9 @@
   p {
     text-wrap: pretty;
   }
+  ::selection {
+    background: rgba(255, 222, 158, 0.7);
+  }
   :focus-visible {
     outline: 3px solid #1B5C8F;
     outline-offset: 3px;
@@ -145,6 +148,116 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   }
 }
 
+/* ---- Home page: a few hand-made touches ----
+   Calm on purpose: one pen stroke at a time, nothing that loops or
+   flashes. The global reduced-motion rule above flattens all of it. */
+
+/* A faint paper grain, so big flat colour fields feel printed, not
+   rendered. */
+.btd-grain {
+  position: relative;
+  isolation: isolate;
+}
+.btd-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.2 0 0 0 0 0.27 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Headline words set down one after another. */
+@keyframes btd-rise {
+  from { opacity: 0; transform: translateY(0.35em); }
+  to { opacity: 1; transform: none; }
+}
+.btd-rise {
+  display: inline-block;
+  opacity: 0;
+  animation: btd-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+/* Pen strokes inking themselves in (see Scribble.tsx). */
+@keyframes btd-ink {
+  to { stroke-dashoffset: 0; }
+}
+.btd-ink {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: btd-ink 0.9s cubic-bezier(0.55, 0, 0.3, 1) forwards;
+}
+.btd-ink-on-reveal {
+  animation-play-state: paused;
+}
+.is-shown .btd-ink-on-reveal {
+  animation-play-state: running;
+}
+
+/* Triggers the pieces below once they scroll into view (see Reveal.tsx).
+   Nothing moves; it only flips .is-shown. */
+.btd-reveal {
+  opacity: 1;
+}
+
+/* Tool cards tilt like a card picked up off a table. */
+.btd-lift {
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.btd-lift:hover,
+.btd-lift:focus-visible {
+  transform: translateY(-4px) rotate(-0.6deg);
+  box-shadow: 6px 8px 0 #8FCBF2;
+  border-color: #213244;
+}
+/* A different soft colour behind each card — just a hint of warmth. */
+.btd-lift-coral:hover,
+.btd-lift-coral:focus-visible {
+  box-shadow: 6px 8px 0 rgba(255, 166, 148, 0.6);
+}
+.btd-lift-butter:hover,
+.btd-lift-butter:focus-visible {
+  box-shadow: 6px 8px 0 rgba(255, 222, 158, 0.85);
+}
+.btd-lift .btd-arrow {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.btd-lift:hover .btd-arrow,
+.btd-lift:focus-visible .btd-arrow {
+  transform: translateX(5px);
+}
+
+/* Guiding principle: each word fills in as the quote arrives. */
+.btd-quote-word {
+  color: rgba(33, 50, 68, 0.25);
+  transition: color 0.6s ease;
+}
+.is-shown .btd-quote-word {
+  color: #213244;
+}
+
+/* Motion off: everything simply in its final, readable state. */
+@media (prefers-reduced-motion: reduce) {
+  .btd-rise {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .btd-ink {
+    stroke-dashoffset: 0 !important;
+    animation: none !important;
+  }
+}
+.a11y-high-contrast .btd-grain::after {
+  display: none;
+}
+.a11y-high-contrast .btd-quote-word {
+  color: #000000 !important;
+}
+
 /* ---- Printing the appointment summary ----
    window.print() should produce the same document as the PDF export, not a
    screenshot of the app: no nav, no accessibility bar, no floating buttons,
@@ -216,6 +329,16 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   .btd-print-note {
     margin-top: 12px !important;
     padding-top: 8px !important;
+  }
+  .btd-rise {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .btd-ink {
+    stroke-dashoffset: 0 !important;
+  }
+  .btd-quote-word {
+    color: inherit !important;
   }
   .btd-avoid-break {
     break-inside: avoid;
