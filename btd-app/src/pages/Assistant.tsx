@@ -13,6 +13,15 @@ const bubble = "max-w-[80%] px-[18px] py-4 text-15 leading-[1.65] whitespace-pre
 const assistantBubble = `${bubble} justify-self-start bg-sky-tint border border-navy/10 rounded-[18px_18px_18px_4px]`;
 const userBubble = `${bubble} btd-dark justify-self-end rounded-[18px_18px_4px_18px]`;
 
+/** The assistant is asked for plain text, but strip any Markdown that slips
+ *  through so people never see stray asterisks or # signs. */
+function plainText(text: string) {
+  return text
+    .replace(/^(\s*)[-*]\s+/gm, "$1• ")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*/g, "");
+}
+
 export default function Assistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -46,8 +55,12 @@ export default function Assistant() {
     setLoading(true);
 
     try {
-      const reply = await sendChatMessage(next);
-      setMessages((m) => [...m, { role: "assistant", content: reply }]);
+      // Show the reply as it streams in; "Thinking…" covers the gap before
+      // the first words arrive.
+      const reply = await sendChatMessage(next, (soFar) =>
+        setMessages([...next, { role: "assistant", content: soFar }])
+      );
+      setMessages([...next, { role: "assistant", content: reply }]);
     } catch (err: unknown) {
       // Show what actually went wrong. The old text blamed a local dev server,
       // which is misleading anywhere but a developer's own machine.
@@ -76,10 +89,10 @@ export default function Assistant() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 grid gap-4 content-start">
           {messages.map((m, i) => (
             <div key={i} className={m.role === "user" ? userBubble : assistantBubble}>
-              {m.content}
+              {m.role === "assistant" ? plainText(m.content) : m.content}
             </div>
           ))}
-          {loading && <div className={`${assistantBubble} text-body`}>Thinking…</div>}
+          {loading && messages[messages.length - 1]?.role === "user" && <div className={`${assistantBubble} text-body`}>Thinking…</div>}
           {error && (
             <div className="rounded-tile bg-coral/25 px-4 py-3 text-sm text-coral-ink">
               {error}
