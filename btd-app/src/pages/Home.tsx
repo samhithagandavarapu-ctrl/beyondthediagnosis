@@ -67,7 +67,7 @@ export default function Home() {
               Voiced helps people with Down syndrome, their families, and their
               clinicians catch what diagnostic overshadowing hides — when a real,
               treatable symptom gets waved off as{" "}
-              <Scribble kind="circle" delay={labelDelay + 1300} className="[&_svg]:text-sky">
+              <Scribble kind="circle" delay={labelDelay + 1300} className="[&_svg]:text-coral/70">
                 "just Down syndrome."
               </Scribble>
             </p>
@@ -108,8 +108,12 @@ export default function Home() {
           </Link>
         </div>
         <div className={`${cardGrid} md:grid-cols-3`}>
-          {tools.map((t) => (
-            <Link key={t.to} to={t.to} className="btd-card btd-lift p-[26px] grid gap-2.5 content-start">
+          {tools.map((t, i) => (
+            <Link
+              key={t.to}
+              to={t.to}
+              className={`btd-card btd-lift btd-lift-${["sky", "coral", "butter"][i % 3]} p-[26px] grid gap-2.5 content-start`}
+            >
               <h3 className="text-23 font-bold">{t.title}</h3>
               <p className="text-15 leading-[1.65] text-body">{t.desc}</p>
               <span className="text-sm font-bold text-link">

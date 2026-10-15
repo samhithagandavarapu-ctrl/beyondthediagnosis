@@ -17,6 +17,9 @@
   p {
     text-wrap: pretty;
   }
+  ::selection {
+    background: rgba(255, 222, 158, 0.7);
+  }
   :focus-visible {
     outline: 3px solid #1B5C8F;
     outline-offset: 3px;
@@ -208,6 +211,15 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   transform: translateY(-4px) rotate(-0.6deg);
   box-shadow: 6px 8px 0 #8FCBF2;
   border-color: #213244;
+}
+/* A different soft colour behind each card — just a hint of warmth. */
+.btd-lift-coral:hover,
+.btd-lift-coral:focus-visible {
+  box-shadow: 6px 8px 0 rgba(255, 166, 148, 0.6);
+}
+.btd-lift-butter:hover,
+.btd-lift-butter:focus-visible {
+  box-shadow: 6px 8px 0 rgba(255, 222, 158, 0.85);
 }
 .btd-lift .btd-arrow {
   display: inline-block;
