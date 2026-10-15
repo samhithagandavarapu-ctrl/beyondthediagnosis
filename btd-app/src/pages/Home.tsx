@@ -4,21 +4,18 @@ import { CTA_LABEL, SURVEY_URL } from "../data/site";
 const tools = [
   {
     to: "/assistant",
-    stripe: "border-t-coral",
     title: "AI Advocacy Assistant",
     desc: "Ask about your rights, accommodations, or how to describe a symptom clearly. It never diagnoses — it helps you advocate.",
     cta: "Open the assistant →",
   },
   {
     to: "/appointment-prep",
-    stripe: "border-t-butter",
     title: "Appointment Prep Tool",
     desc: "Turn symptoms, medications, and questions into a clean one-page summary you can hand straight to a provider.",
     cta: "Build a summary →",
   },
   {
     to: "/resources",
-    stripe: "border-t-sky",
     title: "Resource Navigator",
     desc: "Trusted resources filtered by life stage — prenatal, child, teen, adult, caregiver, or provider.",
     cta: "Browse resources →",
@@ -36,10 +33,7 @@ export default function Home() {
           <div>
             <h1 className="btd-hero-h1 max-w-[16em]">
               Every symptom deserves a real look —
-              <span className="text-link underline decoration-coral decoration-[0.09em] underline-offset-[0.14em]">
-                {" "}
-                not a shrug and a label.
-              </span>
+              <span className="text-link"> not a shrug and a label.</span>
             </h1>
             <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
               Voiced helps people with Down syndrome, their families, and their
@@ -84,11 +78,7 @@ export default function Home() {
         </div>
         <div className={`${cardGrid} md:grid-cols-3`}>
           {tools.map((t) => (
-            <Link
-              key={t.to}
-              to={t.to}
-              className={`btd-card btd-card-hover border-t-[3px] ${t.stripe} p-[26px] grid gap-2.5 content-start`}
-            >
+            <Link key={t.to} to={t.to} className="btd-card btd-card-hover p-[26px] grid gap-2.5 content-start">
               <h3 className="text-23 font-bold">{t.title}</h3>
               <p className="text-15 leading-[1.65] text-body">{t.desc}</p>
               <span className="text-sm font-bold text-link">{t.cta}</span>
@@ -119,7 +109,7 @@ export default function Home() {
                 Read the full breakdown →
               </Link>
             </div>
-            <div className="rounded-r-2xl border-l-[3px] border-coral bg-mist/7 px-6 py-[22px]">
+            <div className="rounded-r-2xl border-l-[3px] border-sky bg-mist/7 px-6 py-[22px]">
               <p className="text-15 font-bold text-mist/85">What it can look like:</p>
               <ul className="mt-3 grid gap-2.5 text-15 leading-[1.6]">
                 <li>A change in mood or behavior that turns out to be pain, hearing loss, or a thyroid problem.</li>
@@ -160,15 +150,15 @@ export default function Home() {
       </section>
 
       {/* Principle band */}
-      <section className="bg-butter">
+      <section className="bg-sky">
         <div className="mx-auto max-w-[900px] px-6 py-[72px] text-center">
-          <p className="text-12 font-bold uppercase tracking-[0.14em] text-butter-ink">
+          <p className="text-12 font-bold uppercase tracking-[0.14em] text-sky-ink">
             Our guiding principle
           </p>
           <blockquote className="mt-[18px] font-display text-[clamp(1.75rem,4vw,2.875rem)] leading-[1.2] tracking-[-0.02em]">
             "Nothing for me, without me."
           </blockquote>
-          <p className="mx-auto mt-[18px] max-w-[46em] text-base leading-[1.7] text-butter-ink">
+          <p className="mx-auto mt-[18px] max-w-[46em] text-base leading-[1.7] text-sky-ink">
             Built by listening directly to self-advocates and families first — not
             assumptions made on their behalf.
           </p>

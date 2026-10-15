@@ -16,7 +16,6 @@ export default function PageHero({ eyebrow, title, lede, tone = "tint", children
         <div>
           <span className={`btd-eyebrow ${navy ? "text-butter" : ""}`}>{eyebrow}</span>
           <h1 className="btd-page-h1 mt-3 max-w-[22em]">{title}</h1>
-          <span aria-hidden="true" className="btd-accent-bar mt-5" />
           <p
             className={`mt-[18px] max-w-[40em] text-lg leading-[1.65] ${
               navy ? "text-mist/85" : "text-body"
