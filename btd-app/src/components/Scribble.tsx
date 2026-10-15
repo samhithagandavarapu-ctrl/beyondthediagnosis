@@ -55,3 +55,20 @@ export default function Scribble({ children, kind = "underline", delay = 0, onRe
     </span>
   );
 }
+
+/** A page title with its last word underlined by hand — the same pen stroke
+ *  the home headline uses, so every page opens the same way. */
+export function inkLastWord(text: string, delay = 350): ReactNode {
+  let cut = text.trimEnd().lastIndexOf(" ");
+  // A pen stroke under "it" is a squiggle; take the word before it too.
+  if (cut > 0 && text.length - cut <= 3) cut = text.lastIndexOf(" ", cut - 1);
+  if (cut < 0) return <Scribble delay={delay} className="[&_svg]:text-sky">{text}</Scribble>;
+  return (
+    <>
+      {text.slice(0, cut)}{" "}
+      <Scribble delay={delay} className="[&_svg]:text-sky">
+        {text.slice(cut + 1)}
+      </Scribble>
+    </>
+  );
+}

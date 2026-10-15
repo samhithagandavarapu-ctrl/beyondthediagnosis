@@ -44,8 +44,23 @@
   .btd-card {
     @apply btd-surface rounded-card border border-navy/12;
   }
+  /* Clickable cards tilt like a card picked up off a table, with a solid
+     offset shadow that cycles blue, soft coral, butter along a row. */
   .btd-card-hover {
-    @apply transition-[border-color,box-shadow] hover:border-coral hover:shadow-[0_10px_30px_rgba(33,50,68,0.09)];
+    transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s ease;
+  }
+  .btd-card-hover:hover,
+  .btd-card-hover:focus-visible {
+    transform: translateY(-4px) rotate(-0.6deg);
+    box-shadow: 6px 8px 0 #8FCBF2;
+  }
+  .btd-card-hover:nth-child(3n + 2):hover,
+  .btd-card-hover:nth-child(3n + 2):focus-visible {
+    box-shadow: 6px 8px 0 rgba(255, 166, 148, 0.6);
+  }
+  .btd-card-hover:nth-child(3n):hover,
+  .btd-card-hover:nth-child(3n):focus-visible {
+    box-shadow: 6px 8px 0 rgba(255, 222, 158, 0.85);
   }
   .btd-dark {
     @apply bg-navy text-mist;
@@ -228,6 +243,33 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
 .btd-lift:hover .btd-arrow,
 .btd-lift:focus-visible .btd-arrow {
   transform: translateX(5px);
+}
+
+/* A photo pinned up like a snapshot: white border, a slight tilt, and a
+   strip of tape across the top. */
+.btd-snapshot {
+  position: relative;
+  padding: 10px 10px 0;
+  transform: rotate(-1.2deg);
+  box-shadow: 0 18px 40px -18px rgba(33, 50, 68, 0.35);
+}
+.btd-snapshot::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: -12px;
+  left: 50%;
+  width: 96px;
+  height: 26px;
+  transform: translateX(-50%) rotate(3deg);
+  background: rgba(255, 222, 158, 0.75);
+  box-shadow: 0 1px 2px rgba(33, 50, 68, 0.12);
+}
+.a11y-high-contrast .btd-snapshot {
+  transform: none;
+}
+.a11y-high-contrast .btd-snapshot::before {
+  display: none;
 }
 
 /* Guiding principle: each word fills in as the quote arrives. */

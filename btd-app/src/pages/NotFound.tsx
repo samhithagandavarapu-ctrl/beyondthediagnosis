@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
+import { inkLastWord } from "../components/Scribble";
 
 export default function NotFound() {
   return (
     <div className="btd-container py-14 max-w-md">
-      <h1 className="text-3xl font-display font-semibold mb-2">We couldn't find that page</h1>
+      <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("We couldn't find that page")}</h1>
       <p className="text-slate mb-6">
         The link may be out of date, or something may have gone sideways on the way here.
         Nothing you saved on this device is lost.

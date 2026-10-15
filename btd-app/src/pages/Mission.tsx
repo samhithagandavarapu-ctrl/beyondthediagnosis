@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { CTA_LABEL } from "../data/site";
+import Scribble, { inkLastWord } from "../components/Scribble";
 
 // One centered column for the whole page, so every section shares its edges.
 const column = "mx-auto w-full max-w-[1000px] px-6";
@@ -7,9 +8,9 @@ const column = "mx-auto w-full max-w-[1000px] px-6";
 export default function Mission() {
   return (
     <div>
-      <section className="bg-sky-tint border-b border-navy/[0.08]">
+      <section className="btd-grain bg-sky-tint border-b border-navy/[0.08]">
         <div className={`${column} pt-16 pb-14`}>
-          <h1 className="btd-page-h1">Our Mission</h1>
+          <h1 className="btd-page-h1">{inkLastWord("Our Mission")}</h1>
           <p className="mt-[18px] text-lg leading-[1.65] text-body">
             Voiced exists so that people with Down syndrome are heard, not overlooked, in
             healthcare.
@@ -29,7 +30,10 @@ export default function Mission() {
       <section className={`${column} py-8`}>
         <blockquote className="border-y-2 border-coral py-10 text-center">
           <p className="font-display text-[clamp(1.75rem,4.5vw,2.25rem)] font-extrabold leading-[1.2] text-navy">
-            Nothing for me, without me.
+            Nothing for me,{" "}
+            <Scribble delay={600} className="[&_svg]:text-coral/70">
+              without me.
+            </Scribble>
           </p>
         </blockquote>
       </section>
@@ -38,8 +42,8 @@ export default function Mission() {
         className={`${column} grid items-stretch gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-10`}
       >
         {/* The text column sets the height; the photo fills it and crops. */}
-        <figure className="btd-card flex flex-col overflow-hidden">
-          <div className="relative aspect-[16/10] md:aspect-auto md:flex-1">
+        <figure className="btd-snapshot btd-card flex flex-col">
+          <div className="relative aspect-[16/10] overflow-hidden rounded-lg md:aspect-auto md:flex-1">
             <img
               src="/images/samhitha-camp-shine.jpg"
               alt="Samhitha smiling in a gym, giving a piggyback ride to a young camper in an orange shirt"

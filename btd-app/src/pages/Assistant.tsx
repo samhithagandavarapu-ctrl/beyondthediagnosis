@@ -1,6 +1,7 @@
 import { FormEvent, useRef, useState, useEffect } from "react";
 import { sendChatMessage, ChatMessage } from "../lib/api";
 import DictateButton from "../components/DictateButton";
+import { inkLastWord } from "../components/Scribble";
 
 export const STARTER_PROMPTS = [
   "What are my rights at a doctor's appointment?",
@@ -64,7 +65,7 @@ export default function Assistant() {
     <section className="mx-auto max-w-[900px] px-6 pt-14 pb-20">
       <span className="btd-eyebrow">Always free</span>
       <h1 className="mt-3 text-[clamp(2rem,4.5vw,3rem)] font-extrabold leading-[1.1]">
-        AI Advocacy Assistant
+        {inkLastWord("AI Advocacy Assistant")}
       </h1>
       <p className="mt-3.5 mb-7 max-w-[40em] text-17 leading-[1.7] text-body">
         Education and advocacy support only. This assistant never diagnoses, never

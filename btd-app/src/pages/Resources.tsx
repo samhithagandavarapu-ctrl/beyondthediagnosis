@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LIFE_STAGES, RESOURCES, LifeStage } from "../data/resources";
+import { inkLastWord } from "../components/Scribble";
 
 export default function Resources() {
   // /resources?stage=adult preselects a filter (linked from the Tools page).
@@ -14,7 +15,7 @@ export default function Resources() {
 
   return (
     <div className="btd-container py-10">
-      <h1 className="text-3xl font-display font-semibold mb-2">Resource Navigator</h1>
+      <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("Resource Navigator")}</h1>
       <p className="text-slate mb-6 max-w-2xl">
         Trusted resources, filtered by where you are right now. Know one we're missing?{" "}
         <a href="#suggest" className="font-semibold text-link hover:underline">
