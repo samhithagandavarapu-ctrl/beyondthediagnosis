@@ -84,6 +84,14 @@ export default function Assistant() {
         Education and advocacy support only. This assistant never diagnoses, never
         recommends medication, and always defers to your provider's care plan.
       </p>
+      <p
+        role="note"
+        className="-mt-3 mb-7 max-w-[40em] rounded-tile border border-navy/16 bg-mist px-4 py-3 text-15 leading-[1.6] text-body"
+      >
+        <strong className="text-navy">AI can make mistakes.</strong> Answers here may be
+        wrong or missing something. Always check important information with your doctor
+        or another trusted source.
+      </p>
 
       <div className="btd-card rounded-panel overflow-hidden flex flex-col h-[70vh] min-h-[460px]">
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 grid gap-4 content-start">
