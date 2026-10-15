@@ -145,97 +145,77 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   }
 }
 
-/* ---- Home page motion ----
-   Calm on purpose: slow drifts and soft lifts, nothing that flashes or
-   loops fast. The global reduced-motion rule above flattens all of it. */
+/* ---- Home page: a few hand-made touches ----
+   Calm on purpose: one pen stroke at a time, nothing that loops or
+   flashes. The global reduced-motion rule above flattens all of it. */
 
-/* Soft light drifting behind the hero. */
-@keyframes btd-drift {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(4%, -6%, 0) scale(1.12); }
+/* A faint paper grain, so big flat colour fields feel printed, not
+   rendered. */
+.btd-grain {
+  position: relative;
+  isolation: isolate;
 }
-.btd-aurora {
+.btd-grain::after {
+  content: "";
   position: absolute;
-  border-radius: 9999px;
-  filter: blur(70px);
+  inset: 0;
+  z-index: -1;
   pointer-events: none;
-  animation: btd-drift 18s ease-in-out infinite;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.2 0 0 0 0 0.27 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* Headline words rising into place, one after another. */
+/* Headline words set down one after another. */
 @keyframes btd-rise {
-  from { opacity: 0; transform: translateY(0.45em); filter: blur(6px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(0.35em); }
+  to { opacity: 1; transform: none; }
 }
 .btd-rise {
   display: inline-block;
   opacity: 0;
-  animation: btd-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation: btd-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
 }
 
-/* Sections easing in as they scroll into view (see Reveal.tsx). */
+/* Pen strokes inking themselves in (see Scribble.tsx). */
+@keyframes btd-ink {
+  to { stroke-dashoffset: 0; }
+}
+.btd-ink {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: btd-ink 0.9s cubic-bezier(0.55, 0, 0.3, 1) forwards;
+}
+.btd-ink-on-reveal {
+  animation-play-state: paused;
+}
+.is-shown .btd-ink-on-reveal {
+  animation-play-state: running;
+}
+
+/* Triggers the pieces below once they scroll into view (see Reveal.tsx).
+   Nothing moves; it only flips .is-shown. */
 .btd-reveal {
-  opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.btd-reveal.is-shown {
   opacity: 1;
-  transform: none;
 }
 
-/* Tool cards lift toward you. */
+/* Tool cards tilt like a card picked up off a table. */
 .btd-lift {
-  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
 .btd-lift:hover,
 .btd-lift:focus-visible {
-  transform: translateY(-6px);
-  box-shadow: 0 24px 50px -18px rgba(33, 50, 68, 0.28);
-  border-color: #8FCBF2;
+  transform: translateY(-4px) rotate(-0.6deg);
+  box-shadow: 6px 8px 0 #8FCBF2;
+  border-color: #213244;
 }
-.btd-lift .btd-lift-icon {
-  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), background-color 0.35s ease;
+.btd-lift .btd-arrow {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.btd-lift:hover .btd-lift-icon,
-.btd-lift:focus-visible .btd-lift-icon {
-  transform: rotate(-6deg) scale(1.08);
-  background-color: #8FCBF2;
-}
-
-/* The overshadowing demo: a label's shadow over real symptoms, lifted. */
-.btd-shadow-veil {
-  transition: opacity 0.7s ease, transform 0.9s cubic-bezier(0.6, 0, 0.2, 1);
-}
-.btd-shadow-stamp {
-  transition: transform 0.9s cubic-bezier(0.6, 0, 0.2, 1);
-}
-.btd-shadow-demo.is-revealed .btd-shadow-veil {
-  opacity: 0;
-  transform: translateY(-105%);
-  pointer-events: none;
-}
-.btd-shadow-demo.is-revealed .btd-shadow-stamp {
-  transform: rotate(-12deg) scale(0.8);
-}
-.btd-symptom {
-  transition: background-color 0.6s ease, border-color 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.btd-shadow-demo.is-revealed .btd-symptom {
-  background-color: #FFFFFF;
-  border-color: rgba(143, 203, 242, 0.9);
-  transform: translateX(4px);
-}
-/* Space is always held for the finding, so lifting the shadow never
-   reflows the card. */
-.btd-symptom-check {
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-.btd-shadow-demo.is-revealed .btd-symptom-check {
-  opacity: 1;
-  transform: none;
+.btd-lift:hover .btd-arrow,
+.btd-lift:focus-visible .btd-arrow {
+  transform: translateX(5px);
 }
 
 /* Guiding principle: each word fills in as the quote arrives. */
@@ -249,18 +229,17 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
 
 /* Motion off: everything simply in its final, readable state. */
 @media (prefers-reduced-motion: reduce) {
-  .btd-rise,
-  .btd-reveal {
+  .btd-rise {
     opacity: 1 !important;
     transform: none !important;
-    filter: none !important;
     animation: none !important;
   }
-  .btd-aurora {
+  .btd-ink {
+    stroke-dashoffset: 0 !important;
     animation: none !important;
   }
 }
-.a11y-high-contrast .btd-aurora {
+.a11y-high-contrast .btd-grain::after {
   display: none;
 }
 .a11y-high-contrast .btd-quote-word {
@@ -339,10 +318,15 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
     margin-top: 12px !important;
     padding-top: 8px !important;
   }
-  .btd-reveal,
   .btd-rise {
     opacity: 1 !important;
     transform: none !important;
+  }
+  .btd-ink {
+    stroke-dashoffset: 0 !important;
+  }
+  .btd-quote-word {
+    color: inherit !important;
   }
   .btd-avoid-break {
     break-inside: avoid;

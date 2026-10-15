@@ -4,14 +4,12 @@ type Props = {
   children: ReactNode;
   as?: ElementType;
   className?: string;
-  /** Milliseconds to wait after coming into view — for staggering siblings. */
-  delay?: number;
 };
 
-/** Fades and lifts its content in the first time it scrolls into view.
- *  Content is never stuck hidden: without IntersectionObserver it shows at
- *  once, reduced-motion collapses the transition, and print forces it on. */
-export default function Reveal({ children, as: Tag = "div", className = "", delay = 0 }: Props) {
+/** Adds .is-shown the first time its content scrolls into view, so pieces
+ *  inside (a pen stroke, a quote filling in) can start then rather than
+ *  off-screen. Without IntersectionObserver it flips at once. */
+export default function Reveal({ children, as: Tag = "div", className = "" }: Props) {
   const ref = useRef<HTMLElement>(null);
   const [shown, setShown] = useState(false);
 
@@ -38,7 +36,6 @@ export default function Reveal({ children, as: Tag = "div", className = "", dela
     <Tag
       ref={ref}
       className={`btd-reveal ${shown ? "is-shown" : ""} ${className}`}
-      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
     >
       {children}
     </Tag>
