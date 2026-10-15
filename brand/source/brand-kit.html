@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voiced Brand Kit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;600;700;800&family=Funnel+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+@page { size: 11in 8.5in; margin: 0; }
+:root {
+  --navy: #213244; --mist: #F3F9FE; --tint: #E4F1FC; --sky: #8FCBF2; --sky-ink: #16394F;
+  --coral: #FFA694; --coral-ink: #4A1F14; --butter: #FFDE9E; --butter-ink: #4A3A12;
+  --body: #3C5266; --muted: #4A6076; --link: #1B5C8F; --white: #FFFFFF;
+  --line: rgba(33, 50, 68, 0.14);
+  --d: "Funnel Display", "Funnel Sans", sans-serif;
+  --b: "Funnel Sans", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--mist); }
+body { font-family: var(--b); color: var(--navy); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page {
+  width: 11in; height: 8.5in; position: relative; overflow: hidden;
+  padding: 0.7in 0.8in 0.75in; page-break-after: always; break-after: page;
+  background: var(--mist); display: flex; flex-direction: column;
+}
+.page:last-child { page-break-after: auto; break-after: auto; }
+.foot {
+  position: absolute; left: 0.8in; right: 0.8in; bottom: 0.38in;
+  display: flex; justify-content: space-between; font-size: 8.5pt; color: var(--muted);
+  border-top: 1px solid var(--line); padding-top: 8px;
+}
+.eyebrow { font: 700 8.5pt/1 var(--b); letter-spacing: 0.14em; text-transform: uppercase; color: var(--link); margin-bottom: 10px; }
+h1 { font: 800 34pt/1.05 var(--d); letter-spacing: -0.02em; }
+h2 { font: 800 30pt/1.06 var(--d); letter-spacing: -0.02em; margin-bottom: 8px; }
+h3 { font: 700 13pt/1.2 var(--d); margin-bottom: 6px; }
+p { font-size: 10.5pt; line-height: 1.55; color: var(--body); }
+.lead { font-size: 13pt; line-height: 1.5; max-width: 44em; color: var(--body); }
+.small { font-size: 8.8pt; line-height: 1.45; color: var(--muted); }
+.mono { font-variant-numeric: tabular-nums; }
+.under { position: relative; display: inline-block; white-space: nowrap; }
+.under svg { position: absolute; left: -3%; width: 106%; bottom: -0.28em; height: 0.36em; overflow: visible; }
+.under path { fill: none; stroke: var(--sky); stroke-width: 3.5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.circ { position: relative; display: inline-block; white-space: nowrap; }
+.circ svg { position: absolute; left: -6%; right: -5%; top: -16%; bottom: -26%; width: 111%; height: 142%; overflow: visible; }
+.circ path { fill: none; stroke: rgba(255,166,148,0.75); stroke-width: 2.5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.grid { display: grid; gap: 22px; }
+.card { background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 20px 22px; }
+.btn { display: inline-flex; align-items: center; border-radius: 999px; font: 700 11pt/1 var(--b); padding: 12px 22px; color: var(--navy); }
+.btn.coral { background: var(--coral); } .btn.sky { background: var(--sky); }
+.btn.outline { border: 2px solid var(--navy); } .btn.navy { background: var(--navy); color: var(--mist); }
+
+/* Cover */
+.cover { background: var(--navy); color: var(--mist); justify-content: space-between; }
+.cover .top { display: flex; align-items: center; gap: 14px; font: 800 22pt/1 var(--d); letter-spacing: -0.02em; }
+.cover h1 { font-size: 64pt; line-height: 1; color: var(--mist); }
+.cover h1 .turn { color: var(--sky); }
+.cover .tag { font-size: 15pt; color: var(--tint); margin-top: 34px; max-width: 34em; line-height: 1.5; }
+.cover .meta { display: flex; justify-content: space-between; align-items: end; font-size: 9.5pt; color: var(--sky); }
+.cover .chips { display: flex; gap: 10px; }
+.cover .chips span { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid rgba(243,249,254,0.25); }
+.cover .under path { stroke: var(--butter); }
+
+/* Logo */
+.logo-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+.logo-tile { border-radius: 20px; height: 2.15in; display: flex; align-items: center; justify-content: center; gap: 14px; font: 800 30pt/1 var(--d); letter-spacing: -0.02em; border: 1px solid var(--line); }
+.logo-tile.light { background: var(--white); color: var(--navy); }
+.logo-tile.dark { background: var(--navy); color: var(--mist); }
+.logo-tile.tint { background: var(--butter); color: var(--navy); }
+.cap { font-size: 8.8pt; color: var(--muted); margin-top: 7px; }
+.rules { display: grid; grid-template-columns: 1.1fr 1fr 1.4fr; gap: 18px; margin-top: 18px; }
+.clear { position: relative; width: 0.95in; height: 0.95in; margin: 0.32in auto 0; }
+.clear .box { position: absolute; inset: -0.25in; border: 1.5px dashed var(--link); border-radius: 8px; }
+.donts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.dont { text-align: center; }
+.dont .t { height: 0.8in; border-radius: 12px; background: var(--white); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.dont .t::after { content: ""; position: absolute; width: 140%; height: 2px; background: #C2412D; transform: rotate(-32deg); }
+.dont .l { font-size: 8pt; color: var(--muted); margin-top: 5px; line-height: 1.3; }
+
+/* Color */
+.sw-main { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.sw { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--white); }
+.sw .chip { height: 1.55in; padding: 12px 14px; display: flex; align-items: end; font: 800 15pt/1 var(--d); }
+.sw .info { padding: 10px 14px 12px; font-size: 8.6pt; line-height: 1.5; color: var(--body); }
+.sw .info b { color: var(--navy); font-weight: 700; }
+.sw-sup { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 14px; }
+.ss { display: grid; gap: 4px; }
+.ss .c { height: 0.42in; border-radius: 10px; border: 1px solid var(--line); }
+.ss .n { font-size: 8.2pt; line-height: 1.3; color: var(--body); }
+.ss .n b { color: var(--navy); }
+.pairs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 14px; }
+.pair { border-radius: 12px; padding: 10px 12px; font: 700 10.5pt/1.2 var(--b); border: 1px solid var(--line); }
+.pair small { display: block; font: 600 7.8pt/1.3 var(--b); margin-top: 4px; opacity: 0.85; }
+
+/* Type */
+.type-top { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.specimen { background: var(--white); border-radius: 20px; border: 1px solid var(--line); padding: 16px 22px; }
+.specimen .big { font-size: 48pt; line-height: 1; letter-spacing: -0.02em; margin: 6px 0 8px; }
+.specimen .alpha { font-size: 12pt; line-height: 1.5; color: var(--body); letter-spacing: 0.02em; }
+.weights { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 10pt; color: var(--navy); }
+.scale { margin-top: 12px; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.scale .r { display: grid; grid-template-columns: 1.55in 1fr; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.scale .r .k { font-size: 8.5pt; color: var(--muted); line-height: 1.35; }
+.scale .r .k b { color: var(--navy); font-weight: 700; display: block; }
+
+/* Signature */
+.sig { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sig .card { padding: 14px 18px; gap: 8px; }
+.sig .card { display: grid; gap: 10px; align-content: start; }
+.demo { background: var(--mist); border-radius: 14px; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; min-height: 0.9in; }
+.offset { background: var(--white); border: 2px solid var(--navy); border-radius: 14px; padding: 12px 14px; font: 700 10.5pt/1.2 var(--d); }
+.offset.s1 { box-shadow: 6px 8px 0 var(--sky); border-color: rgba(33,50,68,0.12); border-width: 1px; }
+.offset.s2 { box-shadow: 6px 8px 0 rgba(255,166,148,0.6); border-color: rgba(33,50,68,0.12); border-width: 1px; }
+.offset.s3 { box-shadow: 6px 8px 0 rgba(255,222,158,0.85); border-color: rgba(33,50,68,0.12); border-width: 1px; }
+.banner { background: var(--butter); border: 2px solid var(--navy); border-radius: 14px; padding: 12px 14px; box-shadow: 6px 7px 0 var(--navy); font: 800 11pt/1.2 var(--d); }
+.radii { display: flex; gap: 14px; align-items: end; }
+.radii div { background: var(--tint); border: 1.5px solid var(--link); display: flex; align-items: end; justify-content: center; font-size: 7.5pt; color: var(--link); padding-bottom: 4px; }
+
+/* Voice */
+.voice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.voice .card p { font-size: 9.8pt; }
+.dd { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.dd .col { border-radius: 18px; padding: 16px 18px; }
+.dd .say { background: var(--tint); }
+.dd .avoid { background: #FFEDE8; }
+.dd h3 { font-size: 11pt; }
+.dd ul { list-style: none; display: grid; gap: 7px; }
+.dd li { font-size: 9.8pt; line-height: 1.45; color: var(--body); padding-left: 16px; position: relative; }
+.dd .say li::before { content: ""; position: absolute; left: 0; top: 0.45em; width: 7px; height: 7px; border-radius: 50%; background: var(--link); }
+.dd .avoid li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 8px; height: 2px; background: #B23A24; }
+
+/* In use */
+.mock { background: linear-gradient(to bottom, var(--mist), var(--tint)); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.mock .nav { display: flex; align-items: center; gap: 18px; padding: 10px 20px; border-bottom: 1px solid var(--line); font-size: 9pt; }
+.mock .nav .lg { display: flex; align-items: center; gap: 8px; font: 800 13pt/1 var(--d); margin-right: auto; }
+.mock .nav .p { background: var(--coral); border-radius: 999px; padding: 6px 12px; font-weight: 700; }
+.mock .hero { padding: 22px 26px 24px; }
+.mock .hero .h { font: 800 25pt/1.06 var(--d); letter-spacing: -0.02em; }
+.mock .hero .h .turn { color: var(--link); }
+.mock .hero .bn { margin-top: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--butter); border: 2px solid var(--navy); border-radius: 16px; padding: 12px 16px; box-shadow: 5px 6px 0 var(--navy); }
+.mock .hero .bn b { font: 800 12pt/1.2 var(--d); display: block; }
+.mock .hero .bn span { font-size: 8.8pt; color: var(--butter-ink); }
+.mock .hero .bn .btn.navy { color: var(--mist); }
+.mock .hero .bn .btn { font-size: 9.5pt; padding: 9px 16px; white-space: nowrap; }
+.mock .hero .in { margin-top: 16px; font-size: 11.5pt; line-height: 1.6; color: var(--body); max-width: 36em; }
+.mock .hero .ct { margin-top: 14px; display: flex; gap: 10px; }
+.mock .hero .ct .btn { font-size: 9.5pt; padding: 9px 16px; }
+</style>
+</head>
+<body>
+
+<!-- 1. Cover -->
+<section class="page cover">
+  <div class="top">
+    <svg width="46" height="46" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#213244"/><circle cx="32" cy="32" r="31" fill="none" stroke="#8FCBF2" stroke-width="1.5" opacity="0.55"/><circle cx="32" cy="32" r="24" fill="none" stroke="#8FCBF2" stroke-width="1" opacity="0.4"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Voiced
+  </div>
+  <div>
+    <p class="eyebrow" style="color: var(--butter)">Brand kit · 2026</p>
+    <h1>Nothing for me,<br><span class="turn"><span class="under">without me.<svg viewBox="0 0 200 24" preserveAspectRatio="none"><path d="M4 15 C 40 9, 85 7, 130 9 S 185 13, 196 8 M 18 20 C 60 15, 120 14, 170 17"/></svg></span></span></h1>
+    <p class="tag">How Voiced looks, sounds and shows up: the logo, colors, fonts, signature details and voice that make every page, flyer and slide feel like one thing.</p>
+  </div>
+  <div class="meta">
+    <span>Version 1.0 · October 2026</span>
+    <div class="chips"><span style="background:#213244"></span><span style="background:#8FCBF2"></span><span style="background:#FFA694"></span><span style="background:#FFDE9E"></span><span style="background:#F3F9FE"></span></div>
+  </div>
+</section>
+
+<!-- 2. Who we are -->
+<section class="page">
+  <p class="eyebrow">01 · Who we are</p>
+  <h2>Every symptom deserves a real look, <span style="color:var(--link)">not a shrug and a <span class="under">label.<svg viewBox="0 0 200 24" preserveAspectRatio="none"><path d="M4 15 C 40 9, 85 7, 130 9 S 185 13, 196 8 M 18 20 C 60 15, 120 14, 170 17"/></svg></span></span></h2>
+  <p class="lead" style="margin-top: 18px">Voiced helps people with Down syndrome, their families, and their clinicians catch what diagnostic overshadowing hides: when a real, treatable symptom gets waved off as <span class="circ">“just Down syndrome.”<svg viewBox="0 0 240 70" preserveAspectRatio="none"><path d="M 196 12 C 150 2, 60 2, 22 16 C -4 28, 6 56, 60 63 C 120 70, 214 64, 232 42 C 246 22, 200 6, 150 6 C 120 6, 96 8, 84 10"/></svg></span></p>
+  <div class="grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 30px">
+    <div class="card"><h3>Mission</h3><p>Voiced exists so that people with Down syndrome are heard, not overlooked, in healthcare.</p></div>
+    <div class="card"><h3>Who it's for</h3><p>Self-advocates with Down syndrome, the families and caregivers beside them, and the clinicians who want to get it right.</p></div>
+    <div class="card"><h3>What we give them</h3><p>Tools to prepare for appointments, explain what's normal for them, and speak up, so every visit leads to real answers.</p></div>
+  </div>
+  <div class="card" style="margin-top: 22px; background: var(--navy); border: none; display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center">
+    <p style="font: 800 24pt/1.1 var(--d); color: var(--mist); letter-spacing: -0.02em">Nothing for me,<br><span style="color: var(--butter)">without me.</span></p>
+    <p style="color: var(--tint); font-size: 10.5pt">Our guiding principle, borrowed from the disability rights movement. Every tool, page and message is built with self-advocates, not just for them. When in doubt, ask: would the person this is about feel included and respected reading it?</p>
+  </div>
+  <div class="foot"><span>Voiced Brand Kit</span><span>2</span></div>
+</section>
+
+<!-- 3. Logo -->
+<section class="page">
+  <p class="eyebrow">02 · Logo</p>
+  <h2>The mark</h2>
+  <p class="lead" style="max-width: 50em">A butter-yellow V on a navy circle, with two faint sky rings like sound moving outward: a voice being heard. Use the mark with the wordmark set in Funnel Display ExtraBold, or the mark alone where space is tight.</p>
+  <div class="logo-row" style="margin-top: 18px">
+    <div>
+      <div class="logo-tile light"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#213244"/><circle cx="32" cy="32" r="31" fill="none" stroke="#8FCBF2" stroke-width="1.5" opacity="0.55"/><circle cx="32" cy="32" r="24" fill="none" stroke="#8FCBF2" stroke-width="1" opacity="0.4"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Voiced</div>
+      <p class="cap"><b>Primary.</b> Navy wordmark on white or Mist.</p>
+    </div>
+    <div>
+      <div class="logo-tile dark"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#213244"/><circle cx="32" cy="32" r="31" fill="none" stroke="#8FCBF2" stroke-width="2.5" opacity="0.9"/><circle cx="32" cy="32" r="24" fill="none" stroke="#8FCBF2" stroke-width="1" opacity="0.4"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Voiced</div>
+      <p class="cap"><b>Reversed.</b> Mist wordmark on Navy. The outer ring separates the mark from the background.</p>
+    </div>
+    <div>
+      <div class="logo-tile tint"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#213244"/><circle cx="32" cy="32" r="31" fill="none" stroke="#8FCBF2" stroke-width="1.5" opacity="0.55"/><circle cx="32" cy="32" r="24" fill="none" stroke="#8FCBF2" stroke-width="1" opacity="0.4"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Voiced</div>
+      <p class="cap"><b>On color.</b> Navy wordmark on Butter, Sky or Coral.</p>
+    </div>
+  </div>
+  <div class="rules">
+    <div class="card">
+      <h3>Clear space</h3>
+      <div class="clear"><div class="box"></div><svg width="100%" height="100%" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#213244"/><circle cx="32" cy="32" r="24" fill="none" stroke="#8FCBF2" stroke-width="1" opacity="0.4"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <p class="small" style="margin-top: 30px">Keep a quarter of the mark's width empty on every side.</p>
+    </div>
+    <div class="card">
+      <h3>Minimum size</h3>
+      <div style="display:flex; align-items:end; gap:14px; margin: 10px 0 12px">
+        <svg width="24" height="24" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#213244"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font: 800 13pt/1 var(--d); display:flex; align-items:center; gap:6px"><svg width="18" height="18" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#213244"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Voiced</span>
+      </div>
+      <p class="small">Mark alone: 24px / 0.25in. With wordmark: 18px mark. Below about 32px, the inner ring can be dropped.</p>
+    </div>
+    <div class="card">
+      <h3>Please don't</h3>
+      <div class="donts">
+        <div class="dont"><div class="t"><svg width="40" height="40" viewBox="0 0 64 64" style="transform: scaleX(1.5)"><circle cx="32" cy="32" r="31" fill="#213244"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="4.5" stroke-linecap="round"/></svg></div><div class="l">Stretch or squash it</div></div>
+        <div class="dont"><div class="t"><svg width="40" height="40" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#7B3FA0"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#9BE15D" stroke-width="4.5" stroke-linecap="round"/></svg></div><div class="l">Recolor it</div></div>
+        <div class="dont"><div class="t" style="background: linear-gradient(135deg,#f6a,#fd5)"><svg width="40" height="40" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#213244"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="4.5" stroke-linecap="round"/></svg></div><div class="l">Put it on busy backgrounds</div></div>
+        <div class="dont"><div class="t"><svg width="40" height="40" viewBox="0 0 64 64" style="filter: drop-shadow(3px 4px 3px rgba(0,0,0,.5)); transform: rotate(-18deg)"><circle cx="32" cy="32" r="31" fill="#213244"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="4.5" stroke-linecap="round"/></svg></div><div class="l">Rotate it or add effects</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Voiced Brand Kit</span><span>3</span></div>
+</section>
+
+<!-- 4. Color -->
+<section class="page">
+  <p class="eyebrow">03 · Color</p>
+  <h2>Calm, warm, and easy to read</h2>
+  <p class="lead">Navy carries the words. Mist is the page. Sky, Coral and Butter are the warmth: use one at a time as a highlight, never all three on one element.</p>
+  <div class="sw-main" style="margin-top: 16px">
+    <div class="sw"><div class="chip" style="background:#213244; color:#F3F9FE">Navy</div><div class="info"><b>#213244</b> · RGB 33 50 68<br>Headlines, text, logo, dark sections</div></div>
+    <div class="sw"><div class="chip" style="background:#F3F9FE; color:#213244">Mist</div><div class="info"><b>#F3F9FE</b> · RGB 243 249 254<br>Page background, text on Navy</div></div>
+    <div class="sw"><div class="chip" style="background:#8FCBF2; color:#213244">Sky</div><div class="info"><b>#8FCBF2</b> · RGB 143 203 242<br>Secondary buttons, underlines, tags</div></div>
+    <div class="sw"><div class="chip" style="background:#FFA694; color:#213244">Coral</div><div class="info"><b>#FFA694</b> · RGB 255 166 148<br>The main call to action. One per view.</div></div>
+    <div class="sw"><div class="chip" style="background:#FFDE9E; color:#213244">Butter</div><div class="info"><b>#FFDE9E</b> · RGB 255 222 158<br>Announcements, banners, the V in the logo</div></div>
+  </div>
+  <div class="sw-sup">
+    <div class="ss"><div class="c" style="background:#1B5C8F"></div><div class="n"><b>Link</b> #1B5C8F<br>Links, eyebrows, accent text</div></div>
+    <div class="ss"><div class="c" style="background:#3C5266"></div><div class="n"><b>Body</b> #3C5266<br>Running text</div></div>
+    <div class="ss"><div class="c" style="background:#4A6076"></div><div class="n"><b>Muted</b> #4A6076<br>Captions, notes</div></div>
+    <div class="ss"><div class="c" style="background:#E4F1FC"></div><div class="n"><b>Sky tint</b> #E4F1FC<br>Soft panels, gradients</div></div>
+    <div class="ss"><div class="c" style="background:#16394F"></div><div class="n"><b>Sky ink</b> #16394F<br>Text on Sky tint</div></div>
+    <div class="ss"><div class="c" style="background:#4A1F14"></div><div class="n"><b>Coral ink</b> #4A1F14<br>Text on Coral</div></div>
+    <div class="ss"><div class="c" style="background:#4A3A12"></div><div class="n"><b>Butter ink</b> #4A3A12<br>Text on Butter</div></div>
+  </div>
+  <h3 style="margin-top: 18px">Pairings that pass accessibility (WCAG AA needs 4.5:1)</h3>
+  <div class="pairs">
+    <div class="pair mono" style="background:#F3F9FE; color:#213244">Navy on Mist<small>12.3 : 1</small></div>
+    <div class="pair mono" style="background:#213244; color:#F3F9FE">Mist on Navy<small>12.3 : 1</small></div>
+    <div class="pair mono" style="background:#FFDE9E; color:#213244">Navy on Butter<small>10.1 : 1</small></div>
+    <div class="pair mono" style="background:#8FCBF2; color:#213244">Navy on Sky<small>7.5 : 1</small></div>
+    <div class="pair mono" style="background:#FFA694; color:#213244">Navy on Coral<small>6.9 : 1</small></div>
+    <div class="pair mono" style="background:#F3F9FE; color:#1B5C8F">Link on Mist<small>6.7 : 1</small></div>
+  </div>
+  <p class="small" style="margin-top: 10px">Never put white or Mist text on Sky, Coral or Butter, and never use Coral, Sky or Butter as text color on light backgrounds (Coral on Mist is only 1.8 : 1).</p>
+  <div class="foot"><span>Voiced Brand Kit</span><span>4</span></div>
+</section>
+
+<!-- 5. Type -->
+<section class="page">
+  <p class="eyebrow">04 · Typography</p>
+  <h2>Funnel Display &amp; Funnel Sans</h2>
+  <div class="type-top" style="margin-top: 10px">
+    <div class="specimen">
+      <p class="eyebrow" style="margin:0">Headlines</p>
+      <div class="big" style="font-family: var(--d); font-weight: 800">Aa Gg</div>
+      <h3 style="font-size: 15pt">Funnel Display</h3>
+      <p class="alpha" style="font-family: var(--d); font-weight: 600">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz 0123456789</p>
+      <div class="weights" style="font-family: var(--d)"><span style="font-weight:600">SemiBold 600</span><span style="font-weight:700">Bold 700</span><span style="font-weight:800">ExtraBold 800</span></div>
+    </div>
+    <div class="specimen">
+      <p class="eyebrow" style="margin:0">Everything else</p>
+      <div class="big" style="font-family: var(--b); font-weight: 400">Aa Gg</div>
+      <h3 style="font-size: 15pt; font-family: var(--b)">Funnel Sans</h3>
+      <p class="alpha">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz 0123456789</p>
+      <div class="weights"><span style="font-weight:400">Regular 400</span><span style="font-weight:500">Medium 500</span><span style="font-weight:600">SemiBold 600</span><span style="font-weight:700">Bold 700</span></div>
+    </div>
+  </div>
+  <div class="scale">
+    <div class="r"><div class="k"><b>Hero headline</b>Display 800 · 56px · −2%</div><div style="font: 800 26pt/1.05 var(--d); letter-spacing:-0.02em">Every symptom deserves a real look</div></div>
+    <div class="r"><div class="k"><b>Section heading</b>Display 800 · 44px</div><div style="font: 800 21pt/1.1 var(--d); letter-spacing:-0.02em">Everything you need before the visit</div></div>
+    <div class="r"><div class="k"><b>Card title</b>Sans 700 · 23px</div><div style="font: 700 14pt/1.2 var(--b)">Appointment Prep Tool</div></div>
+    <div class="r"><div class="k"><b>Body</b>Sans 400 · 17px · 1.6 line height</div><div style="font: 400 11pt/1.6 var(--b); color: var(--body)">Turn symptoms, medications, and questions into a clean one-page summary.</div></div>
+    <div class="r"><div class="k"><b>Eyebrow / label</b>Sans 700 · 12px · caps · +14%</div><div class="eyebrow" style="margin:0">For providers</div></div>
+  </div>
+  <p class="small" style="margin-top: 10px">Both free on Google Fonts under the SIL Open Font License (by Dicotype, 2024). Body text never goes below 15px on screen or 10pt in print. If Funnel isn't available (e.g. in email), fall back to system sans-serif. There is no italic, so emphasize with weight or color instead.</p>
+  <div class="foot"><span>Voiced Brand Kit</span><span>5</span></div>
+</section>
+
+<!-- 6. Signature details -->
+<section class="page">
+  <p class="eyebrow">05 · Signature details</p>
+  <h2>Hand-drawn, soft, and solid</h2>
+  <p class="lead" style="font-size: 12pt">A few details make something feel like Voiced at a glance. Use them with restraint: one hand-drawn mark per headline, one offset shadow per group.</p>
+  <div class="sig" style="margin-top: 12px">
+    <div class="card">
+      <h3>The pen stroke</h3>
+      <div class="demo" style="flex-direction: column; align-items: start; gap: 16px">
+        <span style="font: 800 20pt/1 var(--d); letter-spacing:-0.02em">not a shrug and a <span class="under" style="color: var(--link)">label.<svg viewBox="0 0 200 24" preserveAspectRatio="none"><path d="M4 15 C 40 9, 85 7, 130 9 S 185 13, 196 8 M 18 20 C 60 15, 120 14, 170 17"/></svg></span></span>
+        <span style="font-size: 12pt; color: var(--body)">waved off as <span class="circ">“just Down syndrome.”<svg viewBox="0 0 240 70" preserveAspectRatio="none"><path d="M 196 12 C 150 2, 60 2, 22 16 C -4 28, 6 56, 60 63 C 120 70, 214 64, 232 42 C 246 22, 200 6, 150 6 C 120 6, 96 8, 84 10"/></svg></span></span>
+      </div>
+      <p class="small">A Sky double underline marks the last word of a page title. A soft Coral loop circles the phrase we're pushing back on. Slightly uneven on purpose: it should look like someone cared enough to mark it by hand.</p>
+    </div>
+    <div class="card">
+      <h3>Offset shadows</h3>
+      <div class="demo" style="gap: 20px">
+        <div class="offset s1">Assistant</div><div class="offset s2">Prep tool</div><div class="offset s3">Resources</div>
+        <div class="banner">Met us at an event?</div>
+      </div>
+      <p class="small">Flat, solid shadows offset down and right, no blur. Cards cycle Sky, Coral, Butter along a row. Announcements get a Butter fill, Navy border and Navy shadow.</p>
+    </div>
+    <div class="card">
+      <h3>Pill buttons</h3>
+      <div class="demo">
+        <span class="btn coral">Try the AI advocate</span><span class="btn sky">See all tools →</span><span class="btn outline" style="padding: 10px 20px">Prep for an appointment</span>
+      </div>
+      <p class="small">Always fully rounded and at least 44px tall, so they're easy to tap. Coral is the main action, Sky is secondary, Navy outline is the alternative. Label buttons with what happens: “Build a summary,” not “Submit.”</p>
+    </div>
+    <div class="card">
+      <h3>Rounded corners</h3>
+      <div class="demo" style="align-items: end">
+        <div class="radii"><div style="width:0.55in;height:0.55in;border-radius:8px">8</div><div style="width:0.7in;height:0.7in;border-radius:14px">14</div><div style="width:0.85in;height:0.85in;border-radius:20px">20</div><div style="width:1in;height:0.85in;border-radius:24px">24</div></div>
+      </div>
+      <p class="small">8px for inputs, 14px for tiles, 20px for cards, 24px for big panels. Nothing is sharp-cornered.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Voiced Brand Kit</span><span>6</span></div>
+</section>
+
+<!-- 7. Voice -->
+<section class="page">
+  <p class="eyebrow">06 · Voice</p>
+  <h2>How Voiced sounds</h2>
+  <p class="lead">Like a knowledgeable friend sitting next to you in the waiting room: on your side, plain-spoken, and never talking down.</p>
+  <div class="voice" style="margin-top: 16px">
+    <div class="card"><h3>Plain, not clinical</h3><p>Short sentences and everyday words. Explain a medical term the first time it appears. If a self-advocate couldn't read it on their own, rewrite it.</p></div>
+    <div class="card"><h3>Respectful, not pitying</h3><p>People with Down syndrome are the experts on their own lives. Speak to them directly, not only about them, and never frame them as a burden or a tragedy.</p></div>
+    <div class="card"><h3>Confident, not alarming</h3><p>We help people speak up and ask better questions. We never diagnose, and we never promise outcomes. In an emergency, we say call 911.</p></div>
+  </div>
+  <div class="dd">
+    <div class="col say">
+      <h3>Say</h3>
+      <ul>
+        <li>“person with Down syndrome,” “self-advocate”</li>
+        <li>Ask what someone wants to be called, and use it</li>
+        <li>“Bring this summary to your appointment.”</li>
+        <li>“This is new for me, and it isn't how I usually feel.”</li>
+        <li>“It never diagnoses. It helps you advocate.”</li>
+      </ul>
+    </div>
+    <div class="col avoid">
+      <h3>Avoid</h3>
+      <ul>
+        <li>“Down's,” “a Down syndrome child,” “suffers from”</li>
+        <li>Jargon without a plain explanation</li>
+        <li>“Don't worry, it's probably nothing.”</li>
+        <li>Promises like “get the right diagnosis”</li>
+        <li>Cute or childish language for adults</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Voiced Brand Kit</span><span>7</span></div>
+</section>
+
+<!-- 8. In use -->
+<section class="page">
+  <p class="eyebrow">07 · Putting it together</p>
+  <h2>The home page, by the rules</h2>
+  <div style="display:grid; grid-template-columns: 1.7fr 1fr; gap: 22px; margin-top: 12px; align-items: start">
+    <div class="mock">
+      <div class="nav"><span class="lg"><svg width="22" height="22" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#213244"/><path d="M20 22 L32 44 L44 22" fill="none" stroke="#FFDE9E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>Voiced</span><span>Tools</span><span>Mission</span><span class="p">Try the AI advocate</span></div>
+      <div class="hero">
+        <div class="h">Every symptom deserves a real look, <span class="turn">not a shrug and a <span class="under">label.<svg viewBox="0 0 200 24" preserveAspectRatio="none"><path d="M4 15 C 40 9, 85 7, 130 9 S 185 13, 196 8 M 18 20 C 60 15, 120 14, 170 17"/></svg></span></span></div>
+        <div class="bn"><div><b>Met us at an event? Help shape Voiced.</b><span>A short survey that takes just a few minutes.</span></div><span class="btn navy">Take the survey →</span></div>
+        <p class="in">Voiced helps people with Down syndrome, their families, and their clinicians catch what diagnostic overshadowing hides.</p>
+        <div class="ct"><span class="btn coral">Try the AI advocate</span><span class="btn outline">Prep for an appointment</span></div>
+      </div>
+    </div>
+    <div class="grid" style="gap: 12px">
+      <div class="card" style="padding: 14px 16px"><h3 style="font-size:11pt">1 · One idea per headline</h3><p class="small">Funnel Display ExtraBold, with the turn in Link blue and one pen stroke.</p></div>
+      <div class="card" style="padding: 14px 16px"><h3 style="font-size:11pt">2 · Butter means “news”</h3><p class="small">Time-sensitive asks go in a Butter banner with a Navy shadow.</p></div>
+      <div class="card" style="padding: 14px 16px"><h3 style="font-size:11pt">3 · One Coral button</h3><p class="small">The main action is Coral. Everything else is outline or Sky.</p></div>
+      <div class="card" style="padding: 14px 16px"><h3 style="font-size:11pt">4 · Lots of Mist</h3><p class="small">Generous space keeps it calm for people reading slowly or under stress.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Voiced Brand Kit</span><span>8</span></div>
+</section>
+
+</body>
+</html>
