@@ -3,20 +3,20 @@ import type { jsPDF } from "jspdf";
 /** Loads the site's own typeface into a jsPDF document.
  *
  *  jsPDF only ships the PDF base-14 fonts, so an unstyled export comes out in
- *  Helvetica — which looks nothing like the rest of Voiced. Public Sans is the
+ *  Helvetica — which looks nothing like the rest of Voiced. Funnel Sans is the
  *  body face the site already uses and is OFL-licensed, so it ships as a static
  *  asset (public/fonts/) and is fetched only when someone actually builds a
- *  PDF. That keeps ~170KB of font out of the app bundle.
+ *  PDF. That keeps ~65KB of font out of the app bundle.
  *
  *  If the fetch fails — offline, blocked, a bad deploy — the export still
  *  happens in Helvetica rather than failing. A plainer PDF beats no PDF when
  *  someone is walking out the door to an appointment. */
 
-export const PDF_FONT = "PublicSans";
+export const PDF_FONT = "FunnelSans";
 
 const WEIGHTS = [
-  { style: "normal", file: "PublicSans-Regular.ttf" },
-  { style: "bold", file: "PublicSans-Bold.ttf" },
+  { style: "normal", file: "FunnelSans-Regular.ttf" },
+  { style: "bold", file: "FunnelSans-Bold.ttf" },
 ] as const;
 
 // Fetched once per page load, then reused for every later export.
@@ -26,7 +26,7 @@ function toBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
   // Chunked: one String.fromCharCode call per 8k avoids blowing the argument
-  // limit on a ~85KB font.
+  // limit on a ~33KB font.
   for (let i = 0; i < bytes.length; i += 8192) {
     binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
   }

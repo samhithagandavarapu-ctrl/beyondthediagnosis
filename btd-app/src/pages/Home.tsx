@@ -39,27 +39,6 @@ export default function Home() {
       {/* Hero */}
       <section className="btd-grain bg-gradient-to-b from-mist to-sky-tint border-b border-navy/[0.08]">
         <div className="btd-container pt-10 pb-[76px]">
-          {/* Event banner: front and centre, so people who met us in person
-              go straight to the survey. */}
-          <div className="btd-event-banner mb-12 flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-navy bg-butter px-6 py-5">
-            <div className="max-w-[40em]">
-              <p className="font-display text-21 font-extrabold leading-tight text-navy">
-                Met us at an event? Help shape Voiced.
-              </p>
-              <p className="mt-1 text-15 leading-[1.6] text-butter-ink">
-                Tell us what would help you, your family, or your patients. It's a short
-                survey and takes just a few minutes.
-              </p>
-            </div>
-            <a
-              href={SURVEY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
-            >
-              Take the survey →
-            </a>
-          </div>
           <div>
             <h1 className="btd-hero-h1 max-w-[18em] !text-[clamp(2.125rem,4.4vw,3.5rem)] !leading-[1.06]">
               {headline.map((w, i) => (
@@ -84,7 +63,28 @@ export default function Home() {
                 </span>
               </span>
             </h1>
-            <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
+            {/* Event banner: right under the headline, so people who met us in
+                person go straight to the survey. */}
+            <div className="btd-event-banner mt-8 flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-navy bg-butter px-6 py-5">
+              <div className="max-w-[40em]">
+                <p className="font-display text-21 font-extrabold leading-tight text-navy">
+                  Met us at an event? Help shape Voiced.
+                </p>
+                <p className="mt-1 text-15 leading-[1.6] text-butter-ink">
+                  Tell us what would help you, your family, or your patients. It's a short
+                  survey and takes just a few minutes.
+                </p>
+              </div>
+              <a
+                href={SURVEY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
+              >
+                Take the survey →
+              </a>
+            </div>
+            <p className="mt-8 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
               Voiced helps people with Down syndrome, their families, and their
               clinicians catch what diagnostic overshadowing hides: when a real,
               treatable symptom gets waved off as{" "}

@@ -46,8 +46,8 @@ export default {
         clay: "#4A1F14",
       },
       fontFamily: {
-        display: ["'Bricolage Grotesque'", "'Public Sans'", "sans-serif"],
-        body: ["'Public Sans'", "system-ui", "sans-serif"],
+        display: ["'Funnel Display'", "'Funnel Sans'", "system-ui", "sans-serif"],
+        body: ["'Funnel Sans'", "system-ui", "sans-serif"],
       },
       // rem so the "Large text" / "Easy read" root font-size scales everything.
       fontSize: {
