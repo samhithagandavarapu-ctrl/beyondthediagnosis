@@ -160,6 +160,17 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {mode === "signin" && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setMode("forgot")}
+                    className="text-sm font-semibold text-link hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={busy}
@@ -169,7 +180,7 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="flex items-center justify-between text-xs">
+            <div className="text-center text-sm">
               <button
                 type="button"
                 onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
@@ -177,15 +188,6 @@ export default function Login() {
               >
                 {mode === "signin" ? "Create an account" : "Have an account? Sign in"}
               </button>
-              {mode === "signin" && (
-                <button
-                  type="button"
-                  onClick={() => setMode("forgot")}
-                  className="text-slate hover:underline"
-                >
-                  Forgot password?
-                </button>
-              )}
             </div>
 
             {PHONE_SIGNIN_READY ? (
