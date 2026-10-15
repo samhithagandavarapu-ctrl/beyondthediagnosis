@@ -109,14 +109,32 @@ export function searchSite(query: string, limit = 8): SearchEntry[] {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
   return SEARCH_INDEX.map((entry) => {
-    const title = entry.title.toLowerCase();
-    const haystack = `${title} ${entry.description} ${entry.keywords ?? ""}`.toLowerCase();
-    if (!words.every((w) => haystack.includes(w))) return null;
-    const score = words.filter((w) => title.includes(w)).length * 2 + (entry.kind === "Page" ? 1 : 0);
+    const title = tokens(entry.title);
+    const keywords = tokens(entry.keywords ?? "");
+    const description = tokens(entry.description);
+    // Each typed word has to start a word somewhere — "ear" finds "ears",
+    // not "year" or "learn". A whole-word hit in the title counts most.
+    let score = 0;
+    for (const w of words) {
+      const hit =
+        (title.includes(w) && 10) ||
+        (title.some((t) => t.startsWith(w)) && 7) ||
+        (keywords.includes(w) && 5) ||
+        (keywords.some((t) => t.startsWith(w)) && 4) ||
+        (description.includes(w) && 2) ||
+        (description.some((t) => t.startsWith(w)) && 1);
+      if (!hit) return null;
+      score += hit;
+    }
+    if (entry.kind === "Page") score += 1;
     return { entry, score };
   })
     .filter((r): r is { entry: SearchEntry; score: number } => r !== null)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((r) => r.entry);
+}
+
+function tokens(text: string): string[] {
+  return text.toLowerCase().split(/[^a-z0-9']+/).filter(Boolean);
 }

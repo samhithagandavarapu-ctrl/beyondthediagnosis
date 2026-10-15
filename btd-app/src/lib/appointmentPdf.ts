@@ -38,7 +38,32 @@ export type Symptom = {
   description: string;
   onset: string;
   baselineOrNew: "baseline" | "new";
+  /** Where on the body. Optional so drafts saved before it existed load. */
+  area?: string;
 };
+
+/** The choices for a symptom's body area, in head-to-toe order, then the
+ *  ones that aren't a place on the body. */
+export const SYMPTOM_AREAS = [
+  "Head",
+  "Eyes",
+  "Ears",
+  "Mouth and teeth",
+  "Throat and neck",
+  "Chest and breathing",
+  "Heart",
+  "Stomach and digestion",
+  "Bladder and bowels",
+  "Back",
+  "Arms and hands",
+  "Legs and feet",
+  "Skin",
+  "Muscles and joints",
+  "Whole body / energy",
+  "Sleep",
+  "Mood and behavior",
+  "Thinking and memory",
+] as const;
 
 export type Question = {
   id: string;
@@ -378,6 +403,7 @@ export function medicationLine(m: Medication): string {
 
 export function symptomDetail(s: Symptom): string {
   return [
+    s.area ? `Area: ${s.area}` : "",
     s.onset.trim() ? `Started: ${s.onset.trim()}` : "",
     s.baselineOrNew === "new" ? "New — not typical for this person" : "Part of their baseline",
   ]
@@ -467,7 +493,10 @@ export async function buildAppointmentPdf(
   if (symptoms.length) {
     sectionHeading(ctx, "What we're seeing");
     symptoms.forEach((s) =>
-      item(ctx, s.description, s.onset.trim() ? `Started: ${s.onset.trim()}` : "", {
+      item(ctx, s.description, [
+        s.area ? `Area: ${s.area}` : "",
+        s.onset.trim() ? `Started: ${s.onset.trim()}` : "",
+      ].filter(Boolean).join("   ·   "), {
         text:
           s.baselineOrNew === "new" ? "NEW — NOT TYPICAL" : "PART OF THEIR BASELINE",
         fill: s.baselineOrNew === "new" ? CORAL : BUTTER,

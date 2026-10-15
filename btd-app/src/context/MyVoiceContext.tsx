@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { useAuth } from "./AuthContext";
 import { fetchProfile, saveReadingLevel } from "../lib/profile";
 import { usePracticeMode } from "./PracticeModeContext";
+import { attachCheckIn } from "../lib/drafts";
 import { speak, speechSupported } from "../lib/speech";
 import {
   CheckIn,
@@ -134,6 +135,11 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore
     }
+    // Also onto the Appointment Prep draft — in the account when signed in,
+    // so it's there on whatever device the summary gets made on.
+    attachCheckIn(user?.id ?? null, checkIn).catch((err) =>
+      console.error("Couldn't put the check-in on a draft:", err)
+    );
   }
 
   function clearCheckIn() {

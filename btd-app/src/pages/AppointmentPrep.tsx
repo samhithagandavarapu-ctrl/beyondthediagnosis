@@ -1,19 +1,35 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { refineAppointmentForm } from "../lib/api";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
+import { useAuth } from "../context/AuthContext";
 import {
   HistoryEntry,
   addToHistory,
-  clearDraft,
   formIsEmpty,
   historyTitle,
-  loadDraft,
   loadHistory,
   removeFromHistory,
-  saveDraft,
 } from "../lib/appointmentHistory";
+import {
+  Draft,
+  DraftStore,
+  deleteDraft,
+  draftLabel,
+  emptyForm,
+  emptyMedication,
+  emptyQuestion,
+  emptyRuledOut,
+  emptySymptom,
+  getActiveDraftId,
+  listDrafts,
+  newDraft,
+  newId,
+  saveDraft,
+  setActiveDraftId,
+} from "../lib/drafts";
+import { shortDate } from "../lib/shortDate";
 import { CheckIn, checkInLines } from "../lib/myVoice";
 import Icon from "../components/icons/Icon";
 import DictateButton from "../components/DictateButton";
@@ -38,42 +54,31 @@ import {
   buildAppointmentPdf,
   medicationLine,
   symptomDetail,
+  SYMPTOM_AREAS,
   timelineDetail,
 } from "../lib/appointmentPdf";
 import { inkLastWord } from "../components/Scribble";
 
-const newId = () => crypto.randomUUID();
-
-const emptySymptom = (): Symptom => ({
-  id: newId(),
-  description: "",
-  onset: "",
-  baselineOrNew: "new",
-});
-
-// Medications and ruled-out items are one entry per thing, like symptoms —
-// a single free-text box turns into an unreadable wall on the printed page,
-// and there's nothing to line up dose against frequency.
-const emptyMedication = (): Medication => ({ id: newId(), name: "", dose: "", frequency: "" });
-const emptyRuledOut = (): RuledOutItem => ({ id: newId(), description: "", when: "" });
-const emptyQuestion = (): Question => ({ id: newId(), text: "" });
-
-const emptyForm = (): AppointmentForm => ({
-  patientName: "",
-  reasonForVisit: "",
-  symptoms: [emptySymptom()],
-  medications: [emptyMedication()],
-  ruledOut: [emptyRuledOut()],
-  accommodations: "",
-  questions: [emptyQuestion()],
-  timeline: emptyTimeline(),
-});
-
 export default function AppointmentPrep() {
-  const { savedCheckIn, clearCheckIn } = useMyVoice();
+  const { clearCheckIn } = useMyVoice();
   const { practice } = usePracticeMode();
-  // Pick up where you left off: whatever was typed last time is still here.
-  const [form, setForm] = useState<AppointmentForm>(() => loadDraft() ?? emptyForm());
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
+
+  // Drafts: the one open now, and the rest. They live in the account when
+  // signed in and on this device otherwise (see lib/drafts.ts).
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [store, setStore] = useState<DraftStore>("device");
+  const [accountMissing, setAccountMissing] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [draftId, setDraftId] = useState<string>(() => newId());
+  const [draftName, setDraftName] = useState("");
+  const [draftMyVoice, setDraftMyVoice] = useState<CheckIn | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  // What was last written (or just opened), so opening a draft doesn't count
+  // as a change.
+  const lastSaved = useRef("");
+  const [form, setForm] = useState<AppointmentForm>(emptyForm);
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
   // A past summary being looked at, rather than the one being written now.
   const [viewing, setViewing] = useState<HistoryEntry | null>(null);
@@ -131,6 +136,7 @@ export default function AppointmentPrep() {
                 description: s.description,
                 onset: s.onset,
                 baselineOrNew: f.symptoms[i]?.baselineOrNew ?? "new",
+                area: f.symptoms[i]?.area,
               }))
             : f.symptoms,
         medications:
@@ -226,30 +232,84 @@ export default function AppointmentPrep() {
     );
   }, [hash]);
 
-  // Saved as you type. Practice mode is a rehearsal, so it keeps nothing — the
-  // real draft is left exactly as it was.
-  useEffect(() => {
-    if (practice) return;
-    if (formIsEmpty(form)) clearDraft();
-    else saveDraft(form);
-  }, [form, practice]);
+  function snapshot(name: string, f: AppointmentForm, mv: CheckIn | null) {
+    return JSON.stringify({ name, f, mv });
+  }
 
-  function startFresh() {
-    if (!window.confirm("Clear this form and start a new one? Summaries you've already made stay in your history.")) {
-      return;
-    }
-    setForm(emptyForm());
+  function openDraft(d: Draft) {
+    setDraftId(d.id);
+    setDraftName(d.name);
+    setForm(d.form);
+    setDraftMyVoice(d.myVoice);
+    setActiveDraftId(d.id);
     setRefineError(null);
+    lastSaved.current = snapshot(d.name, d.form, d.myVoice);
+  }
+
+  // Load the drafts once we know who's here, and again if that changes
+  // (signing in brings this device's drafts into the account).
+  useEffect(() => {
+    if (authLoading) return;
+    let cancelled = false;
+    setLoaded(false);
+    listDrafts(userId).then((res) => {
+      if (cancelled) return;
+      setDrafts(res.drafts);
+      setStore(res.store);
+      setAccountMissing(res.accountMissing);
+      const activeId = getActiveDraftId();
+      openDraft(res.drafts.find((d) => d.id === activeId) ?? res.drafts[0] ?? newDraft());
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, authLoading]);
+
+  // Saved as you type, a moment after you stop. Practice mode is a rehearsal,
+  // so it keeps nothing — the real draft is left exactly as it was.
+  useEffect(() => {
+    if (!loaded || practice) return;
+    const snap = snapshot(draftName, form, draftMyVoice);
+    if (snap === lastSaved.current) return;
+    if (formIsEmpty(form) && !draftMyVoice && !draftName.trim()) return;
+    setSaveState("saving");
+    const timer = window.setTimeout(() => {
+      const d: Draft = {
+        id: draftId,
+        name: draftName,
+        form,
+        myVoice: draftMyVoice,
+        updatedAt: new Date().toISOString(),
+      };
+      lastSaved.current = snap;
+      saveDraft(userId, d).then((where) => {
+        setSaveState(userId && where === "device" && store === "account" ? "failed" : "saved");
+        setDrafts((prev) => [d, ...prev.filter((x) => x.id !== d.id)]);
+      });
+    }, 700);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, draftName, draftMyVoice, loaded, practice]);
+
+  function startNewDraft() {
+    openDraft(newDraft());
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function removeDraft(d: Draft) {
+    if (!window.confirm(`Delete the draft "${draftLabel(d)}"? This can't be undone.`)) return;
+    await deleteDraft(userId, d.id);
+    const rest = drafts.filter((x) => x.id !== d.id);
+    setDrafts(rest);
+    if (d.id === draftId) openDraft(rest[0] ?? newDraft());
   }
 
   function reuseEntry(entry: HistoryEntry) {
-    if (
-      !formIsEmpty(form) &&
-      !window.confirm("Replace what's in the form now with this past visit?")
-    ) {
-      return;
-    }
-    // Fresh ids, so the copy and the history entry never share list keys.
+    // A new draft, so whatever is open now is kept as it is. Fresh ids, so
+    // the copy and the history entry never share list keys.
+    openDraft(newDraft({ myVoice: null }));
     setForm({
       ...entry.form,
       symptoms: entry.form.symptoms.map((x) => ({ ...x, id: newId() })),
@@ -271,7 +331,7 @@ export default function AppointmentPrep() {
     setHistory(removeFromHistory(entry.id));
   }
 
-  const myVoice = includeMyVoice ? savedCheckIn : null;
+  const myVoice = includeMyVoice ? draftMyVoice : null;
 
   if (viewing) {
     return (
@@ -302,22 +362,22 @@ export default function AppointmentPrep() {
         summary you can bring straight to your provider — so nothing gets lost in a
         rushed appointment.
       </p>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-tile bg-sky-tint px-4 py-3 text-13 text-sky-ink">
-        <span>
-          {practice
-            ? "Practice mode: nothing you type here is saved, and it won't go in your history."
-            : "What you type is saved on this device as you go, so you can come back to it. It's never uploaded."}
-        </span>
-        {!formIsEmpty(form) && (
-          <button
-            type="button"
-            onClick={startFresh}
-            className="font-semibold text-link hover:underline"
-          >
-            Start a new form
-          </button>
-        )}
-      </div>
+      <DraftsPanel
+        practice={practice}
+        signedIn={Boolean(user)}
+        store={store}
+        accountMissing={accountMissing}
+        saveState={saveState}
+        loaded={loaded}
+        name={draftName}
+        onNameChange={setDraftName}
+        placeholder={form.patientName.trim() || "Untitled draft"}
+        current={drafts.find((d) => d.id === draftId)}
+        others={drafts.filter((d) => d.id !== draftId)}
+        onOpen={openDraft}
+        onNew={startNewDraft}
+        onDelete={removeDraft}
+      />
 
       <form
         onSubmit={(e) => {
@@ -369,6 +429,19 @@ export default function AppointmentPrep() {
                 onChange={(e) => updateItem("symptoms", s.id, { description: e.target.value })}
               />
               <div className="grid sm:grid-cols-2 gap-3">
+                <select
+                  className="btd-input"
+                  aria-label="Where on the body"
+                  value={s.area ?? ""}
+                  onChange={(e) => updateItem("symptoms", s.id, { area: e.target.value || undefined })}
+                >
+                  <option value="">Where on the body? (optional)</option>
+                  {SYMPTOM_AREAS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
                 <input
                   className="btd-input"
                   placeholder="When did it start? (onset / duration)"
@@ -376,7 +449,7 @@ export default function AppointmentPrep() {
                   onChange={(e) => updateItem("symptoms", s.id, { onset: e.target.value })}
                 />
                 <select
-                  className="btd-input"
+                  className="btd-input sm:col-span-2"
                   value={s.baselineOrNew}
                   onChange={(e) =>
                     updateItem("symptoms", s.id, {
@@ -398,10 +471,13 @@ export default function AppointmentPrep() {
         />
 
         <MyVoiceSection
-          checkIn={savedCheckIn}
+          checkIn={draftMyVoice}
           include={includeMyVoice}
           onIncludeChange={setIncludeMyVoice}
-          onClear={clearCheckIn}
+          onClear={() => {
+            setDraftMyVoice(null);
+            clearCheckIn();
+          }}
         />
 
         <ListSection
@@ -674,6 +750,162 @@ function ListSection({
       </div>
       <div className="space-y-3">{children}</div>
     </div>
+  );
+}
+
+// ---- Drafts ----
+
+function DraftsPanel({
+  practice,
+  signedIn,
+  store,
+  accountMissing,
+  saveState,
+  loaded,
+  name,
+  onNameChange,
+  placeholder,
+  current,
+  others,
+  onOpen,
+  onNew,
+  onDelete,
+}: {
+  practice: boolean;
+  signedIn: boolean;
+  store: DraftStore;
+  accountMissing: boolean;
+  saveState: "idle" | "saving" | "saved" | "failed";
+  loaded: boolean;
+  name: string;
+  onNameChange: (name: string) => void;
+  placeholder: string;
+  current: Draft | undefined;
+  others: Draft[];
+  onOpen: (d: Draft) => void;
+  onNew: () => void;
+  onDelete: (d: Draft) => void;
+}) {
+  const [showOthers, setShowOthers] = useState(false);
+
+  let where: string;
+  if (practice) {
+    where = "Practice mode: nothing you type here is saved, and it won't go in your history.";
+  } else if (store === "account") {
+    where = "Saved to your account as you type, so it's here on any device you sign in on.";
+  } else if (signedIn && accountMissing) {
+    where = "Saved on this device as you type. Saving to your account isn't switched on yet.";
+  } else {
+    where = "Saved on this device as you type, and never uploaded. Sign in to keep your drafts on any device.";
+  }
+
+  const status = practice
+    ? null
+    : !loaded
+    ? "Loading your drafts…"
+    : saveState === "saving"
+    ? "Saving…"
+    : saveState === "failed"
+    ? "Couldn't reach your account — kept on this device for now."
+    : saveState === "saved"
+    ? store === "account"
+      ? "Saved to your account"
+      : "Saved on this device"
+    : null;
+
+  return (
+    <section aria-labelledby="drafts-heading" className="btd-card mb-8 p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <label id="drafts-heading" htmlFor="draft-name" className="block text-sm font-bold text-navy">
+            This draft
+          </label>
+          <input
+            id="draft-name"
+            className="btd-input mt-1.5"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder={placeholder}
+            aria-describedby="draft-where"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {current && (
+            <button
+              type="button"
+              onClick={() => onDelete(current)}
+              className="btd-btn min-h-[40px] px-4 text-sm font-semibold text-clay hover:underline"
+            >
+              Delete
+            </button>
+          )}
+          <button type="button" onClick={onNew} className="btd-btn-sky min-h-[40px] px-4 text-sm">
+            + New draft
+          </button>
+        </div>
+      </div>
+
+      <p id="draft-where" className="mt-3 text-13 text-sky-ink">
+        {where}
+        {status && (
+          <span className="ml-1 font-semibold text-navy" aria-live="polite">
+            {status}
+          </span>
+        )}
+      </p>
+
+      {others.length > 0 && (
+        <div className="mt-4 border-t border-navy/[0.08] pt-3">
+          <button
+            type="button"
+            onClick={() => setShowOthers((v) => !v)}
+            aria-expanded={showOthers}
+            className="flex items-center gap-1 text-sm font-semibold text-link hover:underline"
+          >
+            {showOthers ? "Hide your other drafts" : `Your other drafts (${others.length})`}
+            <Icon
+              name="chevron-right"
+              size={16}
+              className={`transition-transform ${showOthers ? "-rotate-90" : "rotate-90"}`}
+            />
+          </button>
+          {showOthers && (
+            <ul className="mt-2 divide-y divide-navy/[0.08]">
+              {others.map((d) => (
+                <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-navy">{draftLabel(d)}</p>
+                    <p className="text-12 text-muted">
+                      Last changed {shortDate(d.updatedAt)}
+                      {d.myVoice ? " · has a My Voice sentence" : ""}
+                    </p>
+                  </div>
+                  <div className="flex gap-3 text-sm">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpen(d);
+                        setShowOthers(false);
+                      }}
+                      className="font-semibold text-link hover:underline"
+                    >
+                      Open
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(d)}
+                      className="text-clay hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

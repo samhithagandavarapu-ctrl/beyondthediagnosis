@@ -28,6 +28,11 @@ type Props = {
  *  with no description is simply left off. */
 export default function SymptomTimeline({ value, onChange }: Props) {
   const [newestFirst, setNewestFirst] = useState(true);
+  // The whole section folds away, since it's optional. It starts open when
+  // there's already something in it, so nobody's work looks lost.
+  const [expanded, setExpanded] = useState(
+    () => value.usualSelf.trim() !== "" || value.entries.length > 0
+  );
   // Which entries are open for editing. New ones open; everything else starts
   // folded so a long timeline stays scannable.
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -92,7 +97,27 @@ export default function SymptomTimeline({ value, onChange }: Props) {
   return (
     <section aria-labelledby="timeline-heading" className="rounded-card border border-navy/12 bg-white p-5 sm:p-6">
       <h2 id="timeline-heading" className="text-21 font-extrabold text-navy">
-        Symptom timeline
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-controls="timeline-body"
+          className="flex w-full items-center justify-between gap-3 text-left"
+        >
+          <span>Symptom timeline</span>
+          <span className="inline-flex shrink-0 items-center gap-1 text-13 font-semibold text-link">
+            {expanded
+              ? "Close"
+              : value.entries.length
+              ? `Open (${value.entries.length} ${value.entries.length === 1 ? "entry" : "entries"})`
+              : "Open"}
+            <Icon
+              name="chevron-right"
+              size={16}
+              className={`transition-transform ${expanded ? "-rotate-90" : "rotate-90"}`}
+            />
+          </span>
+        </button>
       </h2>
       <p className="mt-1.5 text-sm leading-[1.6] text-body">
         When did things change, and what else changed around the same time? A timeline
@@ -100,94 +125,98 @@ export default function SymptomTimeline({ value, onChange }: Props) {
         Everything here is optional.
       </p>
 
-      {/* ---- Their usual self ---- */}
-      <div className="mt-5">
-        <label htmlFor="tl-usual" className="block text-sm font-bold text-navy">
-          Their usual self
-        </label>
-        <p id="tl-usual-hint" className="mt-0.5 text-13 text-muted">
-          What are they like on a typical good day? Think about energy, mood, skills,
-          sleep, and eating. This is what the doctor compares everything else to.
-        </p>
-        <textarea
-          id="tl-usual"
-          aria-describedby="tl-usual-hint"
-          className="btd-input mt-2 min-h-[80px]"
-          value={value.usualSelf}
-          onChange={(e) => onChange({ ...value, usualSelf: e.target.value })}
-          placeholder="e.g. Up by 7, walks to the bus on their own, chatty at dinner, loves drawing, sleeps through the night"
-        />
-      </div>
-
-      {/* ---- Areas to think about ---- */}
-      <fieldset className="mt-5">
-        <legend className="text-sm font-bold text-navy">Areas to think about</legend>
-        <p className="mt-0.5 text-13 text-muted">
-          Just reminders, so nothing gets forgotten — not a list of what might be wrong.
-          Tap one to add something about it.
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {AREAS.map((area) => {
-            const used = usedAreas.has(area);
-            return (
-              <button
-                key={area}
-                type="button"
-                onClick={() => addArea(area)}
-                aria-pressed={used}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-13 font-semibold transition-colors ${
-                  used
-                    ? "border-navy bg-navy text-mist"
-                    : "border-navy/20 bg-white text-navy hover:border-navy/50"
-                }`}
-              >
-                {used ? <Icon name="check" size={15} /> : <span aria-hidden="true">+</span>}
-                {area}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      {/* ---- The timeline itself ---- */}
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => add()}
-          className="inline-flex items-center gap-2 rounded bg-navy px-4 py-2.5 text-sm font-semibold text-mist hover:bg-navy/90"
-        >
-          <span aria-hidden="true">+</span> Add to the timeline
-        </button>
-        {value.entries.length > 1 && (
-          <button
-            type="button"
-            onClick={() => setNewestFirst((v) => !v)}
-            className="text-13 font-semibold text-link hover:underline"
-          >
-            {newestFirst ? "Showing newest first · Show oldest first" : "Showing oldest first · Show newest first"}
-          </button>
-        )}
-      </div>
-
-      {ordered.length === 0 ? (
-        <p className="mt-4 rounded-tile border border-dashed border-navy/20 bg-mist p-4 text-sm text-body">
-          Nothing on the timeline yet. Add a change you've noticed, a new medication, an
-          illness, a test, or a big life change like a move.
-        </p>
-      ) : (
-        <ol className="relative mt-5 space-y-4 border-l-2 border-sky pl-5 sm:pl-6">
-          {ordered.map((entry) => (
-            <EntryItem
-              key={entry.id}
-              entry={entry}
-              near={near.get(entry.id) ?? []}
-              isOpen={open.has(entry.id)}
-              onToggle={() => toggle(entry.id)}
-              onChange={(patch) => update(entry.id, patch)}
-              onRemove={() => remove(entry)}
+      {expanded && (
+        <div id="timeline-body">
+          {/* ---- Their usual self ---- */}
+          <div className="mt-5">
+            <label htmlFor="tl-usual" className="block text-sm font-bold text-navy">
+              Their usual self
+            </label>
+            <p id="tl-usual-hint" className="mt-0.5 text-13 text-muted">
+              What are they like on a typical good day? Think about energy, mood, skills,
+              sleep, and eating. This is what the doctor compares everything else to.
+            </p>
+            <textarea
+              id="tl-usual"
+              aria-describedby="tl-usual-hint"
+              className="btd-input mt-2 min-h-[80px]"
+              value={value.usualSelf}
+              onChange={(e) => onChange({ ...value, usualSelf: e.target.value })}
+              placeholder="e.g. Up by 7, walks to the bus on their own, chatty at dinner, loves drawing, sleeps through the night"
             />
-          ))}
-        </ol>
+          </div>
+
+          {/* ---- Areas to think about ---- */}
+          <fieldset className="mt-5">
+            <legend className="text-sm font-bold text-navy">Areas to think about</legend>
+            <p className="mt-0.5 text-13 text-muted">
+              Just reminders, so nothing gets forgotten — not a list of what might be wrong.
+              Tap one to add something about it.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {AREAS.map((area) => {
+                const used = usedAreas.has(area);
+                return (
+                  <button
+                    key={area}
+                    type="button"
+                    onClick={() => addArea(area)}
+                    aria-pressed={used}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-13 font-semibold transition-colors ${
+                      used
+                        ? "border-navy bg-navy text-mist"
+                        : "border-navy/20 bg-white text-navy hover:border-navy/50"
+                    }`}
+                  >
+                    {used ? <Icon name="check" size={15} /> : <span aria-hidden="true">+</span>}
+                    {area}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {/* ---- The timeline itself ---- */}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => add()}
+              className="inline-flex items-center gap-2 rounded bg-navy px-4 py-2.5 text-sm font-semibold text-mist hover:bg-navy/90"
+            >
+              <span aria-hidden="true">+</span> Add to the timeline
+            </button>
+            {value.entries.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setNewestFirst((v) => !v)}
+                className="text-13 font-semibold text-link hover:underline"
+              >
+                {newestFirst ? "Showing newest first · Show oldest first" : "Showing oldest first · Show newest first"}
+              </button>
+            )}
+          </div>
+
+          {ordered.length === 0 ? (
+            <p className="mt-4 rounded-tile border border-dashed border-navy/20 bg-mist p-4 text-sm text-body">
+              Nothing on the timeline yet. Add a change you've noticed, a new medication, an
+              illness, a test, or a big life change like a move.
+            </p>
+          ) : (
+            <ol className="relative mt-5 space-y-4 border-l-2 border-sky pl-5 sm:pl-6">
+              {ordered.map((entry) => (
+                <EntryItem
+                  key={entry.id}
+                  entry={entry}
+                  near={near.get(entry.id) ?? []}
+                  isOpen={open.has(entry.id)}
+                  onToggle={() => toggle(entry.id)}
+                  onChange={(patch) => update(entry.id, patch)}
+                  onRemove={() => remove(entry)}
+                />
+              ))}
+            </ol>
+          )}
+        </div>
       )}
     </section>
   );
