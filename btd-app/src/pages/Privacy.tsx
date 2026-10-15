@@ -37,8 +37,11 @@ export default function Privacy() {
           <li>
             <strong>AI Assistant conversations:</strong> messages you send to the AI
             Advocacy Assistant are sent to Anthropic (the company behind Claude, the AI
-            model we use) to generate a response. We don't store your conversation
-            history on our own servers beyond your active session.
+            model we use) to generate a response. Your chats are saved so you can come
+            back to them: if you're signed in, they're saved to your account so you can
+            see them on any device, and only you can see them. If you're not signed in,
+            they stay in your own browser on this device. You can delete any chat from
+            the assistant page, and deleting your account deletes your chats.
           </li>
           <li>
             <strong>Community Stories:</strong> anything you submit through "Share your

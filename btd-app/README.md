@@ -212,6 +212,15 @@ Supabase → **SQL Editor**, paste in
 it. Until then drafts stay in the browser they were made in, and the page says
 so. Only the owner can read their drafts; deleting the account deletes them.
 
+### Assistant chat history
+
+The AI Advocacy Assistant keeps a list of past chats (new chat, pin, rename,
+delete). Signed in, chats are saved to the person's account so they're on every
+device. That needs one table: open Supabase → **SQL Editor**, paste in
+[`supabase/assistant-chats.sql`](supabase/assistant-chats.sql), and run it.
+Until then chats stay in the browser they were made in. Only the owner can read
+their chats; deleting the account deletes them.
+
 ### Story-published notifications
 
 The **Notifications** tab (bell in the top bar) tells people when a story they
