@@ -145,6 +145,128 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   }
 }
 
+/* ---- Home page motion ----
+   Calm on purpose: slow drifts and soft lifts, nothing that flashes or
+   loops fast. The global reduced-motion rule above flattens all of it. */
+
+/* Soft light drifting behind the hero. */
+@keyframes btd-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(4%, -6%, 0) scale(1.12); }
+}
+.btd-aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  pointer-events: none;
+  animation: btd-drift 18s ease-in-out infinite;
+}
+
+/* Headline words rising into place, one after another. */
+@keyframes btd-rise {
+  from { opacity: 0; transform: translateY(0.45em); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.btd-rise {
+  display: inline-block;
+  opacity: 0;
+  animation: btd-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+/* Sections easing in as they scroll into view (see Reveal.tsx). */
+.btd-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.btd-reveal.is-shown {
+  opacity: 1;
+  transform: none;
+}
+
+/* Tool cards lift toward you. */
+.btd-lift {
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.btd-lift:hover,
+.btd-lift:focus-visible {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 50px -18px rgba(33, 50, 68, 0.28);
+  border-color: #8FCBF2;
+}
+.btd-lift .btd-lift-icon {
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), background-color 0.35s ease;
+}
+.btd-lift:hover .btd-lift-icon,
+.btd-lift:focus-visible .btd-lift-icon {
+  transform: rotate(-6deg) scale(1.08);
+  background-color: #8FCBF2;
+}
+
+/* The overshadowing demo: a label's shadow over real symptoms, lifted. */
+.btd-shadow-veil {
+  transition: opacity 0.7s ease, transform 0.9s cubic-bezier(0.6, 0, 0.2, 1);
+}
+.btd-shadow-stamp {
+  transition: transform 0.9s cubic-bezier(0.6, 0, 0.2, 1);
+}
+.btd-shadow-demo.is-revealed .btd-shadow-veil {
+  opacity: 0;
+  transform: translateY(-105%);
+  pointer-events: none;
+}
+.btd-shadow-demo.is-revealed .btd-shadow-stamp {
+  transform: rotate(-12deg) scale(0.8);
+}
+.btd-symptom {
+  transition: background-color 0.6s ease, border-color 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.btd-shadow-demo.is-revealed .btd-symptom {
+  background-color: #FFFFFF;
+  border-color: rgba(143, 203, 242, 0.9);
+  transform: translateX(4px);
+}
+/* Space is always held for the finding, so lifting the shadow never
+   reflows the card. */
+.btd-symptom-check {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.btd-shadow-demo.is-revealed .btd-symptom-check {
+  opacity: 1;
+  transform: none;
+}
+
+/* Guiding principle: each word fills in as the quote arrives. */
+.btd-quote-word {
+  color: rgba(33, 50, 68, 0.25);
+  transition: color 0.6s ease;
+}
+.is-shown .btd-quote-word {
+  color: #213244;
+}
+
+/* Motion off: everything simply in its final, readable state. */
+@media (prefers-reduced-motion: reduce) {
+  .btd-rise,
+  .btd-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+  .btd-aurora {
+    animation: none !important;
+  }
+}
+.a11y-high-contrast .btd-aurora {
+  display: none;
+}
+.a11y-high-contrast .btd-quote-word {
+  color: #000000 !important;
+}
+
 /* ---- Printing the appointment summary ----
    window.print() should produce the same document as the PDF export, not a
    screenshot of the app: no nav, no accessibility bar, no floating buttons,
@@ -216,6 +338,11 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   .btd-print-note {
     margin-top: 12px !important;
     padding-top: 8px !important;
+  }
+  .btd-reveal,
+  .btd-rise {
+    opacity: 1 !important;
+    transform: none !important;
   }
   .btd-avoid-break {
     break-inside: avoid;
