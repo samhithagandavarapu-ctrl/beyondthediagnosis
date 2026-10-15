@@ -13,6 +13,15 @@ const bubble = "max-w-[80%] px-[18px] py-4 text-15 leading-[1.65] whitespace-pre
 const assistantBubble = `${bubble} justify-self-start bg-sky-tint border border-navy/10 rounded-[18px_18px_18px_4px]`;
 const userBubble = `${bubble} btd-dark justify-self-end rounded-[18px_18px_4px_18px]`;
 
+/** The assistant is asked for plain text, but strip any Markdown that slips
+ *  through so people never see stray asterisks or # signs. */
+function plainText(text: string) {
+  return text
+    .replace(/^(\s*)[-*]\s+/gm, "$1• ")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*/g, "");
+}
+
 export default function Assistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -25,6 +34,7 @@ export default function Assistant() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Keep the newest message in view by scrolling only the chat box, never the
   // page. Skipped while it's just the greeting, so it opens at the top.
@@ -45,10 +55,30 @@ export default function Assistant() {
     setError(null);
     setLoading(true);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let soFar = "";
+
     try {
-      const reply = await sendChatMessage(next);
-      setMessages((m) => [...m, { role: "assistant", content: reply }]);
+      // Show the reply as it streams in; "Thinking…" covers the gap before
+      // the first words arrive.
+      const reply = await sendChatMessage(
+        next,
+        (text) => {
+          soFar = text;
+          setMessages([...next, { role: "assistant", content: text }]);
+        },
+        controller.signal
+      );
+      setMessages([...next, { role: "assistant", content: reply }]);
     } catch (err: unknown) {
+      if (controller.signal.aborted) {
+        // Stopped on purpose: keep whatever had arrived, and say it was cut short.
+        if (soFar.trim()) {
+          setMessages([...next, { role: "assistant", content: `${soFar.trimEnd()}\n\n(Stopped)` }]);
+        }
+        return;
+      }
       // Show what actually went wrong. The old text blamed a local dev server,
       // which is misleading anywhere but a developer's own machine.
       setError(
@@ -57,9 +87,17 @@ export default function Assistant() {
           : "The assistant couldn't respond just now. Please try again."
       );
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
   }
+
+  function handleStop() {
+    abortRef.current?.abort();
+  }
+
+  // Leaving the page stops a reply that's still coming.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   return (
     <section className="mx-auto max-w-[900px] px-6 pt-14 pb-20">
@@ -71,15 +109,23 @@ export default function Assistant() {
         Education and advocacy support only. This assistant never diagnoses, never
         recommends medication, and always defers to your provider's care plan.
       </p>
+      <p
+        role="note"
+        className="-mt-3 mb-7 max-w-[40em] rounded-tile border border-navy/16 bg-mist px-4 py-3 text-15 leading-[1.6] text-body"
+      >
+        <strong className="text-navy">AI can make mistakes.</strong> Answers here may be
+        wrong or missing something. Always check important information with your doctor
+        or another trusted source.
+      </p>
 
       <div className="btd-card rounded-panel overflow-hidden flex flex-col h-[70vh] min-h-[460px]">
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 grid gap-4 content-start">
           {messages.map((m, i) => (
             <div key={i} className={m.role === "user" ? userBubble : assistantBubble}>
-              {m.content}
+              {m.role === "assistant" ? plainText(m.content) : m.content}
             </div>
           ))}
-          {loading && <div className={`${assistantBubble} text-body`}>Thinking…</div>}
+          {loading && messages[messages.length - 1]?.role === "user" && <div className={`${assistantBubble} text-body`}>Thinking…</div>}
           {error && (
             <div className="rounded-tile bg-coral/25 px-4 py-3 text-sm text-coral-ink">
               {error}
@@ -115,13 +161,23 @@ export default function Assistant() {
             className="flex-1 min-w-0 rounded-full border border-navy/16 bg-white px-[18px] py-[13px] text-15 placeholder:text-[#6C8095] focus:border-link focus:outline-none"
           />
           <DictateButton variant="icon" value={input} onChange={setInput} label="your message" />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="btd-btn-coral min-h-[46px] px-[22px] text-15 disabled:opacity-40"
-          >
-            Send
-          </button>
+          {loading ? (
+            <button
+              type="button"
+              onClick={handleStop}
+              className="min-h-[46px] rounded-full border border-navy/30 bg-white px-[22px] text-15 font-semibold text-navy transition-colors hover:border-navy"
+            >
+              Stop
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="btd-btn-coral min-h-[46px] px-[22px] text-15 disabled:opacity-40"
+            >
+              Send
+            </button>
+          )}
         </form>
       </div>
 

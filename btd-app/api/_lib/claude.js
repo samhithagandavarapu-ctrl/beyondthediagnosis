@@ -58,6 +58,8 @@ You help people with Down syndrome and their families prepare for medical appoin
 - Use plain, everyday words by default. Avoid medical jargon; when a medical term is needed, explain it in the same sentence.
 - Write so a wide range of readers can follow: short sentences, one idea at a time, short lists where they help. Do not assume a caregiver is the one reading.
 - Be respectful and never patronizing. If the person with Down syndrome is the one writing to you, talk to them directly as "you" — never about them in the third person.
+- Write plain text only. The chat window does not show formatting, so never use Markdown: no asterisks, no bold or italics, no # headings. For a list, start each item on its own line with "• ".
+- Keep replies short: usually under 150 words. Answer the question asked, then offer to go further instead of covering everything at once.
 
 4. AUDIENCE — self-advocates first
 - Do not assume you are talking to a caregiver about someone else. Many users are self-advocates with Down syndrome using this for themselves.
@@ -170,49 +172,124 @@ const SSN_PATTERN = /\b\d{3}-\d{2}-\d{4}\b/;
 const PRIVACY_NOTE =
   "One more thing: it looks like you may have shared a Social Security number. You don't need to share that here — you can delete it from your message.";
 
+/** The escalation lines the newest user message calls for, if any. */
+function escalationLines(messages) {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  const lines = [];
+  if (CRISIS_PATTERNS.some((re) => re.test(lastUser))) lines.push(CRISIS_LINE);
+  if (EMERGENCY_PATTERNS.some((re) => re.test(lastUser))) lines.push(EMERGENCY_LINE);
+  return lines;
+}
+
+function privacyNote(messages, body) {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+  return SSN_PATTERN.test(lastUser) && !/social security/i.test(body) ? PRIVACY_NOTE : "";
+}
+
 /** Enforces the guidelines' hard rules in code, not just in the prompt:
  *  an emergency or crisis message always gets the escalation line first,
  *  and a pasted Social Security number always gets a privacy note. */
 export function applySafetyGuards(messages, reply) {
-  const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-
-  const lines = [];
-  if (CRISIS_PATTERNS.some((re) => re.test(lastUser))) lines.push(CRISIS_LINE);
-  if (EMERGENCY_PATTERNS.some((re) => re.test(lastUser))) lines.push(EMERGENCY_LINE);
+  const lines = escalationLines(messages);
 
   let body = reply;
   for (const line of lines) body = body.split(line).join("");
   body = body.trim();
 
-  if (SSN_PATTERN.test(lastUser) && !/social security/i.test(body)) {
-    body = `${body}\n\n${PRIVACY_NOTE}`.trim();
-  }
+  const note = privacyNote(messages, body);
+  if (note) body = `${body}\n\n${note}`.trim();
 
   return [...lines, body].filter(Boolean).join("\n\n");
 }
 
+const REFUSAL_REPLY =
+  "I can't help with that one. If it's about preparing for an appointment or understanding your rights, try asking it a different way and I'll do my best.";
+const EMPTY_REPLY = "I'm not sure how to respond to that — could you try rephrasing?";
+
+// Room for the model to think and still answer in full. Effort stays low
+// because this is a live chat box and a serverless function has a
+// wall-clock limit.
+const CHAT_PARAMS = {
+  max_tokens: 4096,
+  output_config: { effort: "low" },
+  system: SYSTEM_PROMPT,
+};
+
 export async function chatReply(messages) {
-  const response = await getClient().messages.create({
-    model: MODEL,
-    // Room for the model to think and still answer in full. Effort stays low
-    // because this is a live chat box: people are watching a "Thinking…"
-    // bubble, and a serverless function has a wall-clock limit.
-    max_tokens: 4096,
-    output_config: { effort: "low" },
-    system: SYSTEM_PROMPT,
-    messages,
-  });
+  const response = await getClient().messages.create({ model: MODEL, ...CHAT_PARAMS, messages });
 
   let reply;
   if (response.stop_reason === "refusal") {
-    reply = "I can't help with that one. If it's about preparing for an appointment or understanding your rights, try asking it a different way and I'll do my best.";
+    reply = REFUSAL_REPLY;
   } else {
-    reply =
-      textOf(response) ||
-      "I'm not sure how to respond to that — could you try rephrasing?";
+    reply = textOf(response) || EMPTY_REPLY;
   }
 
   return applySafetyGuards(messages, reply);
+}
+
+function startText(res) {
+  res.status(200);
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("X-Accel-Buffering", "no");
+}
+
+/** Streams the reply to `res` as plain text, so the first words show up as
+ *  soon as the model writes them instead of after the whole answer.
+ *  Works with both Express and Vercel's Node response objects.
+ *
+ *  Throws (with nothing written) if the request fails before any text
+ *  arrives, so the caller can still answer with a JSON error. */
+export async function streamChatReply(messages, res) {
+  // An emergency or crisis message is answered in one piece: the escalation
+  // line has to come first, and the model's own copy of it has to be removed,
+  // which can't be done to text already sent.
+  if (escalationLines(messages).length > 0) {
+    const reply = await chatReply(messages);
+    startText(res);
+    res.end(reply);
+    return;
+  }
+
+  const stream = getClient().messages.stream({ model: MODEL, ...CHAT_PARAMS, messages });
+  let body = "";
+
+  // If the person presses Stop (or leaves), stop generating too, so we don't
+  // keep paying for an answer nobody will read.
+  let clientGone = false;
+  res.on("close", () => {
+    if (!res.writableEnded) {
+      clientGone = true;
+      stream.abort();
+    }
+  });
+
+  try {
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        if (!res.headersSent) startText(res);
+        res.write(event.delta.text);
+        body += event.delta.text;
+      }
+    }
+    const final = await stream.finalMessage();
+    if (!res.headersSent) startText(res);
+    if (final.stop_reason === "refusal") {
+      res.write(body ? `\n\n${REFUSAL_REPLY}` : REFUSAL_REPLY);
+    } else if (!body.trim()) {
+      res.write(EMPTY_REPLY);
+    }
+  } catch (err) {
+    if (clientGone) return;
+    if (!res.headersSent) throw err;
+    console.error("Chat stream broke partway:", err);
+    res.end("\n\n(The reply was cut off. Please try sending your message again.)");
+    return;
+  }
+
+  const note = privacyNote(messages, body);
+  res.end(note ? `\n\n${note}` : "");
 }
 
 export async function refineForm(form) {

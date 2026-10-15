@@ -1,9 +1,9 @@
 import {
-  chatReply,
   cleanMessages,
   describeError,
   hasApiKey,
   MISSING_KEY_MESSAGE,
+  streamChatReply,
 } from "./_lib/claude.js";
 
 export default async function handler(req, res) {
@@ -22,8 +22,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const reply = await chatReply(messages);
-    return res.status(200).json({ reply });
+    await streamChatReply(messages, res);
   } catch (err) {
     const { status, message } = describeError(err);
     return res.status(status).json({ error: message });

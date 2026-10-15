@@ -65,13 +65,39 @@ export async function refineAppointmentForm(form: unknown): Promise<RefinedAppoi
   const data = await readJson(res, "The polish request");
   return data.refined as RefinedAppointmentForm;
 }
-export async function sendChatMessage(messages: ChatMessage[]): Promise<string> {
+/** Sends the conversation and streams the reply back. `onText` gets the
+ *  whole reply so far each time more arrives; the promise resolves with the
+ *  finished reply. Aborting `signal` stops the reply partway. */
+export async function sendChatMessage(
+  messages: ChatMessage[],
+  onText?: (soFar: string) => void,
+  signal?: AbortSignal
+): Promise<string> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
+    signal,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages }),
   });
 
-  const data = await readJson(res, "The assistant");
-  return data.reply as string;
+  // Errors (and anything that isn't the streamed text, like the SPA fallback
+  // page) arrive as a whole body — readJson turns them into a readable error.
+  const type = res.headers.get("Content-Type") ?? "";
+  if (!res.ok || !type.startsWith("text/plain") || !res.body) {
+    const data = await readJson(res, "The assistant");
+    return data.reply as string;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let reply = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    reply += decoder.decode(value, { stream: true });
+    onText?.(reply);
+  }
+  reply += decoder.decode();
+  onText?.(reply);
+  return reply;
 }

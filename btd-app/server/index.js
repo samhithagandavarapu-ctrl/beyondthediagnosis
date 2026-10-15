@@ -2,13 +2,13 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import {
-  chatReply,
   cleanMessages,
   describeError,
   hasApiKey,
   MISSING_KEY_MESSAGE,
   MODEL,
   refineForm,
+  streamChatReply,
 } from "../api/_lib/claude.js";
 import { deleteAccount } from "../api/_lib/account.js";
 
@@ -38,7 +38,7 @@ app.post("/api/chat", async (req, res) => {
   }
 
   try {
-    res.json({ reply: await chatReply(messages) });
+    await streamChatReply(messages, res);
   } catch (err) {
     const { status, message } = describeError(err);
     res.status(status).json({ error: message });
