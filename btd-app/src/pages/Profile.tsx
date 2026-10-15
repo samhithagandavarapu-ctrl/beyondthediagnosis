@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
-import { fetchProfile, upsertProfile } from "../lib/profile";
+import { fetchProfile, preferredName, savePreferredName, upsertProfile } from "../lib/profile";
 import { historyTitle, loadHistory } from "../lib/appointmentHistory";
 import { READING_LEVELS } from "../lib/myVoice";
 import { shortDate } from "../lib/shortDate";
@@ -293,6 +293,7 @@ export default function Profile() {
     canSpeak,
   } = useMyVoice();
 
+  const [callMe, setCallMe] = useState(() => preferredName(user));
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
@@ -314,6 +315,7 @@ export default function Profile() {
       setFetching(false);
       return;
     }
+    setCallMe(preferredName(user));
     fetchProfile(userId).then((profile) => {
       if (profile) {
         setFullName(profile.full_name ?? "");
@@ -330,11 +332,11 @@ export default function Profile() {
     setSaving(true);
     setError(null);
     setSaved(false);
-    const { error } = await upsertProfile(user.id, {
-      full_name: fullName,
-      username,
-      phone,
-    });
+    const [{ error: profileError }, { error: nameError }] = await Promise.all([
+      upsertProfile(user.id, { full_name: fullName, username, phone }),
+      callMe.trim() !== preferredName(user) ? savePreferredName(callMe) : { error: null },
+    ]);
+    const error = profileError || nameError;
     setSaving(false);
     if (error) setError(error);
     else setSaved(true);
@@ -419,6 +421,21 @@ export default function Profile() {
                         Saved.
                       </p>
                     )}
+                    <div>
+                      <label htmlFor="p-call" className="mb-1 block text-sm font-bold text-navy">
+                        What should we call you?
+                      </label>
+                      <input
+                        id="p-call"
+                        className="btd-input"
+                        value={callMe}
+                        onChange={(e) => setCallMe(e.target.value)}
+                        aria-describedby="p-call-hint"
+                      />
+                      <p id="p-call-hint" className="mt-1 text-12 text-muted">
+                        The name we'll use when we reply to your messages.
+                      </p>
+                    </div>
                     <div>
                       <label htmlFor="p-name" className="mb-1 block text-sm font-bold text-navy">
                         Full name
