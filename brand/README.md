@@ -8,6 +8,9 @@
   - `Voiced-Logo-Stacked.pdf`: mark above the wordmark, transparent. For square spaces.
   - `Voiced-Mark.pdf` / `Voiced-Mark.svg`: the V mark alone, transparent.
   - `Voiced-Mark-on-Navy.pdf`: the mark on a navy square (avatars, app icons).
+- `fonts/` (and `Voiced-Fonts.zip`): Funnel Display and Funnel Sans as static TTF files, one per
+  weight, for Canva, Word, Figma and so on. In Canva: Brand > Brand Kit > Fonts > Upload a font
+  (needs Canva Pro, Teams, Education or Nonprofits). Upload every file. OFL-licensed, free to use.
 - `source/`: the HTML and scripts that produce the PDFs.
 
 To regenerate after a change, from this folder: `npm i -D playwright` (once), then
