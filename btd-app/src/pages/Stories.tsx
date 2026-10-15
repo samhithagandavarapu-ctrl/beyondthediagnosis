@@ -117,7 +117,14 @@ export default function Stories() {
         </div>
 
         {loaded && allStories.length === 0 ? (
-          <p className="text-17 text-body">None so far.</p>
+          <div className="btd-card max-w-[720px] p-7">
+            <h2 className="text-23 font-extrabold text-navy">Stories are on their way</h2>
+            <p className="mt-1.5 text-15 leading-[1.6] text-body">
+              We're gathering the first stories from self-advocates, families, and
+              clinicians, and each one is published only with permission. Yours could be
+              one of the first.
+            </p>
+          </div>
         ) : (
           <>
             <div className="mb-7 flex flex-wrap items-center gap-2.5">

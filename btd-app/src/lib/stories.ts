@@ -36,7 +36,7 @@ export type StorySubmission = {
 
 export async function submitStory(submission: StorySubmission): Promise<{ error: string | null }> {
   if (!authEnabled) {
-    return { error: "Story submission isn't set up yet — see README 'Setting up login'." };
+    return { error: "Sending stories isn't available right now. Please email your story to withvoiced@gmail.com instead." };
   }
   const { error } = await supabase.from("stories").insert({
     title: submission.title,

@@ -23,15 +23,19 @@ export default function Assistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Keep the newest message in view by scrolling only the chat box, never the
+  // page. Skipped while it's just the greeting, so it opens at the top.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+    const box = scrollRef.current;
+    if (!box || (messages.length <= 1 && !loading)) return;
+    box.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
+  }, [messages, loading, error]);
 
-  async function handleSend(e: FormEvent) {
-    e.preventDefault();
-    const text = input.trim();
+  async function handleSend(e?: FormEvent, prompt?: string) {
+    e?.preventDefault();
+    const text = (prompt ?? input).trim();
     if (!text || loading) return;
 
     const next: ChatMessage[] = [...messages, { role: "user", content: text }];
@@ -68,7 +72,7 @@ export default function Assistant() {
       </p>
 
       <div className="btd-card rounded-panel overflow-hidden flex flex-col h-[70vh] min-h-[460px]">
-        <div className="flex-1 overflow-y-auto p-6 grid gap-4 content-start">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 grid gap-4 content-start">
           {messages.map((m, i) => (
             <div key={i} className={m.role === "user" ? userBubble : assistantBubble}>
               {m.content}
@@ -80,7 +84,6 @@ export default function Assistant() {
               {error}
             </div>
           )}
-          <div ref={bottomRef} />
         </div>
 
         {messages.length <= 1 && (
@@ -89,7 +92,8 @@ export default function Assistant() {
               <button
                 key={p}
                 type="button"
-                onClick={() => setInput(p)}
+                onClick={() => handleSend(undefined, p)}
+                disabled={loading}
                 className="rounded-full border border-navy/16 bg-mist px-3.5 py-[9px] text-13 text-body transition-colors hover:border-link hover:text-navy"
               >
                 {p}
@@ -106,7 +110,7 @@ export default function Assistant() {
             id="chat-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about rights, accommodations, or how to raise a concern…"
+            placeholder="Ask a question…"
             className="flex-1 min-w-0 rounded-full border border-navy/16 bg-white px-[18px] py-[13px] text-15 placeholder:text-[#6C8095] focus:border-link focus:outline-none"
           />
           <DictateButton variant="icon" value={input} onChange={setInput} label="your message" />

@@ -1,6 +1,6 @@
 import { usePracticeMode } from "../context/PracticeModeContext";
 
-// Global "Practice" vs "This is real" switch. Kept standalone so the same
+// Global practice-mode switch. Kept standalone so the same
 // control can be dropped into Appointment Prep later.
 
 export default function PracticeModeToggle({ tone = "dark" }: { tone?: "dark" | "light" }) {
@@ -15,7 +15,7 @@ export default function PracticeModeToggle({ tone = "dark" }: { tone?: "dark" | 
       title={
         practice
           ? "Practice mode: nothing you do is saved or downloaded."
-          : "This is real: what you finish is saved and can go to your appointment."
+          : "Turn on practice mode to try things out without saving or downloading anything."
       }
       className={`min-h-[30px] rounded-full border px-3 py-1.5 text-11 font-bold uppercase tracking-[0.08em] transition-colors ${
         practice
@@ -25,7 +25,7 @@ export default function PracticeModeToggle({ tone = "dark" }: { tone?: "dark" | 
           : "border-mist/35 hover:border-sky"
       }`}
     >
-      {practice ? "Practice mode on" : "This is real"}
+      {practice ? "Practice mode on" : "Practice mode"}
     </button>
   );
 }

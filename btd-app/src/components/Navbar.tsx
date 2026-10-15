@@ -15,16 +15,16 @@ const links = [
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `inline-flex items-center min-h-[40px] px-3 py-[9px] rounded-lg text-sm font-medium transition-colors ${
-    isActive ? "bg-navy text-mist" : "text-body hover:bg-butter/60 hover:text-navy"
+    isActive ? "bg-navy text-mist" : "text-body hover:bg-sky/30 hover:text-navy"
   }`;
 
 const iconLinkClass = ({ isActive }: { isActive: boolean }) =>
   `grid h-10 w-10 place-items-center rounded-lg transition-colors ${
-    isActive ? "bg-navy text-mist" : "text-body hover:bg-butter/60 hover:text-navy"
+    isActive ? "bg-navy text-mist" : "text-body hover:bg-sky/30 hover:text-navy"
   }`;
 
 const menuItemClass =
-  "block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-body hover:bg-butter/60 hover:text-navy";
+  "block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-body hover:bg-sky/30 hover:text-navy";
 
 /** Everything about your own account, in one place: keeps the top bar to a
  *  single tidy line however many account pages there are. */
@@ -68,7 +68,7 @@ function AccountMenu({
         aria-haspopup="true"
         aria-label="My account"
         className={`inline-flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-[9px] text-sm font-medium transition-colors sm:px-3 ${
-          open ? "bg-navy text-mist" : "text-body hover:bg-butter/60 hover:text-navy"
+          open ? "bg-navy text-mist" : "text-body hover:bg-sky/30 hover:text-navy"
         }`}
       >
         <Icon name="person" size={18} className="sm:hidden" />

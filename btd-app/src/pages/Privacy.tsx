@@ -2,7 +2,7 @@ export default function Privacy() {
   return (
     <div className="btd-container py-10 max-w-2xl">
       <h1 className="text-3xl font-display font-semibold mb-2">Privacy Policy</h1>
-      <p className="text-slate-light text-sm mb-8">Last updated {new Date().toLocaleDateString()}</p>
+      <p className="text-slate-light text-sm mb-8">Last updated October 14, 2026</p>
 
       <div className="btd-card p-6 mb-8 bg-clay/10 border-clay/40 text-sm text-ink">
         <strong>Plain-language note:</strong> Voiced is an early-stage platform built by a
@@ -95,8 +95,8 @@ export default function Privacy() {
             "Refine with AI" feature.
           </li>
           <li>
-            <strong>Vercel and Render</strong> — host the website and its backend
-            server.
+            <strong>Vercel</strong> — hosts the website and runs the server code
+            behind the AI features.
           </li>
         </ul>
       </section>

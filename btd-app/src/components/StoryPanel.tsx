@@ -55,7 +55,7 @@ export default function StoryPanel({ defaultName }: { defaultName: string }) {
     >
       {!authEnabled ? (
         <p className="rounded-tile bg-butter p-4 text-sm text-butter-ink">
-          Submissions need the Supabase project connected — see the README.
+          Sending stories here isn't available right now. You can email your story to withvoiced@gmail.com instead.
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="grid gap-4">
