@@ -38,6 +38,7 @@ import {
   buildAppointmentPdf,
   medicationLine,
   symptomDetail,
+  SYMPTOM_AREAS,
   timelineDetail,
 } from "../lib/appointmentPdf";
 import { inkLastWord } from "../components/Scribble";
@@ -131,6 +132,7 @@ export default function AppointmentPrep() {
                 description: s.description,
                 onset: s.onset,
                 baselineOrNew: f.symptoms[i]?.baselineOrNew ?? "new",
+                area: f.symptoms[i]?.area,
               }))
             : f.symptoms,
         medications:
@@ -369,6 +371,19 @@ export default function AppointmentPrep() {
                 onChange={(e) => updateItem("symptoms", s.id, { description: e.target.value })}
               />
               <div className="grid sm:grid-cols-2 gap-3">
+                <select
+                  className="btd-input"
+                  aria-label="Where on the body"
+                  value={s.area ?? ""}
+                  onChange={(e) => updateItem("symptoms", s.id, { area: e.target.value || undefined })}
+                >
+                  <option value="">Where on the body? (optional)</option>
+                  {SYMPTOM_AREAS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
                 <input
                   className="btd-input"
                   placeholder="When did it start? (onset / duration)"
@@ -376,7 +391,7 @@ export default function AppointmentPrep() {
                   onChange={(e) => updateItem("symptoms", s.id, { onset: e.target.value })}
                 />
                 <select
-                  className="btd-input"
+                  className="btd-input sm:col-span-2"
                   value={s.baselineOrNew}
                   onChange={(e) =>
                     updateItem("symptoms", s.id, {

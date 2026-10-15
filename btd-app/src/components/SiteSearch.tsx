@@ -4,11 +4,13 @@ import { searchSite } from "../data/searchIndex";
 import Icon from "./icons/Icon";
 
 /** Search box for the top bar: finds pages and resources as you type.
- *  Arrow keys move through the results, Enter opens one, Escape closes. */
+ *  Arrow keys move through the results, Enter opens the one you picked,
+ *  Escape closes. Nothing opens until you choose it. */
 export default function SiteSearch({ className = "" }: { className?: string }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
+  // -1: nothing picked yet, so Enter never jumps to a result on its own.
+  const [active, setActive] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
@@ -29,7 +31,7 @@ export default function SiteSearch({ className = "" }: { className?: string }) {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
-  useEffect(() => setActive(0), [query]);
+  useEffect(() => setActive(-1), [query]);
 
   function go(to: string) {
     setOpen(false);
@@ -49,10 +51,11 @@ export default function SiteSearch({ className = "" }: { className?: string }) {
       setActive((i) => (i + 1) % results.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActive((i) => (i - 1 + results.length) % results.length);
+      setActive((i) => (i <= 0 ? results.length - 1 : i - 1));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      go(results[active].to);
+      setOpen(true);
+      if (active >= 0) go(results[active].to);
     }
   }
 
@@ -75,7 +78,7 @@ export default function SiteSearch({ className = "" }: { className?: string }) {
         aria-expanded={showList}
         aria-controls={listId}
         aria-autocomplete="list"
-        aria-activedescendant={showList && results.length ? `${listId}-${active}` : undefined}
+        aria-activedescendant={showList && active >= 0 ? `${listId}-${active}` : undefined}
         autoComplete="off"
         placeholder="Search"
         value={query}
