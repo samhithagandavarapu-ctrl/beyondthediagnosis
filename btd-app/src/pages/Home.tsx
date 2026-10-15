@@ -86,7 +86,7 @@ export default function Home() {
             </h1>
             <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
               Voiced helps people with Down syndrome, their families, and their
-              clinicians catch what diagnostic overshadowing hides — when a real,
+              clinicians catch what diagnostic overshadowing hides: when a real,
               treatable symptom gets waved off as{" "}
               <Scribble kind="circle" delay={labelDelay + 1300} className="[&_svg]:text-coral/70">
                 "just Down syndrome."
