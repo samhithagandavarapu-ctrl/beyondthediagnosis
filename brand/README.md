@@ -8,11 +8,14 @@
   - `Voiced-Logo-Stacked.pdf`: mark above the wordmark, transparent. For square spaces.
   - `Voiced-Mark.pdf` / `Voiced-Mark.svg`: the V mark alone, transparent.
   - `Voiced-Mark-on-Navy.pdf`: the mark on a navy square (avatars, app icons).
+- `Voiced-Business-Card.pdf`: print file, front and back, 3.5 x 2 in with 0.125 in bleed.
+  `Voiced-Business-Card-Front.png` / `-Back.png` are 300 dpi, trimmed, for Canva or previews.
+  The white square on the back is left empty for a QR code.
 - `fonts/` (and `Voiced-Fonts.zip`): Funnel Display and Funnel Sans as static TTF files, one per
   weight, for Canva, Word, Figma and so on. In Canva: Brand > Brand Kit > Fonts > Upload a font
   (needs Canva Pro, Teams, Education or Nonprofits). Upload every file. OFL-licensed, free to use.
 - `source/`: the HTML and scripts that produce the PDFs.
 
 To regenerate after a change, from this folder: `npm i -D playwright` (once), then
-`node source/render-brand-kit.mjs` and `node source/render-logos.mjs`. Both need internet
+`node source/render-brand-kit.mjs` and `node source/render-logos.mjs` (and `node source/render-business-card.mjs`). Both need internet
 access to load Funnel Display and Funnel Sans from Google Fonts.
