@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authEnabled } from "../lib/supabaseClient";
 import PasswordInput from "../components/PasswordInput";
+import { inkLastWord } from "../components/Scribble";
 
 // Phone sign-in needs a paid SMS provider connected in Supabase (README,
 // "Turn on phone number sign-in"). Until VITE_PHONE_SIGNIN=true says that's
@@ -51,7 +52,7 @@ export default function Login() {
   if (!loading && user) {
     return (
       <div className="btd-container py-14 max-w-md">
-        <h1 className="text-3xl font-display font-semibold mb-2">You're signed in</h1>
+        <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("You're signed in")}</h1>
         <p className="text-slate mb-8">Signed in as {user.email || user.phone || "your account"}.</p>
         <div className="btd-card p-6 space-y-3">
           <Link
@@ -77,7 +78,7 @@ export default function Login() {
 
   return (
     <div className="btd-container py-14 max-w-md">
-      <h1 className="text-3xl font-display font-semibold mb-2">Sign in to Voiced</h1>
+      <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("Sign in to Voiced")}</h1>
       <p className="text-slate mb-8">
         Save your appointment prep history and pick up where you left off.
       </p>

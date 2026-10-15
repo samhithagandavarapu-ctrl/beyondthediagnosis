@@ -40,6 +40,7 @@ import {
   symptomDetail,
   timelineDetail,
 } from "../lib/appointmentPdf";
+import { inkLastWord } from "../components/Scribble";
 
 const newId = () => crypto.randomUUID();
 
@@ -295,7 +296,7 @@ export default function AppointmentPrep() {
 
   return (
     <div className="btd-container py-10 max-w-2xl">
-      <h1 className="text-3xl font-display font-semibold mb-2">Appointment Prep Tool</h1>
+      <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("Appointment Prep Tool")}</h1>
       <p className="text-slate mb-4">
         Fill this out before your visit. It generates a clean, downloadable one-page
         summary you can bring straight to your provider — so nothing gets lost in a

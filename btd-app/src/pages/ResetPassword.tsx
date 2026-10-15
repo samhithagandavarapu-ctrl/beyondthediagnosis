@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/PasswordInput";
+import { inkLastWord } from "../components/Scribble";
 
 export default function ResetPassword() {
   const { user, updatePassword, passwordRecoveryMode } = useAuth();
@@ -23,7 +24,7 @@ export default function ResetPassword() {
 
   return (
     <div className="btd-container py-14 max-w-md">
-      <h1 className="text-3xl font-display font-semibold mb-2">Set a new password</h1>
+      <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("Set a new password")}</h1>
 
       {!passwordRecoveryMode && !user && !done && (
         <p className="text-sm text-slate mb-6">
