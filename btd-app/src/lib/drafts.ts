@@ -204,6 +204,60 @@ export async function attachCheckIn(userId: string | null, checkIn: CheckIn): Pr
   await saveDraft(userId, { ...target, myVoice: checkIn, updatedAt: new Date().toISOString() });
 }
 
+/** Add notes from an assistant chat to the draft being worked on, or to a
+ *  new one. Returns the draft they went into. Nothing already in the draft
+ *  is changed: empty placeholder rows are filled first, then rows are added. */
+export async function addNotesToDraft(
+  userId: string | null,
+  notes: {
+    reasonForVisit: string;
+    symptoms: { description: string; onset: string }[];
+    questions: string[];
+  },
+  where: "current" | "new"
+): Promise<Draft> {
+  let target: Draft;
+  if (where === "new") {
+    target = newDraft();
+  } else {
+    const { drafts } = await listDrafts(userId);
+    const activeId = getActiveDraftId();
+    target = drafts.find((d) => d.id === activeId) ?? drafts[0] ?? newDraft();
+  }
+
+  const form = target.form;
+  const reason = form.reasonForVisit.trim();
+  const reasonForVisit =
+    !notes.reasonForVisit || reason.includes(notes.reasonForVisit)
+      ? form.reasonForVisit
+      : reason
+        ? `${reason}\n${notes.reasonForVisit}`
+        : notes.reasonForVisit;
+
+  const symptoms = [
+    ...form.symptoms.filter((s) => s.description.trim() || s.onset.trim()),
+    ...notes.symptoms.map((s) => ({ ...emptySymptom(), description: s.description, onset: s.onset })),
+  ];
+  const questions = [
+    ...form.questions.filter((q) => q.text.trim()),
+    ...notes.questions.map((text) => ({ ...emptyQuestion(), text })),
+  ];
+
+  const updated: Draft = {
+    ...target,
+    form: {
+      ...form,
+      reasonForVisit,
+      symptoms: symptoms.length ? symptoms : [emptySymptom()],
+      questions: questions.length ? questions : [emptyQuestion()],
+    },
+    updatedAt: new Date().toISOString(),
+  };
+  setActiveDraftId(updated.id);
+  await saveDraft(userId, updated);
+  return updated;
+}
+
 function sortDrafts(drafts: Draft[]): Draft[] {
   return [...drafts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }

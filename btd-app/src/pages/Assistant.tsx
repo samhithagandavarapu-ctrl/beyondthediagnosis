@@ -1,5 +1,9 @@
 import { FormEvent, useRef, useState, useEffect } from "react";
-import { sendChatMessage, ChatMessage } from "../lib/api";
+import { Link } from "react-router-dom";
+import { sendChatMessage, prepNotesFromChat, ChatMessage } from "../lib/api";
+import { addNotesToDraft, draftLabel } from "../lib/drafts";
+import { useAuth } from "../context/AuthContext";
+import { Chat, ChatStore, chatLabel, deleteChat, listChats, newChat, saveChat, sortChats } from "../lib/chats";
 import DictateButton from "../components/DictateButton";
 import { inkLastWord } from "../components/Scribble";
 
@@ -22,17 +26,33 @@ function plainText(text: string) {
     .replace(/\*/g, "");
 }
 
+const GREETING: ChatMessage = {
+  role: "assistant",
+  content:
+    "Hi — I'm the Voiced Advocacy Assistant. I can help you understand your rights, prepare for an appointment, or think through how to raise a concern with a provider. I can't diagnose anything or recommend treatment — but I can help you build a clear, confident case to bring to your doctor. What's going on?",
+};
+
 export default function Assistant() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content:
-        "Hi — I'm the Voiced Advocacy Assistant. I can help you understand your rights, prepare for an appointment, or think through how to raise a concern with a provider. I can't diagnose anything or recommend treatment — but I can help you build a clear, confident case to bring to your doctor. What's going on?",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
+  // Chat history: every saved chat, and which one is open (null = a new chat
+  // that hasn't been sent yet, so isn't saved).
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [chatStore, setChatStore] = useState<ChatStore>("device");
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [showChats, setShowChats] = useState(false);
+  // Latest values for code that finishes after a reply streams in.
+  const chatsRef = useRef(chats);
+  chatsRef.current = chats;
+  const openIdRef = useRef<string | null>(null);
+  // Saving the chat to Appointment Prep.
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -44,6 +64,76 @@ export default function Assistant() {
     box.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
   }, [messages, loading, error]);
 
+  // Load saved chats once we know who's here, and again if that changes
+  // (signing in brings this device's chats into the account).
+  useEffect(() => {
+    if (authLoading) return;
+    let cancelled = false;
+    listChats(userId).then((res) => {
+      if (cancelled) return;
+      setChats(res.chats);
+      setChatStore(res.store);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, authLoading]);
+
+  /** Save the open chat with these messages, and keep the list in step. */
+  async function persist(id: string, final: ChatMessage[]) {
+    const existing = chatsRef.current.find((c) => c.id === id);
+    const chat: Chat = {
+      ...(existing ?? { ...newChat(final), id }),
+      messages: final,
+      updatedAt: new Date().toISOString(),
+    };
+    setChats((prev) => sortChats([chat, ...prev.filter((c) => c.id !== id)]));
+    await saveChat(userId, chat);
+  }
+
+  function resetView(next: ChatMessage[]) {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setLoading(false);
+    setMessages(next);
+    setInput("");
+    setError(null);
+    setSaved(null);
+    setSaveError(null);
+    setShowChats(false);
+  }
+
+  function openChat(c: Chat) {
+    resetView(c.messages.length ? c.messages : [GREETING]);
+    setChatId(c.id);
+    openIdRef.current = c.id;
+  }
+
+  function startNewChat() {
+    resetView([GREETING]);
+    setChatId(null);
+    openIdRef.current = null;
+  }
+
+  async function updateChat(c: Chat, patch: Partial<Chat>) {
+    const updated = { ...c, ...patch };
+    setChats((prev) => sortChats(prev.map((x) => (x.id === c.id ? updated : x))));
+    await saveChat(userId, updated);
+  }
+
+  function renameChat(c: Chat) {
+    const title = window.prompt("Name this chat:", chatLabel(c));
+    if (title === null) return;
+    updateChat(c, { title: title.trim() });
+  }
+
+  async function removeChat(c: Chat) {
+    if (!window.confirm(`Delete the chat "${chatLabel(c)}"? This can't be undone.`)) return;
+    setChats((prev) => prev.filter((x) => x.id !== c.id));
+    if (c.id === chatId) startNewChat();
+    await deleteChat(userId, c.id);
+  }
+
   async function handleSend(e?: FormEvent, prompt?: string) {
     e?.preventDefault();
     const text = (prompt ?? input).trim();
@@ -53,11 +143,21 @@ export default function Assistant() {
     setMessages(next);
     setInput("");
     setError(null);
+    setSaved(null);
+    setSaveError(null);
     setLoading(true);
 
     const controller = new AbortController();
     abortRef.current = controller;
     let soFar = "";
+    let final: ChatMessage[] = next;
+    const id = chatId ?? crypto.randomUUID();
+    setChatId(id);
+    openIdRef.current = id;
+    // If the person opens another chat mid-reply, keep this reply off screen.
+    const show = (m: ChatMessage[]) => {
+      if (openIdRef.current === id) setMessages(m);
+    };
 
     try {
       // Show the reply as it streams in; "Thinking…" covers the gap before
@@ -66,19 +166,22 @@ export default function Assistant() {
         next,
         (text) => {
           soFar = text;
-          setMessages([...next, { role: "assistant", content: text }]);
+          show([...next, { role: "assistant", content: text }]);
         },
         controller.signal
       );
-      setMessages([...next, { role: "assistant", content: reply }]);
+      final = [...next, { role: "assistant", content: reply }];
+      show(final);
     } catch (err: unknown) {
       if (controller.signal.aborted) {
         // Stopped on purpose: keep whatever had arrived, and say it was cut short.
         if (soFar.trim()) {
-          setMessages([...next, { role: "assistant", content: `${soFar.trimEnd()}\n\n(Stopped)` }]);
+          final = [...next, { role: "assistant", content: `${soFar.trimEnd()}\n\n(Stopped)` }];
+          show(final);
         }
         return;
       }
+      if (openIdRef.current !== id) return;
       // Show what actually went wrong. The old text blamed a local dev server,
       // which is misleading anywhere but a developer's own machine.
       setError(
@@ -87,8 +190,44 @@ export default function Assistant() {
           : "The assistant couldn't respond just now. Please try again."
       );
     } finally {
-      abortRef.current = null;
-      setLoading(false);
+      // Save the chat even if it was stopped or another chat was opened.
+      // A newer request may own the loading state by now; only clear our own.
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
+      persist(id, final);
+    }
+  }
+
+  async function handleSaveToPrep(where: "current" | "new") {
+    setSaving(true);
+    setSaved(null);
+    setSaveError(null);
+    try {
+      const notes = await prepNotesFromChat(messages);
+      const found = notes.symptoms.length + notes.questions.length + (notes.reasonForVisit ? 1 : 0);
+      if (found === 0) {
+        setSaveError(
+          "I didn't find any symptoms or questions for your doctor in this chat yet. Tell me what's going on, then try again."
+        );
+        return;
+      }
+      const draft = await addNotesToDraft(user?.id ?? null, notes, where);
+      const parts = [
+        notes.symptoms.length && `${notes.symptoms.length} symptom${notes.symptoms.length > 1 ? "s" : ""}`,
+        notes.questions.length && `${notes.questions.length} question${notes.questions.length > 1 ? "s" : ""}`,
+        notes.reasonForVisit && "the reason for the visit",
+      ].filter(Boolean) as string[];
+      const list =
+        parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}` : parts[0];
+      setSaved(`Added ${list} to "${draftLabel(draft)}".`);
+    } catch (err: unknown) {
+      setSaveError(
+        err instanceof Error && err.message ? err.message : "Couldn't save to Appointment Prep. Please try again."
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -100,7 +239,7 @@ export default function Assistant() {
   useEffect(() => () => abortRef.current?.abort(), []);
 
   return (
-    <section className="mx-auto max-w-[900px] px-6 pt-14 pb-20">
+    <section className="mx-auto max-w-[1200px] px-6 pt-14 pb-20">
       <span className="btd-eyebrow">Always free</span>
       <h1 className="mt-3 text-[clamp(2rem,4.5vw,3rem)] font-extrabold leading-[1.1]">
         {inkLastWord("AI Advocacy Assistant")}
@@ -117,6 +256,35 @@ export default function Assistant() {
         wrong or missing something. Always check important information with your doctor
         or another trusted source.
       </p>
+
+      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+      {/* On small screens the list folds away behind a button above the chat. */}
+      <div className="lg:hidden">
+        <button
+          type="button"
+          onClick={() => setShowChats((v) => !v)}
+          aria-expanded={showChats}
+          className="rounded-full border border-navy/16 bg-white px-4 py-2 text-sm font-semibold text-navy"
+        >
+          {showChats ? "Hide your chats" : `Your chats${chats.length ? ` (${chats.length})` : ""}`}
+        </button>
+      </div>
+      <aside
+        aria-label="Your chats"
+        className={`${showChats ? "block" : "hidden"} lg:block btd-card rounded-panel overflow-hidden lg:h-[70vh] lg:min-h-[460px]`}
+      >
+        <ChatList
+          chats={chats}
+          openId={chatId}
+          store={chatStore}
+          signedIn={Boolean(userId)}
+          onNew={startNewChat}
+          onOpen={openChat}
+          onPin={(c) => updateChat(c, { pinned: !c.pinned })}
+          onRename={renameChat}
+          onDelete={removeChat}
+        />
+      </aside>
 
       <div className="btd-card rounded-panel overflow-hidden flex flex-col h-[70vh] min-h-[460px]">
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 grid gap-4 content-start">
@@ -146,6 +314,44 @@ export default function Assistant() {
                 {p}
               </button>
             ))}
+          </div>
+        )}
+
+        {messages.some((m) => m.role === "user") && !loading && (
+          <div className="border-t border-navy/10 px-6 py-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-body">Save this chat to Appointment Prep:</span>
+              <button
+                type="button"
+                onClick={() => handleSaveToPrep("current")}
+                disabled={saving}
+                className="rounded-full border border-navy/16 bg-mist px-3.5 py-[7px] text-13 text-navy transition-colors hover:border-link disabled:opacity-50"
+              >
+                Add to my draft
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveToPrep("new")}
+                disabled={saving}
+                className="rounded-full border border-navy/16 bg-mist px-3.5 py-[7px] text-13 text-navy transition-colors hover:border-link disabled:opacity-50"
+              >
+                Start a new draft
+              </button>
+              {saving && <span className="text-muted">Saving…</span>}
+            </div>
+            {saved && (
+              <p className="mt-2 text-navy" role="status">
+                {saved}{" "}
+                <Link to="/appointment-prep" className="font-semibold text-link underline">
+                  Open Appointment Prep
+                </Link>
+              </p>
+            )}
+            {saveError && (
+              <p className="mt-2 text-coral-ink" role="alert">
+                {saveError}
+              </p>
+            )}
           </div>
         )}
 
@@ -181,10 +387,139 @@ export default function Assistant() {
         </form>
       </div>
 
+      </div>
+
       <p className="mt-4 text-sm text-muted">
         In a medical emergency, call 911 or your local emergency number immediately — do
         not wait on a response here.
       </p>
     </section>
+  );
+}
+
+// ---- Chat history ----
+
+function ChatList({
+  chats,
+  openId,
+  store,
+  signedIn,
+  onNew,
+  onOpen,
+  onPin,
+  onRename,
+  onDelete,
+}: {
+  chats: Chat[];
+  openId: string | null;
+  store: ChatStore;
+  signedIn: boolean;
+  onNew: () => void;
+  onOpen: (c: Chat) => void;
+  onPin: (c: Chat) => void;
+  onRename: (c: Chat) => void;
+  onDelete: (c: Chat) => void;
+}) {
+  // Which chat's Pin / Rename / Delete menu is open.
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const pinned = chats.filter((c) => c.pinned);
+  const recent = chats.filter((c) => !c.pinned);
+
+  const row = (c: Chat) => {
+    const open = c.id === openId;
+    const menuOpen = menuFor === c.id;
+    return (
+      <li key={c.id}>
+        <div
+          className={`group flex items-center gap-1 rounded-tile pr-1 ${
+            open ? "bg-sky-tint" : "hover:bg-mist"
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => onOpen(c)}
+            aria-current={open ? "true" : undefined}
+            className="min-w-0 flex-1 truncate px-3 py-2 text-left text-sm text-navy"
+            title={chatLabel(c)}
+          >
+            {chatLabel(c)}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMenuFor(menuOpen ? null : c.id)}
+            aria-expanded={menuOpen}
+            aria-label={`Options for ${chatLabel(c)}`}
+            className="shrink-0 rounded-full px-2 py-1 text-body hover:bg-white"
+          >
+            ⋯
+          </button>
+        </div>
+        {menuOpen && (
+          <div className="mx-2 mb-1 flex gap-1 text-13">
+            {[
+              [c.pinned ? "Unpin" : "Pin", () => onPin(c)],
+              ["Rename", () => onRename(c)],
+              ["Delete", () => onDelete(c)],
+            ].map(([label, action]) => (
+              <button
+                key={label as string}
+                type="button"
+                onClick={() => {
+                  setMenuFor(null);
+                  (action as () => void)();
+                }}
+                className={`rounded-full border border-navy/16 bg-white px-3 py-1 ${
+                  label === "Delete" ? "text-coral-ink" : "text-navy"
+                }`}
+              >
+                {label as string}
+              </button>
+            ))}
+          </div>
+        )}
+      </li>
+    );
+  };
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="border-b border-navy/10 p-3">
+        <button
+          type="button"
+          onClick={onNew}
+          className="w-full rounded-full border border-navy/16 bg-white px-4 py-2 text-sm font-semibold text-navy hover:border-link"
+        >
+          + New chat
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-2">
+        {chats.length === 0 && (
+          <p className="px-3 py-2 text-13 text-muted">Your chats will show up here.</p>
+        )}
+        {pinned.length > 0 && (
+          <>
+            <h2 className="px-3 pt-2 pb-1 text-11 font-semibold uppercase tracking-wide text-muted">
+              Pinned
+            </h2>
+            <ul>{pinned.map(row)}</ul>
+          </>
+        )}
+        {recent.length > 0 && (
+          <>
+            <h2 className="px-3 pt-2 pb-1 text-11 font-semibold uppercase tracking-wide text-muted">
+              Recent
+            </h2>
+            <ul>{recent.map(row)}</ul>
+          </>
+        )}
+      </div>
+      <p className="border-t border-navy/10 px-4 py-2 text-11 text-muted">
+        {store === "account"
+          ? "Saved to your account."
+          : signedIn
+            ? "Saved in this browser for now."
+            : "Saved in this browser. Sign in to keep chats on every device."}
+      </p>
+    </div>
   );
 }
