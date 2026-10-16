@@ -293,6 +293,37 @@ export default function AppointmentPrep() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, draftName, draftMyVoice, loaded, practice]);
 
+  // Rename any draft from the grid. The open one is renamed through its name
+  // box so the autosave picks it up; others are saved straight away.
+  function renameDraft(d: Draft) {
+    const name = window.prompt("Name this draft:", draftLabel(d));
+    if (name === null) return;
+    if (d.id === draftId) {
+      setDraftName(name.trim());
+      return;
+    }
+    const renamed = { ...d, name: name.trim(), updatedAt: new Date().toISOString() };
+    setDrafts((prev) => [renamed, ...prev.filter((x) => x.id !== d.id)]);
+    saveDraft(userId, renamed);
+  }
+
+  /** "Save to my drafts" at the end of the form: name it and save now. */
+  async function saveToDrafts(name: string): Promise<DraftStore> {
+    const d: Draft = {
+      id: draftId,
+      name,
+      form,
+      myVoice: draftMyVoice,
+      updatedAt: new Date().toISOString(),
+    };
+    setDraftName(name);
+    lastSaved.current = snapshot(name, form, draftMyVoice);
+    const where = await saveDraft(userId, d);
+    setDrafts((prev) => [d, ...prev.filter((x) => x.id !== d.id)]);
+    setSaveState(userId && where === "device" && store === "account" ? "failed" : "saved");
+    return where;
+  }
+
   function startNewDraft() {
     openDraft(newDraft());
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -373,9 +404,11 @@ export default function AppointmentPrep() {
         onNameChange={setDraftName}
         placeholder={form.patientName.trim() || "Untitled draft"}
         current={drafts.find((d) => d.id === draftId)}
-        others={drafts.filter((d) => d.id !== draftId)}
+        drafts={drafts}
+        currentId={draftId}
         onOpen={openDraft}
         onNew={startNewDraft}
+        onRename={renameDraft}
         onDelete={removeDraft}
       />
 
@@ -610,6 +643,19 @@ export default function AppointmentPrep() {
             Generate summary
           </button>
         </div>
+
+        <SaveToDrafts
+          practice={practice}
+          empty={formIsEmpty(form)}
+          suggestedName={
+            draftName.trim() ||
+            `${form.patientName.trim() || "Visit"} – ${new Date().toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}`
+          }
+          onSave={saveToDrafts}
+        />
       </form>
 
       <HistorySection
@@ -766,9 +812,11 @@ function DraftsPanel({
   onNameChange,
   placeholder,
   current,
-  others,
+  drafts,
+  currentId,
   onOpen,
   onNew,
+  onRename,
   onDelete,
 }: {
   practice: boolean;
@@ -781,12 +829,16 @@ function DraftsPanel({
   onNameChange: (name: string) => void;
   placeholder: string;
   current: Draft | undefined;
-  others: Draft[];
+  drafts: Draft[];
+  currentId: string;
   onOpen: (d: Draft) => void;
   onNew: () => void;
+  onRename: (d: Draft) => void;
   onDelete: (d: Draft) => void;
 }) {
-  const [showOthers, setShowOthers] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const shown = showAll ? drafts : drafts.slice(0, 6);
 
   let where: string;
   if (practice) {
@@ -854,58 +906,238 @@ function DraftsPanel({
         )}
       </p>
 
-      {others.length > 0 && (
-        <div className="mt-4 border-t border-navy/[0.08] pt-3">
+      {drafts.length > 0 && (
+        <div className="mt-5 border-t border-navy/[0.08] pt-4">
           <button
             type="button"
-            onClick={() => setShowOthers((v) => !v)}
-            aria-expanded={showOthers}
-            className="flex items-center gap-1 text-sm font-semibold text-link hover:underline"
+            onClick={() => setListOpen((v) => !v)}
+            aria-expanded={listOpen}
+            aria-controls="drafts-grid"
+            className="flex w-full items-center justify-between gap-2 rounded-tile text-left text-sm font-bold text-navy hover:text-link"
           >
-            {showOthers ? "Hide your other drafts" : `Your other drafts (${others.length})`}
+            <span>Your drafts ({drafts.length})</span>
             <Icon
               name="chevron-right"
-              size={16}
-              className={`transition-transform ${showOthers ? "-rotate-90" : "rotate-90"}`}
+              size={18}
+              className={`transition-transform ${listOpen ? "-rotate-90" : "rotate-90"}`}
             />
           </button>
-          {showOthers && (
-            <ul className="mt-2 divide-y divide-navy/[0.08]">
-              {others.map((d) => (
-                <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-navy">{draftLabel(d)}</p>
-                    <p className="text-12 text-muted">
-                      Last changed {shortDate(d.updatedAt)}
-                      {d.myVoice ? " · has a My Voice sentence" : ""}
-                    </p>
-                  </div>
-                  <div className="flex gap-3 text-sm">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onOpen(d);
-                        setShowOthers(false);
-                      }}
-                      className="font-semibold text-link hover:underline"
-                    >
-                      Open
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(d)}
-                      className="text-clay hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          {listOpen && (
+          <ul id="drafts-grid" className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {shown.map((d) => (
+              <DraftCard
+                key={d.id}
+                draft={d}
+                open={d.id === currentId}
+                onOpen={() => {
+                  onOpen(d);
+                  setListOpen(false);
+                }}
+                onRename={() => onRename(d)}
+                onDelete={() => onDelete(d)}
+              />
+            ))}
+          </ul>
+          )}
+          {listOpen && drafts.length > 6 && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-3 text-sm font-semibold text-link hover:underline"
+            >
+              {showAll ? "Show fewer" : `Show all ${drafts.length} drafts`}
+            </button>
           )}
         </div>
       )}
     </section>
+  );
+}
+
+/** One draft as a card, like a file in Google Drive: a small preview of the
+ *  page on top, then its name, when it last changed, and a ⋯ menu. */
+function DraftCard({
+  draft,
+  open,
+  onOpen,
+  onRename,
+  onDelete,
+}: {
+  draft: Draft;
+  open: boolean;
+  onOpen: () => void;
+  onRename: () => void;
+  onDelete: () => void;
+}) {
+  const [menu, setMenu] = useState(false);
+  const f = draft.form;
+  const symptoms = f.symptoms.filter((s) => s.description.trim());
+  const questions = f.questions.filter((q) => q.text.trim());
+
+  return (
+    <li
+      className={`relative flex flex-col overflow-hidden rounded-tile border bg-white transition-shadow hover:shadow-md ${
+        open ? "border-link ring-2 ring-link/30" : "border-navy/16"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Open ${draftLabel(draft)}`}
+        aria-current={open ? "true" : undefined}
+        className="block h-28 overflow-hidden border-b border-navy/10 bg-mist px-3 pt-3 text-left"
+      >
+        <div className="h-full rounded-t-sm bg-white px-2.5 pt-2 text-[7px] leading-[1.45] text-slate shadow-sm">
+          <p className="truncate text-[8px] font-bold text-navy">{f.patientName.trim() || "Visit summary"}</p>
+          {f.reasonForVisit.trim() && <p className="line-clamp-2">{f.reasonForVisit}</p>}
+          {symptoms.slice(0, 3).map((s) => (
+            <p key={s.id} className="truncate">• {s.description}</p>
+          ))}
+          {questions.slice(0, 2).map((q) => (
+            <p key={q.id} className="truncate">? {q.text}</p>
+          ))}
+          {!f.reasonForVisit.trim() && symptoms.length === 0 && questions.length === 0 && (
+            <p className="text-muted">Nothing filled in yet</p>
+          )}
+        </div>
+      </button>
+      <div className="flex items-start gap-2 px-3 py-2.5">
+        <span aria-hidden className="mt-0.5 inline-block h-4 w-3.5 shrink-0 rounded-[2px] bg-link">
+          <span className="mx-auto mt-1 block h-[1.5px] w-2 bg-white" />
+          <span className="mx-auto mt-[2px] block h-[1.5px] w-2 bg-white" />
+        </span>
+        <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
+          <p className="truncate text-sm font-semibold text-navy" title={draftLabel(draft)}>
+            {draftLabel(draft)}
+          </p>
+          <p className="text-12 text-muted">
+            {open ? "Open now" : `Changed ${shortDate(draft.updatedAt)}`}
+          </p>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMenu((v) => !v)}
+          aria-expanded={menu}
+          aria-label={`Options for ${draftLabel(draft)}`}
+          className="-mr-1 shrink-0 rounded-full px-1.5 text-lg leading-none text-body hover:bg-mist"
+        >
+          ⋮
+        </button>
+      </div>
+      {menu && (
+        <div className="absolute right-2 bottom-12 z-10 grid min-w-[120px] rounded-tile border border-navy/16 bg-white py-1 text-sm shadow-lg">
+          {[
+            ["Open", onOpen],
+            ["Rename", onRename],
+            ["Delete", onDelete],
+          ].map(([label, action]) => (
+            <button
+              key={label as string}
+              type="button"
+              onClick={() => {
+                setMenu(false);
+                (action as () => void)();
+              }}
+              className={`px-3 py-1.5 text-left hover:bg-mist ${label === "Delete" ? "text-clay" : "text-navy"}`}
+            >
+              {label as string}
+            </button>
+          ))}
+        </div>
+      )}
+    </li>
+  );
+}
+
+/** The last step of the form: give the draft a name and save it. */
+function SaveToDrafts({
+  practice,
+  empty,
+  suggestedName,
+  onSave,
+}: {
+  practice: boolean;
+  empty: boolean;
+  suggestedName: string;
+  onSave: (name: string) => Promise<DraftStore>;
+}) {
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
+
+  if (practice) return null;
+
+  async function save() {
+    const final = name.trim() || suggestedName;
+    setSaving(true);
+    const where = await onSave(final);
+    setSaving(false);
+    setNaming(false);
+    setDone(
+      `Saved to your drafts as "${final}"${where === "account" ? " — it's in your account." : " on this device."}`
+    );
+  }
+
+  return (
+    <div className="rounded-tile border border-navy/16 bg-mist p-4">
+      {!naming ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={empty}
+            onClick={() => {
+              setName(suggestedName);
+              setDone(null);
+              setNaming(true);
+            }}
+            className="btd-btn-sky min-h-[44px] px-5 text-sm disabled:opacity-40"
+          >
+            Save to my drafts
+          </button>
+          <p className="text-sm text-slate" role="status">
+            {done ?? (empty ? "Fill in the form first, then save it here." : "Give it a name so it's easy to find later.")}
+          </p>
+        </div>
+      ) : (
+        <div>
+          <label htmlFor="save-draft-name" className="block text-sm font-bold text-navy">
+            Name this draft
+          </label>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            <input
+              id="save-draft-name"
+              className="btd-input min-w-0 flex-1"
+              value={name}
+              autoFocus
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  save();
+                }
+              }}
+              placeholder={suggestedName}
+            />
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving}
+              className="btd-btn-sky min-h-[44px] px-5 text-sm disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setNaming(false)}
+              className="min-h-[44px] px-3 text-sm text-slate hover:underline"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
