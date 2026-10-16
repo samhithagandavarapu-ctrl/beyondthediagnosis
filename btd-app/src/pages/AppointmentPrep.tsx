@@ -837,6 +837,7 @@ function DraftsPanel({
   onDelete: (d: Draft) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
   const shown = showAll ? drafts : drafts.slice(0, 6);
 
   let where: string;
@@ -907,20 +908,38 @@ function DraftsPanel({
 
       {drafts.length > 0 && (
         <div className="mt-5 border-t border-navy/[0.08] pt-4">
-          <h2 className="text-sm font-bold text-navy">Your drafts</h2>
-          <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => setListOpen((v) => !v)}
+            aria-expanded={listOpen}
+            aria-controls="drafts-grid"
+            className="flex w-full items-center justify-between gap-2 rounded-tile text-left text-sm font-bold text-navy hover:text-link"
+          >
+            <span>Your drafts ({drafts.length})</span>
+            <Icon
+              name="chevron-right"
+              size={18}
+              className={`transition-transform ${listOpen ? "-rotate-90" : "rotate-90"}`}
+            />
+          </button>
+          {listOpen && (
+          <ul id="drafts-grid" className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {shown.map((d) => (
               <DraftCard
                 key={d.id}
                 draft={d}
                 open={d.id === currentId}
-                onOpen={() => onOpen(d)}
+                onOpen={() => {
+                  onOpen(d);
+                  setListOpen(false);
+                }}
                 onRename={() => onRename(d)}
                 onDelete={() => onDelete(d)}
               />
             ))}
           </ul>
-          {drafts.length > 6 && (
+          )}
+          {listOpen && drafts.length > 6 && (
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
