@@ -34,6 +34,12 @@ import { shortDate } from "../lib/shortDate";
 import { CheckIn, checkInLines, emptyCheckIn, feelingsOverTime, painSummaryLine } from "../lib/myVoice";
 import { CheckInSummary, FeelingsOverTime } from "../components/myvoice/CheckInHistory";
 import CheckInFlow from "../components/myvoice/CheckInFlow";
+import CalendarImport from "../components/calendar/CalendarImport";
+import { CalendarEntry, CustomSymptom, listCustomSymptoms, listEntries, saveEntries } from "../lib/calendar";
+import { CalendarPageText, calendarPageText, toSymptoms, unmerge } from "../lib/calendarImport";
+import { aboutLines, detailLines } from "../lib/calendar";
+import { cycles } from "../lib/cycles";
+import { feeling, painSpotSentence } from "../lib/myVoice";
 import { AboutMe, aboutMeHasContent, aboutMeLines } from "../lib/aboutMe";
 import Icon from "../components/icons/Icon";
 import DictateButton from "../components/DictateButton";
@@ -59,6 +65,8 @@ import {
   medicationLine,
   symptomDetail,
   SYMPTOM_AREAS,
+  SYMPTOM_REPORTERS,
+  SYMPTOM_TRAJECTORIES,
   timelineDetail,
 } from "../lib/appointmentPdf";
 import { inkLastWord } from "../components/Scribble";
@@ -103,6 +111,91 @@ export default function AppointmentPrep() {
   const [refining, setRefining] = useState(false);
   const [refineError, setRefineError] = useState<string | null>(null);
 
+  // The Symptom Calendar, read so entries can be picked and brought in. It's
+  // only ever shown here and printed; never sent to "Refine with AI".
+  const [calEntries, setCalEntries] = useState<CalendarEntry[]>([]);
+  const [calCustoms, setCalCustoms] = useState<CustomSymptom[]>([]);
+  const [calLoaded, setCalLoaded] = useState(false);
+  const [importing, setImporting] = useState(searchParams.get("fromCalendar") === "tray");
+  const [importNote, setImportNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (authLoading) return;
+    let cancelled = false;
+    Promise.all([listEntries(userId), listCustomSymptoms(userId)]).then(([res, customs]) => {
+      if (cancelled) return;
+      setCalEntries(res.entries);
+      setCalCustoms(customs);
+      setCalLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, authLoading]);
+  const importedIds = new Set(form.symptoms.flatMap((s) => s.calendar?.entryIds ?? []));
+  /** The page "From my symptom calendar" for a form, if it's included. */
+  function calendarPageFor(f: AppointmentForm): CalendarPageText | null {
+    const page = f.calendarPage;
+    if (!page?.include) return null;
+    const picked = calEntries.filter((e) => page.entryIds.includes(e.id));
+    if (!picked.length) return null;
+    return calendarPageText(
+      picked,
+      page.from,
+      page.to,
+      (e) => [...detailLines(e, (id) => feeling(id).short, painSpotSentence), ...aboutLines(e, true)],
+      cycles(calEntries)
+    );
+  }
+
+  /** Add picked entries as symptoms (after what's there, filling empty rows
+   *  first), the confirmed medicines, and the range for the PDF page. */
+  function importFromCalendar(picked: CalendarEntry[], from: string, to: string, medicines: string[]) {
+    const fresh = picked.filter((e) => !importedIds.has(e.id));
+    const added = toSymptoms(fresh, from, to, newId);
+    setForm((f) => {
+      const blankSymptom = (x: Symptom) => !x.description.trim() && !x.onset.trim() && !x.calendar;
+      const kept = f.symptoms.filter((x) => !blankSymptom(x));
+      const blankMed = (m: { name: string; dose: string; frequency: string }) =>
+        !m.name.trim() && !m.dose.trim() && !m.frequency.trim();
+      const have = new Set(f.medications.map((m) => m.name.trim().toLowerCase()));
+      const meds = medicines
+        .filter((m) => !have.has(m.toLowerCase()))
+        .map((name) => ({ ...emptyMedication(), name, fromCalendar: true }));
+      const page = f.calendarPage;
+      return {
+        ...f,
+        symptoms: [...kept, ...added].length ? [...kept, ...added] : f.symptoms,
+        medications: meds.length ? [...f.medications.filter((m) => !blankMed(m)), ...meds] : f.medications,
+        calendarPage: {
+          include: page?.include ?? true,
+          entryIds: [...new Set([...(page?.entryIds ?? []), ...fresh.map((e) => e.id)])],
+          from: page && page.from < from ? page.from : from,
+          to: page && page.to > to ? page.to : to,
+        },
+      };
+    });
+    // Brought in: off the visit tray.
+    const fromTray = fresh.filter((e) => e.addToVisit).map((e) => ({ ...e, addToVisit: false }));
+    if (fromTray.length && !practice) {
+      setCalEntries((prev) => prev.map((e) => fromTray.find((t) => t.id === e.id) ?? e));
+      saveEntries(userId, fromTray);
+    }
+    setImporting(false);
+    setImportNote(
+      `Brought in ${fresh.length} ${fresh.length === 1 ? "entry" : "entries"} as ${added.length} ${
+        added.length === 1 ? "symptom" : "symptoms"
+      }${medicines.length ? ` and ${medicines.length} ${medicines.length === 1 ? "medicine" : "medicines"}` : ""}. Check them below before you make the summary.`
+    );
+  }
+
+  function splitSymptom(s: Symptom) {
+    const own = calEntries.filter((e) => s.calendar?.entryIds.includes(e.id));
+    if (own.length < 2) return;
+    const range = form.calendarPage ?? { from: own[0].entryDate, to: own[own.length - 1].entryDate };
+    const parts = unmerge(own, range.from, range.to, newId);
+    setForm((f) => ({ ...f, symptoms: f.symptoms.flatMap((x) => (x.id === s.id ? parts : [x])) }));
+  }
+
   // Drafts saved before the timeline existed have none; treat that as empty.
   const timeline = form.timeline ?? emptyTimeline();
   const refinableEntries = filledEntries(timeline);
@@ -110,11 +203,15 @@ export default function AppointmentPrep() {
   async function handleRefine() {
     setRefining(true);
     setRefineError(null);
+    const ownSymptoms = form.symptoms.filter((s) => !s.calendar);
+    const ownMeds = form.medications.filter((m) => !m.fromCalendar);
     try {
       const refined = await refineAppointmentForm({
         reasonForVisit: form.reasonForVisit,
-        symptoms: form.symptoms.map((s) => ({ description: s.description, onset: s.onset })),
-        medications: form.medications.map((m) => ({
+        // Calendar data never goes to the AI: rows brought in from the
+        // calendar (and medicines confirmed from it) stay out, untouched.
+        symptoms: ownSymptoms.map((s) => ({ description: s.description, onset: s.onset })),
+        medications: ownMeds.map((m) => ({
           name: m.name,
           dose: m.dose,
           frequency: m.frequency,
@@ -145,22 +242,28 @@ export default function AppointmentPrep() {
         accommodations: refined.accommodations ?? f.accommodations,
         symptoms:
           refined.symptoms?.length
-            ? refined.symptoms.map((s, i) => ({
-                id: f.symptoms[i]?.id ?? newId(),
-                description: s.description,
-                onset: s.onset,
-                baselineOrNew: f.symptoms[i]?.baselineOrNew ?? "new",
-                area: f.symptoms[i]?.area,
-              }))
+            ? [
+                ...refined.symptoms.map((s, i) => ({
+                  ...ownSymptoms[i],
+                  id: ownSymptoms[i]?.id ?? newId(),
+                  description: s.description,
+                  onset: s.onset,
+                  baselineOrNew: ownSymptoms[i]?.baselineOrNew ?? "new",
+                })),
+                ...f.symptoms.filter((s) => s.calendar),
+              ]
             : f.symptoms,
         medications:
           refined.medications?.length
-            ? refined.medications.map((m, i) => ({
-                id: f.medications[i]?.id ?? newId(),
-                name: m.name,
-                dose: m.dose,
-                frequency: m.frequency,
-              }))
+            ? [
+                ...refined.medications.map((m, i) => ({
+                  id: ownMeds[i]?.id ?? newId(),
+                  name: m.name,
+                  dose: m.dose,
+                  frequency: m.frequency,
+                })),
+                ...f.medications.filter((m) => m.fromCalendar),
+              ]
             : f.medications,
         ruledOut:
           refined.ruledOut?.length
@@ -389,6 +492,7 @@ export default function AppointmentPrep() {
       <SummaryView
         form={viewing.form}
         checkIns={entryCheckIns(viewing)}
+        calendar={calendarPageFor(viewing.form)}
         date={viewing.savedAt}
         backLabel="← Back to your history"
         onBack={() => {
@@ -407,6 +511,7 @@ export default function AppointmentPrep() {
         form={form}
         checkIns={pickedCheckIns}
         aboutMe={includeAboutMe && aboutMeHasContent(savedAboutMe) ? savedAboutMe : null}
+        calendar={calendarPageFor(form)}
         onBack={() => setShowSummary(false)}
       />
     );
@@ -438,6 +543,51 @@ export default function AppointmentPrep() {
         onRename={renameDraft}
         onDelete={removeDraft}
       />
+
+      <div className="mb-8 grid gap-3">
+        {importing && !calLoaded ? (
+          <p className="text-sm text-slate">Loading your calendar…</p>
+        ) : importing ? (
+          <CalendarImport
+            entries={calEntries}
+            customs={calCustoms}
+            lastVisit={history[0]?.savedAt ?? null}
+            alreadyIn={importedIds}
+            onImport={importFromCalendar}
+            onClose={() => setImporting(false)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setImportNote(null);
+              setImporting(true);
+            }}
+            className="btd-btn-sky min-h-[48px] justify-self-start gap-2 px-5 py-3 text-sm"
+          >
+            <Icon name="calendar" size={18} />
+            Bring in from my calendar
+          </button>
+        )}
+        {importNote && (
+          <p role="status" className="rounded-tile border border-sky bg-sky-tint px-4 py-3 text-sm text-navy">
+            {importNote}
+          </p>
+        )}
+        {form.calendarPage && (
+          <label className="flex items-center gap-2 text-sm font-medium text-ink">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={form.calendarPage.include}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, calendarPage: f.calendarPage && { ...f.calendarPage, include: e.target.checked } }))
+              }
+            />
+            Add a page "From my symptom calendar" to the PDF
+          </label>
+        )}
+      </div>
 
       <form
         onSubmit={(e) => {
@@ -520,7 +670,67 @@ export default function AppointmentPrep() {
                   <option value="new">New — not typical for this person</option>
                   <option value="baseline">Baseline — part of how they usually are</option>
                 </select>
+                <input
+                  className="btd-input"
+                  aria-label="Pattern"
+                  placeholder="Pattern (e.g. most mornings)"
+                  value={s.pattern ?? ""}
+                  onChange={(e) => updateItem("symptoms", s.id, { pattern: e.target.value || undefined })}
+                />
+                <select
+                  className="btd-input"
+                  aria-label="Reported by"
+                  value={s.reportedBy ?? ""}
+                  onChange={(e) =>
+                    updateItem("symptoms", s.id, { reportedBy: (e.target.value || undefined) as Symptom["reportedBy"] })
+                  }
+                >
+                  <option value="">Reported by? (optional)</option>
+                  {SYMPTOM_REPORTERS.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="btd-input sm:col-span-2"
+                  aria-label="Getting stronger, the same, or better"
+                  value={s.trajectory ?? ""}
+                  onChange={(e) =>
+                    updateItem("symptoms", s.id, { trajectory: (e.target.value || undefined) as Symptom["trajectory"] })
+                  }
+                >
+                  <option value="">Getting stronger, the same, or better? (optional)</option>
+                  {SYMPTOM_TRAJECTORIES.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  className="btd-input sm:col-span-2 min-h-[60px]"
+                  aria-label="Notes"
+                  placeholder="Notes (optional)"
+                  value={s.notes ?? ""}
+                  onChange={(e) => updateItem("symptoms", s.id, { notes: e.target.value || undefined })}
+                />
               </div>
+              {s.calendar && (
+                <p className="flex flex-wrap items-center gap-2 text-xs text-slate">
+                  <Icon name="calendar" size={14} />
+                  From my calendar · {s.calendar.entryIds.length}{" "}
+                  {s.calendar.entryIds.length === 1 ? "entry" : "entries"} · not sent to Refine with AI
+                  {s.calendar.entryIds.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => splitSymptom(s)}
+                      className="font-semibold text-link hover:underline"
+                    >
+                      Un-merge
+                    </button>
+                  )}
+                </p>
+              )}
             </EntryCard>
           ))}
         </ListSection>
@@ -1341,6 +1551,7 @@ function SummaryView({
   form,
   checkIns,
   aboutMe = null,
+  calendar = null,
   onBack,
   date,
   backLabel = "← Back to edit",
@@ -1350,6 +1561,8 @@ function SummaryView({
   checkIns: CheckIn[];
   /** "All About Me" from this device; printed first. */
   aboutMe?: AboutMe | null;
+  /** "From my symptom calendar", printed as its own page at the end. */
+  calendar?: CalendarPageText | null;
   onBack: () => void;
   /** When the summary was made; today, unless it's one from the history. */
   date?: string;
@@ -1367,7 +1580,7 @@ function SummaryView({
     setDownloading(true);
     setDownloadError(null);
     try {
-      const doc = await buildAppointmentPdf(form, checkIns, date, aboutMe);
+      const doc = await buildAppointmentPdf(form, checkIns, date, aboutMe, calendar);
       const namePart = form.patientName.trim()
         ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
         : "visit-summary";
@@ -1589,6 +1802,25 @@ function SummaryView({
                   </li>
                 ))}
               </ol>
+            </Section>
+          )}
+
+          {calendar && (
+            <Section title={calendar.title}>
+              <p className="mb-3 text-13 text-muted">{calendar.header}</p>
+              {calendar.period && (
+                <ul className="mb-4 space-y-1 text-sm text-navy">
+                  {[...calendar.period.cycles, ...calendar.period.days].map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              )}
+              <ul className="space-y-3">
+                {calendar.rows.map((r, i) => (
+                  <SummaryItem key={i} title={`${r.date} — ${r.what}`} detail={r.detail} />
+                ))}
+              </ul>
+              <p className="mt-2 text-12 text-muted">The PDF also shows these days on small month calendars.</p>
             </Section>
           )}
 

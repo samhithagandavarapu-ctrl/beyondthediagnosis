@@ -10,6 +10,7 @@ import {
   painSummaryLine,
 } from "./myVoice";
 import { AboutMe, aboutMeLines } from "./aboutMe";
+import type { CalendarPageText } from "./calendarImport";
 import { usePdfFont } from "./pdfFonts";
 import {
   Timeline,
@@ -35,6 +36,8 @@ export type Medication = {
   name: string;
   dose: string;
   frequency: string;
+  /** Added from the Symptom Calendar; never sent to "Refine with AI". */
+  fromCalendar?: boolean;
 };
 
 export type RuledOutItem = {
@@ -50,7 +53,30 @@ export type Symptom = {
   baselineOrNew: "baseline" | "new";
   /** Where on the body. Optional so drafts saved before it existed load. */
   area?: string;
+  /** "Logged 6 of the last 14 days". */
+  pattern?: string;
+  reportedBy?: SymptomReporter;
+  trajectory?: SymptomTrajectory;
+  notes?: string;
+  /** Brought in from the Symptom Calendar: which entries it was made from.
+   *  These rows are never sent to "Refine with AI". */
+  calendar?: { entryIds: string[] };
 };
+
+export type SymptomReporter = "self" | "caregiver" | "both";
+export type SymptomTrajectory = "stronger" | "same" | "better";
+
+export const SYMPTOM_REPORTERS: { id: SymptomReporter; label: string }[] = [
+  { id: "self", label: "The patient" },
+  { id: "caregiver", label: "A caregiver" },
+  { id: "both", label: "The patient and a caregiver" },
+];
+
+export const SYMPTOM_TRAJECTORIES: { id: SymptomTrajectory; label: string }[] = [
+  { id: "stronger", label: "Getting stronger" },
+  { id: "same", label: "About the same" },
+  { id: "better", label: "Getting better" },
+];
 
 /** The choices for a symptom's body area, in head-to-toe order, then the
  *  ones that aren't a place on the body. */
@@ -91,6 +117,9 @@ export type AppointmentForm = {
   /** Optional so drafts and history saved before the timeline existed still
    *  load; a missing timeline is the same as an empty one. */
   timeline?: Timeline;
+  /** "From my symptom calendar": the entries brought in, for the optional
+   *  page at the end of the PDF. */
+  calendarPage?: { entryIds: string[]; from: string; to: string; include: boolean };
 };
 
 // Voiced palette, as jsPDF wants it.
@@ -553,6 +582,81 @@ function numberDot(ctx: Ctx, cx: number, cy: number, n: number) {
   doc.text(String(n), cx, cy + 2.4, { align: "center" });
 }
 
+/** "From my symptom calendar": its own page at the end, with a small month
+ *  grid per month (coral for period days, dots for other things logged), a
+ *  table of what was logged, and the period counts. */
+function calendarPage(ctx: Ctx, page: CalendarPageText) {
+  const { doc } = ctx;
+  newPage(ctx);
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(...NAVY);
+  doc.text(page.title, MARGIN, ctx.y + 6);
+  ctx.y += 24;
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...MUTED);
+  doc.text(page.header, MARGIN, ctx.y);
+  ctx.y += 20;
+
+  // Month grids, three across.
+  const cell = 19;
+  const gridW = cell * 7;
+  const gap = (CONTENT_WIDTH - gridW * 3) / 2;
+  for (let i = 0; i < page.months.length; i += 3) {
+    const row = page.months.slice(i, i + 3);
+    const tallest = Math.max(...row.map((m) => m.weeks.length));
+    ensure(ctx, 30 + tallest * cell);
+    const top = ctx.y;
+    row.forEach((m, col) => {
+      const x0 = MARGIN + col * (gridW + gap);
+      doc.setFont(ctx.font, "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...NAVY);
+      doc.text(m.title, x0, top);
+      doc.setFont(ctx.font, "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...MUTED);
+      ["S", "M", "T", "W", "T", "F", "S"].forEach((d, k) => doc.text(d, x0 + k * cell + cell / 2, top + 11, { align: "center" }));
+      m.weeks.forEach((week, w) =>
+        week.forEach((day, k) => {
+          if (!day.inMonth) return;
+          const x = x0 + k * cell;
+          const y = top + 15 + w * cell;
+          if (day.period) {
+            doc.setFillColor(...CORAL);
+            doc.rect(x + 1, y + 1, cell - 2, cell - 2, "F");
+          }
+          doc.setDrawColor(...HAIRLINE);
+          doc.setLineWidth(0.5);
+          doc.rect(x + 1, y + 1, cell - 2, cell - 2, "S");
+          doc.setFontSize(6.5);
+          doc.setTextColor(...(day.period ? CORAL_INK : BODY));
+          doc.text(String(Number(day.key.slice(8))), x + 3, y + 7.5);
+          doc.setFillColor(...NAVY);
+          for (let dot = 0; dot < Math.min(day.logged, 3); dot++) doc.circle(x + 5 + dot * 4.5, y + cell - 5, 1.3, "F");
+        })
+      );
+    });
+    ctx.y = top + 22 + tallest * cell;
+  }
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...MUTED);
+  doc.text(page.legend, MARGIN, ctx.y);
+  ctx.y += 22;
+
+  if (page.period) {
+    sectionHeading(ctx, "Periods");
+    page.period.cycles.forEach((c) => item(ctx, c));
+    page.period.days.forEach((d) => item(ctx, d));
+    ctx.y += 6;
+  }
+
+  sectionHeading(ctx, "What was logged");
+  page.rows.forEach((r) => item(ctx, `${r.date} — ${r.what}`, r.detail));
+}
+
 /** Footers go on last, once the page count is known. */
 function drawFooters(doc: jsPDF, font: string) {
   const total = doc.getNumberOfPages();
@@ -584,9 +688,20 @@ export function symptomDetail(s: Symptom): string {
     s.area ? `Area: ${s.area}` : "",
     s.onset.trim() ? `Started: ${s.onset.trim()}` : "",
     s.baselineOrNew === "new" ? "New — not typical for this person" : "Part of their baseline",
+    ...symptomExtras(s),
   ]
     .filter(Boolean)
     .join("   ·   ");
+}
+
+/** Pattern, who reported it, trajectory and notes, for the summary and PDF. */
+export function symptomExtras(s: Symptom): string[] {
+  return [
+    s.pattern?.trim() ? `Pattern: ${s.pattern.trim()}` : "",
+    s.reportedBy ? `Reported by: ${SYMPTOM_REPORTERS.find((r) => r.id === s.reportedBy)?.label}` : "",
+    s.trajectory ? `${SYMPTOM_TRAJECTORIES.find((t) => t.id === s.trajectory)?.label}` : "",
+    s.notes?.trim() ? `Notes: ${s.notes.trim()}` : "",
+  ].filter(Boolean);
 }
 
 /** Everything about one timeline entry that fits on a single muted line. */
@@ -656,7 +771,9 @@ export async function buildAppointmentPdf(
   /** When the summary was made; defaults to today. */
   date?: string,
   /** "All About Me", from this device. Printed first. */
-  aboutMe?: AboutMe | null
+  aboutMe?: AboutMe | null,
+  /** The page "From my symptom calendar", when it's included. */
+  calendar?: CalendarPageText | null
 ): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   // Registered before the first draw, so no text is laid out in a font the
@@ -679,6 +796,7 @@ export async function buildAppointmentPdf(
       item(ctx, s.description, [
         s.area ? `Area: ${s.area}` : "",
         s.onset.trim() ? `Started: ${s.onset.trim()}` : "",
+        ...symptomExtras(s),
       ].filter(Boolean).join("   ·   "), {
         text:
           s.baselineOrNew === "new" ? "NEW — NOT TYPICAL" : "PART OF THEIR BASELINE",
@@ -730,6 +848,8 @@ export async function buildAppointmentPdf(
     sectionHeading(ctx, "Questions, in priority order");
     questions.forEach((q, i) => numberedItem(ctx, i + 1, q.text));
   }
+
+  if (calendar) calendarPage(ctx, calendar);
 
   drawFooters(doc, font);
   return doc;

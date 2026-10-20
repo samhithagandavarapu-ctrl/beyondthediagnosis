@@ -197,6 +197,7 @@ export default function MonthGrid({
                 const isPeriod = all.some(isPeriodDay) && shownIn({ category: "period" } as CalendarEntry);
                 const maybe = !isPeriod && predicted.includes(key) && (filter === "all" || filter === "period");
                 const isToday = key === today;
+                const forVisit = all.some((e) => e.addToVisit);
                 const future = key > today;
                 return (
                   <td key={key} className="p-0 align-top">
@@ -213,7 +214,7 @@ export default function MonthGrid({
                       onClick={() => {
                         if (!future) onOpenDay(key);
                       }}
-                      aria-label={`${dayAriaLabel(key, shown)}${maybe ? ", period might start" : ""}${isToday ? ", today" : ""}`}
+                      aria-label={`${dayAriaLabel(key, shown)}${maybe ? ", period might start" : ""}${forVisit ? ", saved for my visit" : ""}${isToday ? ", today" : ""}`}
                       aria-current={isToday ? "date" : undefined}
                       className={`btd-cal-day flex min-h-[64px] w-full flex-col items-start gap-1 rounded-tile border p-1.5 text-left transition-colors sm:min-h-[84px] sm:p-2 ${
                         isPeriod
@@ -225,8 +226,11 @@ export default function MonthGrid({
                         isToday ? "ring-[3px] ring-navy ring-offset-1" : ""
                       } ${future ? "cursor-default bg-mist/60" : "hover:border-sky"}`}
                     >
-                      <span className={`text-sm font-bold ${isToday ? "text-navy" : "text-body"}`}>
-                        {fromDateKey(key).getDate()}
+                      <span className="flex w-full items-center justify-between">
+                        <span className={`text-sm font-bold ${isToday ? "text-navy" : "text-body"}`}>
+                          {fromDateKey(key).getDate()}
+                        </span>
+                        {forVisit && <Icon name="star-filled" size={14} className="text-coral-hover" />}
                       </span>
                       {maybe && <span className="text-11 font-bold uppercase tracking-[0.06em] text-coral-ink">Maybe</span>}
                       {icons.length > 0 && (
@@ -260,6 +264,10 @@ export default function MonthGrid({
               <Icon name="drop" size={12} className="text-navy" />
             </span>
             A period day (coral, with a drop)
+          </li>
+          <li className="flex items-center gap-2">
+            <Icon name="star-filled" size={18} className="text-coral-hover" />
+            Saved for my next appointment
           </li>
           <li className="flex items-center gap-2">
             <span className="btd-cal-maybe inline-block h-5 w-7 rounded border-2 border-dashed border-coral-hover" />

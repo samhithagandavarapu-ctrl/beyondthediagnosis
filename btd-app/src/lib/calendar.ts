@@ -576,14 +576,21 @@ export function detailLines(e: CalendarEntry, feelingWord: (id: FeelingId) => st
   }
 }
 
-/** Everything else about an entry, after its own answers. */
-export function aboutLines(e: CalendarEntry): string[] {
+const FOR_DOCTOR: Record<ReportedBy, string> = {
+  self: "The patient",
+  caregiver: "A caregiver",
+  both: "The patient and a caregiver",
+};
+
+/** Everything else about an entry, after its own answers. `forDoctor` names
+ *  who told it the way a clinician reads it ("The patient", not "Me"). */
+export function aboutLines(e: CalendarEntry, forDoctor = false): string[] {
   const strength = e.category === "pain" ? "" : strengthWords(e);
   return [
     ...(strength ? [`How strong: ${strength}`] : []),
     ...(e.details.since ? [SINCE_WORDS[e.details.since]] : []),
     ...(e.typical === "new" ? ["New or different for me"] : e.typical === "typical" ? ["Usual for me"] : []),
-    `Told by: ${labelOf(REPORTED_BY, e.reportedBy)}`,
+    `Told by: ${forDoctor ? FOR_DOCTOR[e.reportedBy] : labelOf(REPORTED_BY, e.reportedBy)}`,
     ...(e.medicationNote?.trim() ? [`Medicine taken: ${e.medicationNote.trim()}`] : []),
     ...(e.details.hasVoiceNote ? ["Recorded a voice note"] : []),
   ];

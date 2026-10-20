@@ -35,6 +35,7 @@ import { feeling, painSpotSentence } from "../lib/myVoice";
 
 type View =
   | { kind: "month" }
+  | { kind: "tray" }
   | { kind: "day"; date: string }
   | { kind: "log"; date: string; entry?: CalendarEntry };
 
@@ -99,6 +100,12 @@ export default function Calendar() {
     setView(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  function toggleVisit(entry: CalendarEntry) {
+    save({ ...entry, addToVisit: !entry.addToVisit, updatedAt: new Date().toISOString() });
+  }
+
+  const tray = shown.filter((e) => e.addToVisit);
 
   async function save(entry: CalendarEntry): Promise<CalendarStore | "practice"> {
     if (practice) {
@@ -209,6 +216,14 @@ export default function Calendar() {
             onAdd={() => show({ kind: "log", date: view.date })}
             onEdit={(entry) => show({ kind: "log", date: entry.entryDate, entry })}
             onDelete={remove}
+            onToggleVisit={toggleVisit}
+          />
+        ) : view.kind === "tray" ? (
+          <VisitTray
+            entries={tray}
+            customs={customs}
+            onBack={() => show({ kind: "month" })}
+            onRemove={toggleVisit}
           />
         ) : (
           <>
@@ -219,6 +234,17 @@ export default function Calendar() {
               </button>
             </div>
             {periodOn(todayKey()) && <MealtimeReminder />}
+            {tray.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3 rounded-card border-2 border-navy bg-butter px-5 py-3">
+                <Icon name="star-filled" size={22} className="text-navy" />
+                <p className="flex-1 text-15 font-bold text-navy">
+                  {tray.length} {tray.length === 1 ? "thing" : "things"} saved for your visit
+                </p>
+                <button type="button" onClick={() => show({ kind: "tray" })} className="btd-btn min-h-[44px] bg-navy px-5 py-2 text-sm text-mist hover:bg-navy/90">
+                  View
+                </button>
+              </div>
+            )}
             <MonthGrid
               entries={shown}
               customs={customs}
@@ -268,6 +294,7 @@ function DayView({
   onAdd,
   onEdit,
   onDelete,
+  onToggleVisit,
 }: {
   date: string;
   entries: CalendarEntry[];
@@ -277,6 +304,7 @@ function DayView({
   onAdd: () => void;
   onEdit: (e: CalendarEntry) => void;
   onDelete: (e: CalendarEntry) => void;
+  onToggleVisit: (e: CalendarEntry) => void;
 }) {
   const future = date > todayKey();
   return (
@@ -325,6 +353,13 @@ function DayView({
                   </ul>
                 </div>
               </div>
+              {!e.checkInId && (
+                <label className="mt-4 flex min-h-[44px] items-center gap-3 rounded-tile bg-mist px-4 text-15 font-semibold text-navy">
+                  <input type="checkbox" className="h-5 w-5" checked={e.addToVisit} onChange={() => onToggleVisit(e)} />
+                  Add to my next appointment
+                  {e.addToVisit && <Icon name="star-filled" size={16} className="text-coral-hover" />}
+                </label>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" onClick={() => onEdit(e)} className="btd-btn-outline min-h-[44px] px-4 py-2 text-sm">
                   Edit
@@ -337,6 +372,55 @@ function DayView({
                   Delete
                 </button>
               </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Everything ticked "Add to my next appointment", ready for Appointment Prep. */
+function VisitTray({
+  entries,
+  customs,
+  onBack,
+  onRemove,
+}: {
+  entries: CalendarEntry[];
+  customs: CustomSymptom[];
+  onBack: () => void;
+  onRemove: (e: CalendarEntry) => void;
+}) {
+  return (
+    <div className="grid gap-5">
+      <button type="button" onClick={onBack} className="justify-self-start text-sm font-bold text-link hover:underline">
+        ← Back to the month
+      </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-28 font-extrabold text-navy">Saved for my visit</h2>
+        {entries.length > 0 && (
+          <Link to="/appointment-prep?fromCalendar=tray" className="btd-btn-coral min-h-[52px] gap-2 px-6 py-3 text-base">
+            Bring them into Appointment Prep →
+          </Link>
+        )}
+      </div>
+      {entries.length === 0 ? (
+        <div className="btd-card p-6">
+          <p className="text-17 text-body">Nothing saved yet. Open a day and tick "Add to my next appointment".</p>
+        </div>
+      ) : (
+        <ul className="grid gap-3">
+          {entries.map((e) => (
+            <li key={e.id} className="btd-card flex flex-wrap items-center gap-4 p-4">
+              <Icon name={entryIcon(e, customs)} size={26} className="text-navy" />
+              <div className="min-w-0 flex-1">
+                <p className="text-15 font-extrabold text-navy">{entryTitle(e)}</p>
+                <p className="text-13 text-muted">{longDate(e.entryDate)}</p>
+              </div>
+              <button type="button" onClick={() => onRemove(e)} className="min-h-[44px] px-3 text-sm font-semibold text-link hover:underline">
+                Take it off
+              </button>
             </li>
           ))}
         </ul>
