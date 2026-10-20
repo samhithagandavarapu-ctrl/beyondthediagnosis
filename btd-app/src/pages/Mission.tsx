@@ -5,6 +5,25 @@ import Scribble, { inkLastWord } from "../components/Scribble";
 // One centered column for the whole page, so every section shares its edges.
 const column = "mx-auto w-full max-w-[1000px] px-6";
 
+// In order: the board before, a visitor adding a sticker, the board after.
+const booth = [
+  {
+    src: "/images/voiced-booth-table.jpg",
+    alt: "Smiling at the Voiced booth on a sunny field, behind a sign reading “Every voice matters” and table cards with a survey QR code",
+    caption: "Setting up the Voiced booth",
+  },
+  {
+    src: "/images/voiced-booth-sticker.jpg",
+    alt: "A volunteer kneels as a toddler, helped by an adult, adds a sticker to the Voiced sign",
+    caption: "A young visitor adds a sticker",
+  },
+  {
+    src: "/images/voiced-booth-sticker-board.jpg",
+    alt: "Standing behind the Voiced booth, with the “Every voice matters” sign now covered in colorful stickers",
+    caption: "By day’s end, a full board",
+  },
+];
+
 export default function Mission() {
   return (
     <div>
@@ -74,6 +93,31 @@ export default function Mission() {
               syndrome and their families walk into clinics prepared, confident, and heard.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className={`${column} pt-14`}>
+        <h2 className="btd-section-h2">Out in the community</h2>
+        <p className="mt-4 text-lg leading-[1.75] text-body">
+          We bring Voiced to community events so families can learn about it in person.
+          Visitors add a sticker to show they were here.
+        </p>
+        <div className="mt-7 grid gap-6 sm:grid-cols-3">
+          {booth.map((photo) => (
+            <figure key={photo.src} className="btd-snapshot btd-card flex flex-col">
+              <div className="overflow-hidden rounded-lg">
+                <img
+                  src={photo.src}
+                  alt={photo.alt}
+                  width={1200}
+                  height={960}
+                  loading="lazy"
+                  className="aspect-[5/4] h-auto w-full object-cover"
+                />
+              </div>
+              <figcaption className="px-5 py-3.5 text-sm text-body">{photo.caption}</figcaption>
+            </figure>
+          ))}
         </div>
       </section>
 
