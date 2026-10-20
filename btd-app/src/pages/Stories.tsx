@@ -98,24 +98,6 @@ export default function Stories() {
       </PageHero>
 
       <section className="btd-container pt-12 pb-20">
-        <div className="mb-12 max-w-[720px]">
-          {user ? (
-            <StoryPanel defaultName={submitterName} />
-          ) : (
-            !authLoading && (
-              <div id="share" className="btd-card p-7 scroll-mt-24">
-                <h2 className="text-23 font-extrabold text-navy">Share your story</h2>
-                <p className="mt-1.5 text-15 leading-[1.6] text-body">
-                  Sign in to share your story.{" "}
-                  <Link to="/login" className="font-semibold text-link hover:underline">
-                    Sign in →
-                  </Link>
-                </p>
-              </div>
-            )
-          )}
-        </div>
-
         {loaded && allStories.length === 0 ? (
           <div className="btd-card max-w-[720px] p-7">
             <h2 className="text-23 font-extrabold text-navy">Stories are on their way</h2>
@@ -178,6 +160,25 @@ export default function Stories() {
             {filtered.length === 0 && <p className="text-body">No stories match yet.</p>}
           </>
         )}
+
+        {/* After the stories, so people read others' before writing their own. */}
+        <div className="mt-14 max-w-[720px]">
+          {user ? (
+            <StoryPanel defaultName={submitterName} />
+          ) : (
+            !authLoading && (
+              <div id="share" className="btd-card p-7 scroll-mt-24">
+                <h2 className="text-23 font-extrabold text-navy">Share your story</h2>
+                <p className="mt-1.5 text-15 leading-[1.6] text-body">
+                  Sign in to share your story.{" "}
+                  <Link to="/login" className="font-semibold text-link hover:underline">
+                    Sign in →
+                  </Link>
+                </p>
+              </div>
+            )
+          )}
+        </div>
       </section>
     </div>
   );
