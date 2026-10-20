@@ -7,6 +7,9 @@ import LogFlow from "../components/calendar/LogFlow";
 import PracticeModeToggle from "../components/PracticeModeToggle";
 import { BagChecklist, LearnMore, MealtimeReminder, MyPeriodCard, TellADoctor } from "../components/calendar/PeriodHelp";
 import { addDays, predictNext } from "../lib/cycles";
+import Patterns from "../components/calendar/Patterns";
+import CalendarDataTools from "../components/calendar/CalendarDataTools";
+import { sampleEntries } from "../lib/calendarSample";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
@@ -35,6 +38,8 @@ import { feeling, painSpotSentence } from "../lib/myVoice";
 
 type View =
   | { kind: "month" }
+  | { kind: "patterns" }
+  | { kind: "data" }
   | { kind: "tray" }
   | { kind: "day"; date: string }
   | { kind: "log"; date: string; entry?: CalendarEntry };
@@ -49,7 +54,7 @@ export default function Calendar() {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
   const { practice } = usePracticeMode();
-  const { readingLevel, reloadCheckIns } = useMyVoice();
+  const { readingLevel, reloadCheckIns, say } = useMyVoice();
 
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   // Practice mode logs into this instead, and it's gone when practice ends.
@@ -70,6 +75,8 @@ export default function Calendar() {
     }
   });
 
+  const [loads, setLoads] = useState(0);
+  const reload = () => setLoads((n) => n + 1);
   useEffect(() => {
     if (authLoading) return;
     let cancelled = false;
@@ -85,10 +92,11 @@ export default function Calendar() {
     return () => {
       cancelled = true;
     };
-  }, [userId, authLoading]);
+  }, [userId, authLoading, loads]);
 
   useEffect(() => {
-    if (!practice) setPracticeEntries([]);
+    // Practice shows made-up sample data, and keeps nothing afterwards.
+    setPracticeEntries(practice ? sampleEntries() : []);
   }, [practice]);
 
   const shown = practice ? practiceEntries : entries;
@@ -144,7 +152,10 @@ export default function Calendar() {
     }
   }
 
-  const logToday = () => show({ kind: "log", date: todayKey() });
+  const logToday = () => {
+    say("Log today");
+    show({ kind: "log", date: todayKey() });
+  };
 
   return (
     <div>
@@ -186,8 +197,55 @@ export default function Calendar() {
           <PracticeModeToggle tone="light" />
         </div>
 
+        {practice && (
+          <p className="rounded-tile border border-butter bg-butter/30 px-4 py-3 text-15 font-semibold text-navy">
+            Practice mode: this is made-up sample data. Try anything; nothing is saved.
+          </p>
+        )}
+
+        {loaded && (view.kind === "month" || view.kind === "patterns") && (
+          <div role="tablist" aria-label="Calendar views" className="flex flex-wrap gap-2">
+            {(
+              [
+                { id: "month", label: "My calendar", icon: "calendar" },
+                { id: "patterns", label: "My patterns", icon: "repeat" },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={view.kind === t.id}
+                onClick={() => {
+                  say(t.label);
+                  show({ kind: t.id });
+                }}
+                className={`flex min-h-[48px] items-center gap-2 rounded-full border-2 px-5 text-15 font-bold ${
+                  view.kind === t.id ? "border-navy bg-navy text-mist" : "border-navy/15 bg-white text-navy hover:border-sky"
+                }`}
+              >
+                <Icon name={t.icon} size={20} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {!loaded ? (
           <p className="text-body">Loading your calendar…</p>
+        ) : view.kind === "patterns" ? (
+          <Patterns entries={shown} readingLevel={readingLevel} />
+        ) : view.kind === "data" ? (
+          <div className="grid gap-5">
+            <button type="button" onClick={() => show({ kind: "month" })} className="justify-self-start text-sm font-bold text-link hover:underline">
+              ← Back to the month
+            </button>
+            <h2 className="font-display text-28 font-extrabold text-navy">My calendar data</h2>
+            <p className="text-15 text-body">
+              Saved on this device. Download a copy any time, or delete it for good.
+            </p>
+            <CalendarDataTools onChanged={reload} />
+          </div>
         ) : view.kind === "log" ? (
           <LogFlow
             key={`${view.entry?.id ?? "new"}-${logRun}`}
@@ -277,9 +335,22 @@ export default function Calendar() {
           </>
         )}
 
-        <p className="text-13 text-muted">
-          Voiced never diagnoses or suggests medicine. If someone is in danger, call 911.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-13 text-muted">
+            Voiced never diagnoses or suggests medicine. If someone is in danger, call 911.
+          </p>
+          {/* Signed in, the tools live on the Profile page; signed out, the
+              calendar is only on this device, so they open right here. */}
+          {user ? (
+            <Link to="/profile?section=calendar" className="text-13 font-semibold text-link hover:underline">
+              Manage my data
+            </Link>
+          ) : (
+            <button type="button" onClick={() => show({ kind: "data" })} className="text-13 font-semibold text-link hover:underline">
+              Manage my data
+            </button>
+          )}
+        </div>
       </section>
     </div>
   );

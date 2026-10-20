@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import CalendarDataTools from "../components/calendar/CalendarDataTools";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { fetchProfile, preferredName, savePreferredName, upsertProfile } from "../lib/profile";
@@ -280,7 +281,7 @@ function MenuRow({
   );
 }
 
-const SECTIONS = ["details", "my-voice", "history", "security", "delete"] as const;
+const SECTIONS = ["details", "my-voice", "history", "calendar", "security", "delete"] as const;
 type Section = (typeof SECTIONS)[number];
 
 export default function Profile() {
@@ -529,6 +530,14 @@ export default function Profile() {
                   </div>
                 </Panel>
               )}
+              {section === "calendar" && (
+                <Panel
+                  title="My calendar data"
+                  intro="Your Symptom Calendar, including My Voice check-ins. Only you can see it. Download a copy any time, or delete it for good."
+                >
+                  <CalendarDataTools />
+                </Panel>
+              )}
               {section === "history" && (
                 <Panel
                   title="Appointment history"
@@ -610,6 +619,12 @@ export default function Profile() {
                         : `${appointments.length} saved on this device`
                     }
                     onClick={() => open("history")}
+                  />
+                  <MenuRow
+                    icon="calendar"
+                    label="My calendar data"
+                    detail="Download or delete"
+                    onClick={() => open("calendar")}
                   />
                 </div>
               </section>

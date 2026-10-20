@@ -606,3 +606,83 @@ export function dayAriaLabel(key: string, entries: CalendarEntry[]): string {
     .join(" and ");
   return `${day}, ${what}, logged ${who}`;
 }
+
+// ---- The family's own data: export and delete ----
+
+/** Removes every custom symptom, here and in the account. */
+export async function deleteCustomSymptoms(userId: string | null): Promise<void> {
+  writeLocal(LOCAL_SYMPTOMS, []);
+  if (userId && authEnabled) {
+    const { error } = await supabase.from("custom_symptoms").delete().not("id", "is", null);
+    if (error) console.error("Couldn't delete custom symptoms from the account:", error.message);
+  }
+}
+
+/** The little things the calendar remembers on this device. */
+export function clearCalendarDeviceSettings(periodOnly: boolean) {
+  const keys = ["voiced:calendar-usual-products", "voiced:period-bag"];
+  if (!periodOnly) keys.push("voiced:calendar-reported-by", "voiced:calendar-privacy-seen");
+  try {
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // ignore
+  }
+}
+
+const csvCell = (v: unknown) => {
+  const text = v === null || v === undefined ? "" : String(v);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+/** "Download my calendar": every entry as a CSV row, in plain words. */
+export function calendarCsv(entries: CalendarEntry[], answers: (e: CalendarEntry) => string[]): string {
+  const header = [
+    "date",
+    "logged at",
+    "category",
+    "name",
+    "answers",
+    "strength",
+    "usual or new",
+    "told by",
+    "medicine",
+    "note",
+    "saved for visit",
+    "from My Voice check-in",
+  ];
+  const rows = [...entries]
+    .sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.loggedAt.localeCompare(b.loggedAt))
+    .map((e) => [
+      e.entryDate,
+      e.loggedAt,
+      e.category,
+      entryTitle(e),
+      answers(e).join("; "),
+      strengthWords(e),
+      e.typical === "new" ? "new or different" : e.typical === "typical" ? "usual for me" : "",
+      labelOf(REPORTED_BY, e.reportedBy),
+      e.medicationNote ?? "",
+      e.note ?? "",
+      e.addToVisit ? "yes" : "",
+      e.checkInId ? "yes" : "",
+    ]);
+  return [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n");
+}
+
+/** "Delete all my period data" (periodOnly) or "Delete my whole calendar":
+ *  real deletes, on this device and in the account. Row-level security
+ *  limits the account delete to the person's own rows. */
+export async function deleteAllEntries(userId: string | null, periodOnly: boolean): Promise<boolean> {
+  writeLocal(
+    LOCAL_ENTRIES,
+    periodOnly ? readLocal<CalendarEntry>(LOCAL_ENTRIES).filter((e) => e.category !== "period") : []
+  );
+  if (!userId || !authEnabled) return true;
+  const query = supabase.from("calendar_entries").delete();
+  const { error } = periodOnly ? await query.eq("category", "period") : await query.not("id", "is", null);
+  if (error) {
+    console.error("Couldn't delete from the calendar in the account:", error.message);
+    return false;
+  }
+  return true;
+}

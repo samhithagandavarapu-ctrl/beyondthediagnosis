@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "../icons/Icon";
+import { useMyVoice } from "../../context/MyVoiceContext";
 import {
   CATEGORIES,
   CalendarEntry,
@@ -59,6 +60,7 @@ export default function MonthGrid({
   onMonthChange: (anyDayInMonth: string) => void;
   onOpenDay: (key: string) => void;
 }) {
+  const { say } = useMyVoice();
   const [filter, setFilter] = useState<FilterId>("all");
   const [focused, setFocused] = useState<string>(() => {
     const today = todayKey();
@@ -159,7 +161,10 @@ export default function MonthGrid({
             key={f.id}
             type="button"
             aria-pressed={filter === f.id}
-            onClick={() => setFilter(f.id)}
+            onClick={() => {
+              setFilter(f.id);
+              say(f.label);
+            }}
             className={`min-h-[44px] rounded-full border px-4 py-2 text-sm transition-colors ${
               filter === f.id
                 ? "border-navy bg-navy font-bold text-mist"
@@ -212,11 +217,13 @@ export default function MonthGrid({
                       aria-disabled={future || undefined}
                       onFocus={() => setFocused(key)}
                       onClick={() => {
-                        if (!future) onOpenDay(key);
+                        if (future) return;
+                        say(dayAriaLabel(key, shown));
+                        onOpenDay(key);
                       }}
                       aria-label={`${dayAriaLabel(key, shown)}${maybe ? ", period might start" : ""}${forVisit ? ", saved for my visit" : ""}${isToday ? ", today" : ""}`}
                       aria-current={isToday ? "date" : undefined}
-                      className={`btd-cal-day flex min-h-[64px] w-full flex-col items-start gap-1 rounded-tile border p-1.5 text-left transition-colors sm:min-h-[84px] sm:p-2 ${
+                      className={`btd-cal-day flex min-h-[4rem] w-full flex-col items-start gap-1 rounded-tile border p-1.5 text-left transition-colors sm:min-h-[5.25rem] sm:p-2 ${
                         isPeriod
                           ? "btd-cal-period border-coral bg-coral/35"
                           : maybe
