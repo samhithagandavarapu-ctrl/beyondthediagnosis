@@ -194,16 +194,6 @@ export async function deleteDraft(userId: string | null, id: string): Promise<vo
   }
 }
 
-/** Put a finished My Voice sentence on the draft being worked on (or a new
- *  one), so it's waiting in Appointment Prep on any device. */
-export async function attachCheckIn(userId: string | null, checkIn: CheckIn): Promise<void> {
-  const { drafts } = await listDrafts(userId);
-  const activeId = getActiveDraftId();
-  const target = drafts.find((d) => d.id === activeId) ?? drafts[0] ?? newDraft();
-  setActiveDraftId(target.id);
-  await saveDraft(userId, { ...target, myVoice: checkIn, updatedAt: new Date().toISOString() });
-}
-
 /** Add notes from an assistant chat to the draft being worked on, or to a
  *  new one. Returns the draft they went into. Nothing already in the draft
  *  is changed: empty placeholder rows are filled first, then rows are added. */

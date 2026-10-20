@@ -5,6 +5,7 @@ import {
   PainReport,
   PainView,
   checkInLines,
+  feelingsOverTime,
   painAreaView,
   painSummaryLine,
 } from "./myVoice";
@@ -650,11 +651,10 @@ function timelineSections(ctx: Ctx, timeline: Timeline | undefined) {
 
 export async function buildAppointmentPdf(
   form: AppointmentForm,
-  myVoice: CheckIn | null,
+  /** The My Voice check-ins picked for this summary, newest first. */
+  checkIns: CheckIn[],
   /** When the summary was made; defaults to today. */
   date?: string,
-  /** The "Where does it hurt?" body map, from this device. */
-  pain?: PainReport | null,
   /** "All About Me", from this device. Printed first. */
   aboutMe?: AboutMe | null
 ): Promise<jsPDF> {
@@ -689,8 +689,18 @@ export async function buildAppointmentPdf(
     ctx.y += 6;
   }
 
-  if (myVoice) myVoicePanel(ctx, myVoice);
-  if (pain) painPanel(ctx, pain);
+  if (checkIns.length) {
+    const over = feelingsOverTime(checkIns);
+    if (over) {
+      sectionHeading(ctx, "How they've felt, oldest first");
+      item(ctx, over);
+      ctx.y += 6;
+    }
+    checkIns.forEach((c) => myVoicePanel(ctx, c));
+    // The body map from the newest check-in that marked one.
+    const withPain = checkIns.find((c) => c.pain?.length);
+    if (withPain) painPanel(ctx, { createdAt: withPain.createdAt, spots: withPain.pain ?? [] });
+  }
 
   timelineSections(ctx, form.timeline);
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { refineAppointmentForm } from "../lib/api";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   HistoryEntry,
   addToHistory,
+  entryCheckIns,
   formIsEmpty,
   historyTitle,
   loadHistory,
@@ -30,7 +31,8 @@ import {
   setActiveDraftId,
 } from "../lib/drafts";
 import { shortDate } from "../lib/shortDate";
-import { CheckIn, PainReport, checkInLines, painSummaryLine } from "../lib/myVoice";
+import { CheckIn, checkInLines, feelingsOverTime, painSummaryLine } from "../lib/myVoice";
+import { CheckInSummary, FeelingsOverTime } from "../components/myvoice/CheckInHistory";
 import { AboutMe, aboutMeHasContent, aboutMeLines } from "../lib/aboutMe";
 import Icon from "../components/icons/Icon";
 import DictateButton from "../components/DictateButton";
@@ -61,7 +63,7 @@ import {
 import { inkLastWord } from "../components/Scribble";
 
 export default function AppointmentPrep() {
-  const { clearCheckIn, savedPain, clearPain, savedAboutMe, clearAboutMe } = useMyVoice();
+  const { checkIns, checkInsLoaded, importCheckIns, savedAboutMe, clearAboutMe } = useMyVoice();
   const { practice } = usePracticeMode();
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
@@ -83,12 +85,18 @@ export default function AppointmentPrep() {
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
   // A past summary being looked at, rather than the one being written now.
   const [viewing, setViewing] = useState<HistoryEntry | null>(null);
-  // Opt-in on purpose: the check-in belongs to the person who made it, so it
-  // only reaches the provider summary if someone says yes here.
-  const [includeMyVoice, setIncludeMyVoice] = useState(true);
-  // The "Where does it hurt?" body map lives on this device only, so it's
-  // read straight from there rather than from the draft.
-  const [includePain, setIncludePain] = useState(true);
+  // Which My Voice check-ins go on the summary. Until someone ticks or
+  // unticks one, that's the newest — plus any sent here from My Voice with
+  // "Put it on my doctor sheet".
+  const [searchParams] = useSearchParams();
+  const linkedCheckIn = searchParams.get("checkIn");
+  const [picked, setPicked] = useState<string[] | null>(null);
+  const pickedIds =
+    picked ?? [checkIns[0]?.id, linkedCheckIn].filter((id): id is string => Boolean(id));
+  const pickedCheckIns = checkIns.filter((c) => pickedIds.includes(c.id));
+  function togglePicked(id: string) {
+    setPicked(pickedIds.includes(id) ? pickedIds.filter((x) => x !== id) : [...pickedIds, id]);
+  }
   const [includeAboutMe, setIncludeAboutMe] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [refining, setRefining] = useState(false);
@@ -272,6 +280,14 @@ export default function AppointmentPrep() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, authLoading]);
 
+  // Check-ins that only live on older drafts join the My Voice list, so
+  // they can be picked like any other.
+  useEffect(() => {
+    if (!loaded || !checkInsLoaded) return;
+    importCheckIns(drafts.map((d) => d.myVoice).filter((c): c is CheckIn => Boolean(c)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, checkInsLoaded]);
+
   // Saved as you type, a moment after you stop. Practice mode is a rehearsal,
   // so it keeps nothing — the real draft is left exactly as it was.
   useEffect(() => {
@@ -367,13 +383,11 @@ export default function AppointmentPrep() {
     setHistory(removeFromHistory(entry.id));
   }
 
-  const myVoice = includeMyVoice ? draftMyVoice : null;
-
   if (viewing) {
     return (
       <SummaryView
         form={viewing.form}
-        myVoice={viewing.myVoice}
+        checkIns={entryCheckIns(viewing)}
         date={viewing.savedAt}
         backLabel="← Back to your history"
         onBack={() => {
@@ -390,8 +404,7 @@ export default function AppointmentPrep() {
     return (
       <SummaryView
         form={form}
-        myVoice={myVoice}
-        pain={includePain ? savedPain : null}
+        checkIns={pickedCheckIns}
         aboutMe={includeAboutMe && aboutMeHasContent(savedAboutMe) ? savedAboutMe : null}
         onBack={() => setShowSummary(false)}
       />
@@ -428,7 +441,7 @@ export default function AppointmentPrep() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!practice && !formIsEmpty(form)) setHistory(addToHistory(form, myVoice));
+          if (!practice && !formIsEmpty(form)) setHistory(addToHistory(form, pickedCheckIns));
           setShowSummary(true);
         }}
         className="space-y-8"
@@ -517,13 +530,10 @@ export default function AppointmentPrep() {
         />
 
         <MyVoiceSection
-          checkIn={draftMyVoice}
-          include={includeMyVoice}
-          onIncludeChange={setIncludeMyVoice}
-          onClear={() => {
-            setDraftMyVoice(null);
-            clearCheckIn();
-          }}
+          checkIns={checkIns}
+          loaded={checkInsLoaded}
+          pickedIds={pickedIds}
+          onToggle={togglePicked}
         />
 
         {savedAboutMe && aboutMeHasContent(savedAboutMe) && (
@@ -532,15 +542,6 @@ export default function AppointmentPrep() {
             include={includeAboutMe}
             onIncludeChange={setIncludeAboutMe}
             onClear={clearAboutMe}
-          />
-        )}
-
-        {savedPain && (
-          <PainMapSection
-            report={savedPain}
-            include={includePain}
-            onIncludeChange={setIncludePain}
-            onClear={clearPain}
           />
         )}
 
@@ -1173,22 +1174,25 @@ function SaveToDrafts({
 }
 
 function MyVoiceSection({
-  checkIn,
-  include,
-  onIncludeChange,
-  onClear,
+  checkIns,
+  loaded,
+  pickedIds,
+  onToggle,
 }: {
-  checkIn: CheckIn | null;
-  include: boolean;
-  onIncludeChange: (include: boolean) => void;
-  onClear: () => void;
+  checkIns: CheckIn[];
+  loaded: boolean;
+  pickedIds: string[];
+  onToggle: (id: string) => void;
 }) {
-  if (!checkIn) {
+  const [showAll, setShowAll] = useState(false);
+
+  if (!loaded) return null;
+  if (!checkIns.length) {
     return (
       <div className="rounded-tile border border-dashed border-navy/20 bg-mist p-4">
         <p className="text-sm font-semibold text-ink">In their own words</p>
         <p className="mt-1 text-sm text-slate">
-          Nothing from My Voice yet. If the person this visit is for does a check-in in{" "}
+          No check-ins from My Voice yet. If the person this visit is for checks in with{" "}
           <Link to="/my-voice" className="font-semibold text-link hover:underline">
             My Voice
           </Link>
@@ -1198,36 +1202,49 @@ function MyVoiceSection({
     );
   }
 
-  const lines = checkInLines(checkIn);
+  // The newest few, plus any older ones already ticked.
+  const shown = showAll
+    ? checkIns
+    : checkIns.filter((c, i) => i < 5 || pickedIds.includes(c.id));
   return (
     <div className="rounded-tile border-2 border-sky bg-sky-tint p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-ink">In their own words (from My Voice)</p>
-          <p className="text-xs text-slate-light">
-            Checked in {new Date(checkIn.createdAt).toLocaleDateString()}
-          </p>
+      <p className="text-sm font-semibold text-ink">In their own words (from My Voice)</p>
+      <p className="text-xs text-slate-light">
+        Tick each check-in to put on the summary. The newest is ticked to start.
+      </p>
+      {checkIns.filter((c) => c.overall).length >= 2 && (
+        <div className="mt-3 rounded-tile bg-white p-3">
+          <p className="mb-2 text-xs font-semibold text-slate">How they've felt, oldest first</p>
+          <FeelingsOverTime checkIns={checkIns} />
         </div>
-        <button type="button" onClick={onClear} className="text-xs text-clay hover:underline">
-          Remove this check-in
-        </button>
-      </div>
-      <ul className="mt-3 space-y-1">
-        {lines.map((line) => (
-          <li key={line} className="border-l-2 border-sky pl-3 text-sm text-ink">
-            {line}
+      )}
+      <ul className="mt-3 space-y-2">
+        {shown.map((c) => (
+          <li key={c.id}>
+            <label className="flex cursor-pointer items-start gap-3 rounded-tile border border-navy/10 bg-white p-3">
+              <input
+                type="checkbox"
+                checked={pickedIds.includes(c.id)}
+                onChange={() => onToggle(c.id)}
+                className="mt-1 h-4 w-4 shrink-0"
+              />
+              <CheckInSummary checkIn={c} />
+            </label>
           </li>
         ))}
       </ul>
-      <label className="mt-3 flex items-center gap-2 text-sm font-medium text-ink">
-        <input
-          type="checkbox"
-          checked={include}
-          onChange={(e) => onIncludeChange(e.target.checked)}
-          className="h-4 w-4"
-        />
-        Put this on the summary
-      </label>
+      {shown.length < checkIns.length && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="mt-3 text-sm font-semibold text-link hover:underline"
+        >
+          Show all {checkIns.length} check-ins
+        </button>
+      )}
+      <Link to="/my-voice" className="mt-3 block text-sm font-semibold text-link hover:underline">
+        Change or delete check-ins in My Voice →
+      </Link>
     </div>
   );
 }
@@ -1276,71 +1293,21 @@ function AboutMeSection({
   );
 }
 
-function PainMapSection({
-  report,
-  include,
-  onIncludeChange,
-  onClear,
-}: {
-  report: PainReport;
-  include: boolean;
-  onIncludeChange: (include: boolean) => void;
-  onClear: () => void;
-}) {
-  return (
-    <div className="rounded-tile border-2 border-sky bg-sky-tint p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-ink">Where it hurts (from My Voice)</p>
-          <p className="text-xs text-slate-light">
-            Marked {new Date(report.createdAt).toLocaleDateString()} · kept on this device only
-          </p>
-        </div>
-        <button type="button" onClick={onClear} className="text-xs text-clay hover:underline">
-          Remove this body map
-        </button>
-      </div>
-      <ul className="mt-3 space-y-1">
-        {report.spots.map((spot) => {
-          const line = painSummaryLine(spot);
-          return (
-            <li key={spot.area} className="border-l-2 border-sky pl-3 text-sm text-ink">
-              <span className="font-semibold">{line.title}</span>
-              {line.detail && <span className="text-slate"> — {line.detail}</span>}
-            </li>
-          );
-        })}
-      </ul>
-      <label className="mt-3 flex items-center gap-2 text-sm font-medium text-ink">
-        <input
-          type="checkbox"
-          checked={include}
-          onChange={(e) => onIncludeChange(e.target.checked)}
-          className="h-4 w-4"
-        />
-        Put this on the summary
-      </label>
-    </div>
-  );
-}
-
 // ---- Summary ----
 // The on-screen summary deliberately mirrors the PDF's structure, so what you
 // see here is what lands on the page — including when it goes to the printer.
 
 function SummaryView({
   form,
-  myVoice,
-  pain = null,
+  checkIns,
   aboutMe = null,
   onBack,
   date,
   backLabel = "← Back to edit",
 }: {
   form: AppointmentForm;
-  myVoice: CheckIn | null;
-  /** The body map from this device; history summaries don't have one. */
-  pain?: PainReport | null;
+  /** The My Voice check-ins picked for this summary, newest first. */
+  checkIns: CheckIn[];
   /** "All About Me" from this device; printed first. */
   aboutMe?: AboutMe | null;
   onBack: () => void;
@@ -1350,6 +1317,9 @@ function SummaryView({
 }) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  // The body map from the newest picked check-in that marked one; the PDF
+  // draws the same one.
+  const painCheckIn = checkIns.find((c) => c.pain?.length) ?? null;
 
   // Async because the PDF loads the site's typeface before drawing; the button
   // says so rather than looking dead for the moment that takes.
@@ -1357,7 +1327,7 @@ function SummaryView({
     setDownloading(true);
     setDownloadError(null);
     try {
-      const doc = await buildAppointmentPdf(form, myVoice, date, pain, aboutMe);
+      const doc = await buildAppointmentPdf(form, checkIns, date, aboutMe);
       const namePart = form.patientName.trim()
         ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
         : "visit-summary";
@@ -1461,29 +1431,38 @@ function SummaryView({
             </Section>
           )}
 
-          {myVoice && (
-            <div className="btd-avoid-break mb-7 rounded-tile border-l-4 border-sky bg-sky-tint px-5 py-4">
+          {feelingsOverTime(checkIns) && (
+            <Section title="How they've felt, oldest first">
+              <p className="text-sm leading-relaxed text-body">{feelingsOverTime(checkIns)}</p>
+            </Section>
+          )}
+
+          {checkIns.map((c) => (
+            <div
+              key={c.id}
+              className="btd-avoid-break mb-7 rounded-tile border-l-4 border-sky bg-sky-tint px-5 py-4"
+            >
               <p className="text-11 font-bold uppercase tracking-[0.1em] text-link">
                 In their own words ·{" "}
-                {new Date(myVoice.createdAt).toLocaleDateString(undefined, {
+                {new Date(c.createdAt).toLocaleDateString(undefined, {
                   month: "long",
                   day: "numeric",
                 })}
               </p>
               <ul className="mt-2 space-y-1">
-                {checkInLines(myVoice).map((line) => (
+                {checkInLines(c).map((line) => (
                   <li key={line} className="text-sm leading-relaxed text-navy">
                     {line}
                   </li>
                 ))}
               </ul>
             </div>
-          )}
+          ))}
 
-          {pain && pain.spots.length > 0 && (
+          {painCheckIn && (
             <Section title="Where it hurts — their own body map">
               <ul className="space-y-3">
-                {pain.spots.map((spot) => {
+                {(painCheckIn.pain ?? []).map((spot) => {
                   const line = painSummaryLine(spot);
                   return <SummaryItem key={spot.area} title={line.title} detail={line.detail} />;
                 })}

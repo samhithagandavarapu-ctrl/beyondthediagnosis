@@ -137,11 +137,20 @@ export function sinceOption(id: SinceId): SinceOption {
   return SINCE_OPTIONS.find((s) => s.id === id) ?? SINCE_OPTIONS[0];
 }
 
-/** One completed check-in / sentence session. Plain data on purpose. */
+/** One check-in: everything said in one sitting — how they feel, where it
+ *  hurts, since when, and anything else — saved together as one dated entry
+ *  in their list of check-ins (see lib/checkIns.ts). Plain data on purpose. */
 export type CheckIn = {
+  id: string;
   createdAt: string;
+  /** Set when an old check-in is opened and changed. */
+  updatedAt?: string;
   overall: FeelingId | null;
+  /** Simple body parts. Only Practice My Visit and check-ins made before the
+   *  body map was part of the check-in use these; new ones use `pain`. */
   bodyParts: BodyPartId[];
+  /** "Where does it hurt?": each place, how it feels, and how bad. */
+  pain?: PainSpot[];
   since: SinceId | null;
   /** Optional typed note — never required to finish a check-in. */
   note: string;
@@ -155,9 +164,11 @@ export type CheckIn = {
 
 export function emptyCheckIn(): CheckIn {
   return {
+    id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     overall: null,
     bodyParts: [],
+    pain: [],
     since: null,
     note: "",
     hasVoiceNote: false,
@@ -165,7 +176,32 @@ export function emptyCheckIn(): CheckIn {
 }
 
 export function checkInHasContent(c: CheckIn): boolean {
-  return !!c.ownWords?.length || !!c.overall || c.bodyParts.length > 0 || !!c.since || !!c.note.trim() || c.hasVoiceNote;
+  return (
+    !!c.ownWords?.length ||
+    !!c.overall ||
+    c.bodyParts.length > 0 ||
+    !!c.pain?.length ||
+    !!c.since ||
+    !!c.note.trim() ||
+    c.hasVoiceNote
+  );
+}
+
+/** Check-ins saved before they had ids or a body map, made whole. */
+export function normalizeCheckIn(c: Partial<CheckIn> & { createdAt: string }): CheckIn {
+  return {
+    ...emptyCheckIn(),
+    ...c,
+    id: c.id || crypto.randomUUID(),
+    bodyParts: c.bodyParts ?? [],
+    pain: c.pain ?? [],
+    note: c.note ?? "",
+  };
+}
+
+/** Newest first. */
+export function sortCheckIns(list: CheckIn[]): CheckIn[] {
+  return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 function listOut(items: string[]): string {
@@ -175,27 +211,48 @@ function listOut(items: string[]): string {
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 }
 
-/** The tap-to-build sentence: "I feel [face] in my [part] since [when]". */
-export function buildSentence(c: CheckIn): string {
-  if (!c.overall && c.bodyParts.length === 0) return "";
-  const how = c.overall ? feeling(c.overall).sentence : "not right";
+/** What the check-in says, in their voice: "I feel bad. My lower belly
+ *  hurts. It feels crampy… It started a few days ago." */
+export function checkInSentences(c: CheckIn): string[] {
+  if (c.ownWords?.length) return c.ownWords;
+  const out: string[] = [];
   const where = c.bodyParts.length
     ? ` in my ${listOut(c.bodyParts.map((id) => bodyPart(id).sentence))}`
     : "";
-  const when = c.since ? ` since ${sinceOption(c.since).sentence}` : "";
-  return `I feel ${how}${where}${when}.`;
+  if (c.overall || where) {
+    out.push(`I feel ${c.overall ? feeling(c.overall).sentence : "not right"}${where}.`);
+  }
+  out.push(...(c.pain ?? []).map(painSpotSentence));
+  if (c.since) out.push(`It started ${sinceOption(c.since).sentence}.`);
+  return out;
+}
+
+export function buildSentence(c: CheckIn): string {
+  return checkInSentences(c).join(" ");
+}
+
+/** "Oct 9: So-so  ·  Oct 14: Good  ·  Oct 20: Bad", oldest first, for the
+ *  printed summary. Empty unless at least two check-ins have a face. */
+export function feelingsOverTime(list: CheckIn[]): string {
+  const withFace = list
+    .filter((c) => c.overall)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  if (withFace.length < 2) return "";
+  return withFace
+    .map((c) => {
+      const day = new Date(c.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      return `${day}: ${feeling(c.overall!).short}`;
+    })
+    .join("  ·  ");
 }
 
 /** Everything the check-in knows, as lines the PDF/summary can print. */
 export function checkInLines(c: CheckIn): string[] {
-  const lines: string[] = [];
-  if (c.ownWords?.length) {
-    lines.push(...c.ownWords);
-  } else {
-    const sentence = buildSentence(c);
-    if (sentence) lines.push(sentence);
+  const lines = checkInSentences(c);
+  // Their own words from Practice My Visit don't say how they feel overall.
+  if (c.ownWords?.length && c.overall) {
+    lines.push(`Overall today: ${feeling(c.overall).label.replace(/^I feel /, "")}.`);
   }
-  if (c.overall) lines.push(`Overall today: ${feeling(c.overall).label.replace(/^I feel /, "")}.`);
   if (c.note.trim()) lines.push(c.note.trim());
   if (c.hasVoiceNote) lines.push("They also recorded a voice note about this.");
   return lines;
