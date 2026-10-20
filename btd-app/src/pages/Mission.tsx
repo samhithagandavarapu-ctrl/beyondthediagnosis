@@ -112,8 +112,8 @@ export default function Mission() {
             </p>
             <p>
               The conversations gave us valuable input on what would actually help at the
-              doctor, and a group of families joined our pilot program to try Voiced and
-              help shape what comes next.
+              doctor, and a group of families told us they’d like to help test Voiced when
+              we start a pilot program.
             </p>
           </div>
         </div>
