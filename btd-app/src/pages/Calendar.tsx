@@ -5,6 +5,11 @@ import Icon from "../components/icons/Icon";
 import MonthGrid from "../components/calendar/MonthGrid";
 import LogFlow from "../components/calendar/LogFlow";
 import PracticeModeToggle from "../components/PracticeModeToggle";
+import { BagChecklist, LearnMore, MealtimeReminder, MyPeriodCard, TellADoctor } from "../components/calendar/PeriodHelp";
+import { addDays, predictNext } from "../lib/cycles";
+import Patterns from "../components/calendar/Patterns";
+import CalendarDataTools from "../components/calendar/CalendarDataTools";
+import { sampleEntries } from "../lib/calendarSample";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
@@ -18,6 +23,7 @@ import {
   detailLines,
   entryIcon,
   entryTitle,
+  isPeriodDay,
   listCustomSymptoms,
   listEntries,
   longDate,
@@ -32,6 +38,9 @@ import { feeling, painSpotSentence } from "../lib/myVoice";
 
 type View =
   | { kind: "month" }
+  | { kind: "patterns" }
+  | { kind: "data" }
+  | { kind: "tray" }
   | { kind: "day"; date: string }
   | { kind: "log"; date: string; entry?: CalendarEntry };
 
@@ -45,7 +54,7 @@ export default function Calendar() {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
   const { practice } = usePracticeMode();
-  const { readingLevel, reloadCheckIns } = useMyVoice();
+  const { readingLevel, reloadCheckIns, say } = useMyVoice();
 
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   // Practice mode logs into this instead, and it's gone when practice ends.
@@ -66,6 +75,8 @@ export default function Calendar() {
     }
   });
 
+  const [loads, setLoads] = useState(0);
+  const reload = () => setLoads((n) => n + 1);
   useEffect(() => {
     if (authLoading) return;
     let cancelled = false;
@@ -81,18 +92,28 @@ export default function Calendar() {
     return () => {
       cancelled = true;
     };
-  }, [userId, authLoading]);
+  }, [userId, authLoading, loads]);
 
   useEffect(() => {
-    if (!practice) setPracticeEntries([]);
+    // Practice shows made-up sample data, and keeps nothing afterwards.
+    setPracticeEntries(practice ? sampleEntries() : []);
   }, [practice]);
 
   const shown = practice ? practiceEntries : entries;
+  const hasPeriods = shown.some((e) => e.category === "period");
+  const prediction = predictNext(shown);
+  const periodOn = (day: string) => shown.some((e) => e.entryDate === day && isPeriodDay(e));
 
   function show(next: View) {
     setView(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  function toggleVisit(entry: CalendarEntry) {
+    save({ ...entry, addToVisit: !entry.addToVisit, updatedAt: new Date().toISOString() });
+  }
+
+  const tray = shown.filter((e) => e.addToVisit);
 
   async function save(entry: CalendarEntry): Promise<CalendarStore | "practice"> {
     if (practice) {
@@ -131,7 +152,10 @@ export default function Calendar() {
     }
   }
 
-  const logToday = () => show({ kind: "log", date: todayKey() });
+  const logToday = () => {
+    say("Log today");
+    show({ kind: "log", date: todayKey() });
+  };
 
   return (
     <div>
@@ -173,8 +197,55 @@ export default function Calendar() {
           <PracticeModeToggle tone="light" />
         </div>
 
+        {practice && (
+          <p className="rounded-tile border border-butter bg-butter/30 px-4 py-3 text-15 font-semibold text-navy">
+            Practice mode: this is made-up sample data. Try anything; nothing is saved.
+          </p>
+        )}
+
+        {loaded && (view.kind === "month" || view.kind === "patterns") && (
+          <div role="tablist" aria-label="Calendar views" className="flex flex-wrap gap-2">
+            {(
+              [
+                { id: "month", label: "My calendar", icon: "calendar" },
+                { id: "patterns", label: "My patterns", icon: "repeat" },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={view.kind === t.id}
+                onClick={() => {
+                  say(t.label);
+                  show({ kind: t.id });
+                }}
+                className={`flex min-h-[48px] items-center gap-2 rounded-full border-2 px-5 text-15 font-bold ${
+                  view.kind === t.id ? "border-navy bg-navy text-mist" : "border-navy/15 bg-white text-navy hover:border-sky"
+                }`}
+              >
+                <Icon name={t.icon} size={20} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {!loaded ? (
           <p className="text-body">Loading your calendar…</p>
+        ) : view.kind === "patterns" ? (
+          <Patterns entries={shown} readingLevel={readingLevel} />
+        ) : view.kind === "data" ? (
+          <div className="grid gap-5">
+            <button type="button" onClick={() => show({ kind: "month" })} className="justify-self-start text-sm font-bold text-link hover:underline">
+              ← Back to the month
+            </button>
+            <h2 className="font-display text-28 font-extrabold text-navy">My calendar data</h2>
+            <p className="text-15 text-body">
+              Saved on this device. Download a copy any time, or delete it for good.
+            </p>
+            <CalendarDataTools onChanged={reload} />
+          </div>
         ) : view.kind === "log" ? (
           <LogFlow
             key={`${view.entry?.id ?? "new"}-${logRun}`}
@@ -183,6 +254,8 @@ export default function Calendar() {
             readingLevel={readingLevel}
             practice={practice}
             customSymptoms={customs}
+            dayBeforeIsPeriod={periodOn(addDays(view.date, -1))}
+            lastProducts={shown.find((e) => e.category === "period" && e.details.products?.length)?.details.products ?? []}
             onAddCustomSymptom={addSymptom}
             onSave={save}
             onLogAnother={() => {
@@ -196,10 +269,19 @@ export default function Calendar() {
             date={view.date}
             entries={shown.filter((e) => e.entryDate === view.date)}
             customs={customs}
+            periodDay={periodOn(view.date)}
             onBack={() => show({ kind: "month" })}
             onAdd={() => show({ kind: "log", date: view.date })}
             onEdit={(entry) => show({ kind: "log", date: entry.entryDate, entry })}
             onDelete={remove}
+            onToggleVisit={toggleVisit}
+          />
+        ) : view.kind === "tray" ? (
+          <VisitTray
+            entries={tray}
+            customs={customs}
+            onBack={() => show({ kind: "month" })}
+            onRemove={toggleVisit}
           />
         ) : (
           <>
@@ -209,13 +291,36 @@ export default function Calendar() {
                 Log today
               </button>
             </div>
+            {periodOn(todayKey()) && <MealtimeReminder />}
+            {tray.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3 rounded-card border-2 border-navy bg-butter px-5 py-3">
+                <Icon name="star-filled" size={22} className="text-navy" />
+                <p className="flex-1 text-15 font-bold text-navy">
+                  {tray.length} {tray.length === 1 ? "thing" : "things"} saved for your visit
+                </p>
+                <button type="button" onClick={() => show({ kind: "tray" })} className="btd-btn min-h-[44px] bg-navy px-5 py-2 text-sm text-mist hover:bg-navy/90">
+                  View
+                </button>
+              </div>
+            )}
             <MonthGrid
               entries={shown}
               customs={customs}
+              predicted={prediction?.days ?? []}
               month={month}
               onMonthChange={setMonth}
               onOpenDay={(date) => show({ kind: "day", date })}
             />
+            {hasPeriods && (
+              <section aria-label="My period" className="grid gap-4">
+                <MyPeriodCard entries={shown} />
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <BagChecklist />
+                  <LearnMore />
+                </div>
+                <TellADoctor />
+              </section>
+            )}
             {/* Pinned where a thumb can reach it on a phone. */}
             <div className="fixed inset-x-4 bottom-4 z-30 sm:hidden">
               <button
@@ -230,9 +335,22 @@ export default function Calendar() {
           </>
         )}
 
-        <p className="text-13 text-muted">
-          Voiced never diagnoses or suggests medicine. If someone is in danger, call 911.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-13 text-muted">
+            Voiced never diagnoses or suggests medicine. If someone is in danger, call 911.
+          </p>
+          {/* Signed in, the tools live on the Profile page; signed out, the
+              calendar is only on this device, so they open right here. */}
+          {user ? (
+            <Link to="/profile?section=calendar" className="text-13 font-semibold text-link hover:underline">
+              Manage my data
+            </Link>
+          ) : (
+            <button type="button" onClick={() => show({ kind: "data" })} className="text-13 font-semibold text-link hover:underline">
+              Manage my data
+            </button>
+          )}
+        </div>
       </section>
     </div>
   );
@@ -242,18 +360,22 @@ function DayView({
   date,
   entries,
   customs,
+  periodDay,
   onBack,
   onAdd,
   onEdit,
   onDelete,
+  onToggleVisit,
 }: {
   date: string;
   entries: CalendarEntry[];
   customs: CustomSymptom[];
+  periodDay: boolean;
   onBack: () => void;
   onAdd: () => void;
   onEdit: (e: CalendarEntry) => void;
   onDelete: (e: CalendarEntry) => void;
+  onToggleVisit: (e: CalendarEntry) => void;
 }) {
   const future = date > todayKey();
   return (
@@ -270,6 +392,8 @@ function DayView({
           </button>
         )}
       </div>
+
+      {periodDay && date === todayKey() && <MealtimeReminder />}
 
       {entries.length === 0 ? (
         <div className="btd-card p-6">
@@ -300,6 +424,13 @@ function DayView({
                   </ul>
                 </div>
               </div>
+              {!e.checkInId && (
+                <label className="mt-4 flex min-h-[44px] items-center gap-3 rounded-tile bg-mist px-4 text-15 font-semibold text-navy">
+                  <input type="checkbox" className="h-5 w-5" checked={e.addToVisit} onChange={() => onToggleVisit(e)} />
+                  Add to my next appointment
+                  {e.addToVisit && <Icon name="star-filled" size={16} className="text-coral-hover" />}
+                </label>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" onClick={() => onEdit(e)} className="btd-btn-outline min-h-[44px] px-4 py-2 text-sm">
                   Edit
@@ -312,6 +443,55 @@ function DayView({
                   Delete
                 </button>
               </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Everything ticked "Add to my next appointment", ready for Appointment Prep. */
+function VisitTray({
+  entries,
+  customs,
+  onBack,
+  onRemove,
+}: {
+  entries: CalendarEntry[];
+  customs: CustomSymptom[];
+  onBack: () => void;
+  onRemove: (e: CalendarEntry) => void;
+}) {
+  return (
+    <div className="grid gap-5">
+      <button type="button" onClick={onBack} className="justify-self-start text-sm font-bold text-link hover:underline">
+        ← Back to the month
+      </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-28 font-extrabold text-navy">Saved for my visit</h2>
+        {entries.length > 0 && (
+          <Link to="/appointment-prep?fromCalendar=tray" className="btd-btn-coral min-h-[52px] gap-2 px-6 py-3 text-base">
+            Bring them into Appointment Prep →
+          </Link>
+        )}
+      </div>
+      {entries.length === 0 ? (
+        <div className="btd-card p-6">
+          <p className="text-17 text-body">Nothing saved yet. Open a day and tick "Add to my next appointment".</p>
+        </div>
+      ) : (
+        <ul className="grid gap-3">
+          {entries.map((e) => (
+            <li key={e.id} className="btd-card flex flex-wrap items-center gap-4 p-4">
+              <Icon name={entryIcon(e, customs)} size={26} className="text-navy" />
+              <div className="min-w-0 flex-1">
+                <p className="text-15 font-extrabold text-navy">{entryTitle(e)}</p>
+                <p className="text-13 text-muted">{longDate(e.entryDate)}</p>
+              </div>
+              <button type="button" onClick={() => onRemove(e)} className="min-h-[44px] px-3 text-sm font-semibold text-link hover:underline">
+                Take it off
+              </button>
             </li>
           ))}
         </ul>

@@ -123,6 +123,63 @@ export const ENERGY_LEVELS = [
   { id: "low", label: "Very low" },
 ] as const;
 
+// ---- My period ----
+
+export type FlowId = "little" | "some" | "lot" | "soaked";
+export type FlowCounts = Record<FlowId, number>;
+
+/** Pictures of a pad (or tampon, or period underwear) after it's been worn,
+ *  with no score and no "heavy" or "normal": the doctor reads the counts. */
+export const FLOW_LEVELS: { id: FlowId; label: string; fill: number }[] = [
+  { id: "little", label: "Just a little", fill: 0.18 },
+  { id: "some", label: "Some", fill: 0.42 },
+  { id: "lot", label: "A lot", fill: 0.7 },
+  { id: "soaked", label: "Soaked through", fill: 1 },
+];
+
+export type FlowProduct = "pad" | "tampon" | "underwear";
+
+export const FLOW_PRODUCTS: { id: FlowProduct; label: string; noun: string }[] = [
+  { id: "pad", label: "Pad", noun: "pad" },
+  { id: "tampon", label: "Tampon", noun: "tampon" },
+  { id: "underwear", label: "Period underwear", noun: "period underwear" },
+];
+
+export type ProductId = "pad" | "pad_wings" | "pad_long" | "period_underwear" | "tampon" | "cup" | "other";
+
+export const PRODUCTS: { id: ProductId; label: string }[] = [
+  { id: "pad", label: "Pad" },
+  { id: "pad_wings", label: "Pad with wings" },
+  { id: "pad_long", label: "Long pad" },
+  { id: "period_underwear", label: "Period underwear" },
+  { id: "tampon", label: "Tampon" },
+  { id: "cup", label: "Cup" },
+  { id: "other", label: "Something else" },
+];
+
+export type ClotSize = "dime" | "quarter" | "bigger";
+
+export const CLOT_SIZES: { id: ClotSize; label: string; px: number }[] = [
+  { id: "dime", label: "Smaller than a dime", px: 10 },
+  { id: "quarter", label: "About a quarter", px: 18 },
+  { id: "bigger", label: "Bigger than a quarter", px: 26 },
+];
+
+export const emptyFlow = (): FlowCounts => ({ little: 0, some: 0, lot: 0, soaked: 0 });
+
+/** "2 Some, 1 Soaked through". Empty if nothing was counted. */
+export function flowWords(flow: FlowCounts | undefined): string {
+  if (!flow) return "";
+  return FLOW_LEVELS.filter((l) => flow[l.id] > 0)
+    .map((l) => `${flow[l.id]} ${l.label}`)
+    .join(", ");
+}
+
+/** A period day, rather than spotting between periods. */
+export function isPeriodDay(e: CalendarEntry): boolean {
+  return e.category === "period" && !e.details.spotting;
+}
+
 export type EntryDetails = {
   // How I feel (and My Voice check-ins)
   overall?: FeelingId;
@@ -152,6 +209,19 @@ export type EntryDetails = {
   // Something scary happened
   whatHappened?: string;
   howLong?: string;
+  // My period
+  /** "Is this the first day of your period?" Yes starts a new cycle. */
+  firstDay?: boolean;
+  /** Bleeding between periods; not counted as a period day. */
+  spotting?: boolean;
+  /** How many of each picture they tapped +1 on that day. */
+  flow?: FlowCounts;
+  /** Which pictures they were looking at. */
+  flowProduct?: FlowProduct;
+  products?: ProductId[];
+  leak?: boolean;
+  /** Blobs (clots), and how big; "none" if they said no. */
+  clots?: ClotSize | "none";
   /** Other: the custom symptom it was logged under, if any. */
   customSymptomId?: string;
 };
@@ -482,6 +552,20 @@ export function detailLines(e: CalendarEntry, feelingWord: (id: FeelingId) => st
       return d.bathroom?.length ? [d.bathroom.map((b) => labelOf(BATHROOM, b)).join(", ")] : [];
     case "energy":
       return d.energy ? [`Energy: ${d.energy === "normal" ? "Usual" : labelOf(ENERGY_LEVELS, d.energy)}`] : [];
+    case "period":
+      return [
+        ...(d.spotting ? ["Spotting (between periods)"] : d.firstDay ? ["First day of my period"] : []),
+        ...(flowWords(d.flow)
+          ? [`${labelOf(FLOW_PRODUCTS, d.flowProduct ?? "pad")}: ${flowWords(d.flow)}`]
+          : []),
+        ...(d.products?.length ? [`Used: ${d.products.map((p) => labelOf(PRODUCTS, p)).join(", ")}`] : []),
+        ...(d.leak === true ? ["Leaked on my clothes"] : d.leak === false ? ["No leaks"] : []),
+        ...(d.clots && d.clots !== "none"
+          ? [`Blobs (clots): ${labelOf(CLOT_SIZES, d.clots).toLowerCase()}`]
+          : d.clots === "none"
+            ? ["No blobs (clots)"]
+            : []),
+      ];
     case "event":
       return [
         ...(d.whatHappened?.trim() ? [d.whatHappened.trim()] : []),
@@ -492,14 +576,21 @@ export function detailLines(e: CalendarEntry, feelingWord: (id: FeelingId) => st
   }
 }
 
-/** Everything else about an entry, after its own answers. */
-export function aboutLines(e: CalendarEntry): string[] {
+const FOR_DOCTOR: Record<ReportedBy, string> = {
+  self: "The patient",
+  caregiver: "A caregiver",
+  both: "The patient and a caregiver",
+};
+
+/** Everything else about an entry, after its own answers. `forDoctor` names
+ *  who told it the way a clinician reads it ("The patient", not "Me"). */
+export function aboutLines(e: CalendarEntry, forDoctor = false): string[] {
   const strength = e.category === "pain" ? "" : strengthWords(e);
   return [
     ...(strength ? [`How strong: ${strength}`] : []),
     ...(e.details.since ? [SINCE_WORDS[e.details.since]] : []),
     ...(e.typical === "new" ? ["New or different for me"] : e.typical === "typical" ? ["Usual for me"] : []),
-    `Told by: ${labelOf(REPORTED_BY, e.reportedBy)}`,
+    `Told by: ${forDoctor ? FOR_DOCTOR[e.reportedBy] : labelOf(REPORTED_BY, e.reportedBy)}`,
     ...(e.medicationNote?.trim() ? [`Medicine taken: ${e.medicationNote.trim()}`] : []),
     ...(e.details.hasVoiceNote ? ["Recorded a voice note"] : []),
   ];
@@ -514,4 +605,84 @@ export function dayAriaLabel(key: string, entries: CalendarEntry[]): string {
     .map((w) => (w === "me" ? "by me" : `by ${w.replace(/^my /, "")}`))
     .join(" and ");
   return `${day}, ${what}, logged ${who}`;
+}
+
+// ---- The family's own data: export and delete ----
+
+/** Removes every custom symptom, here and in the account. */
+export async function deleteCustomSymptoms(userId: string | null): Promise<void> {
+  writeLocal(LOCAL_SYMPTOMS, []);
+  if (userId && authEnabled) {
+    const { error } = await supabase.from("custom_symptoms").delete().not("id", "is", null);
+    if (error) console.error("Couldn't delete custom symptoms from the account:", error.message);
+  }
+}
+
+/** The little things the calendar remembers on this device. */
+export function clearCalendarDeviceSettings(periodOnly: boolean) {
+  const keys = ["voiced:calendar-usual-products", "voiced:period-bag"];
+  if (!periodOnly) keys.push("voiced:calendar-reported-by", "voiced:calendar-privacy-seen");
+  try {
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // ignore
+  }
+}
+
+const csvCell = (v: unknown) => {
+  const text = v === null || v === undefined ? "" : String(v);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+/** "Download my calendar": every entry as a CSV row, in plain words. */
+export function calendarCsv(entries: CalendarEntry[], answers: (e: CalendarEntry) => string[]): string {
+  const header = [
+    "date",
+    "logged at",
+    "category",
+    "name",
+    "answers",
+    "strength",
+    "usual or new",
+    "told by",
+    "medicine",
+    "note",
+    "saved for visit",
+    "from My Voice check-in",
+  ];
+  const rows = [...entries]
+    .sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.loggedAt.localeCompare(b.loggedAt))
+    .map((e) => [
+      e.entryDate,
+      e.loggedAt,
+      e.category,
+      entryTitle(e),
+      answers(e).join("; "),
+      strengthWords(e),
+      e.typical === "new" ? "new or different" : e.typical === "typical" ? "usual for me" : "",
+      labelOf(REPORTED_BY, e.reportedBy),
+      e.medicationNote ?? "",
+      e.note ?? "",
+      e.addToVisit ? "yes" : "",
+      e.checkInId ? "yes" : "",
+    ]);
+  return [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n");
+}
+
+/** "Delete all my period data" (periodOnly) or "Delete my whole calendar":
+ *  real deletes, on this device and in the account. Row-level security
+ *  limits the account delete to the person's own rows. */
+export async function deleteAllEntries(userId: string | null, periodOnly: boolean): Promise<boolean> {
+  writeLocal(
+    LOCAL_ENTRIES,
+    periodOnly ? readLocal<CalendarEntry>(LOCAL_ENTRIES).filter((e) => e.category !== "period") : []
+  );
+  if (!userId || !authEnabled) return true;
+  const query = supabase.from("calendar_entries").delete();
+  const { error } = periodOnly ? await query.eq("category", "period") : await query.not("id", "is", null);
+  if (error) {
+    console.error("Couldn't delete from the calendar in the account:", error.message);
+    return false;
+  }
+  return true;
 }

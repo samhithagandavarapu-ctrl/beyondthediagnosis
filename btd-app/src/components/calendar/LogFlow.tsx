@@ -3,6 +3,8 @@ import DictateButton from "../DictateButton";
 import HelperMessage from "../HelperMessage";
 import Icon, { IconName } from "../icons/Icon";
 import FaceScale from "../myvoice/FaceScale";
+import PeriodPicture from "./PeriodPicture";
+import { LearnMore, TellADoctor } from "./PeriodHelp";
 import PainMap from "../myvoice/PainMap";
 import SpeakButton from "../myvoice/SpeakButton";
 import { useMyVoice } from "../../context/MyVoiceContext";
@@ -10,6 +12,7 @@ import {
   BATHROOM,
   BEHAVIORS,
   CATEGORIES,
+  CLOT_SIZES,
   CalendarEntry,
   CalendarStore,
   CategoryId,
@@ -18,6 +21,11 @@ import {
   EMOTIONS,
   ENERGY_LEVELS,
   EntryDetails,
+  FLOW_LEVELS,
+  FLOW_PRODUCTS,
+  PRODUCTS,
+  ProductId,
+  emptyFlow,
   REPORTED_BY,
   ReportedBy,
   SLEEP_QUALITY,
@@ -57,6 +65,19 @@ function lastReporter(mode: Mode): ReportedBy {
   return mode === "caregiver" ? "caregiver" : "self";
 }
 
+const USUAL_PRODUCTS_KEY = "voiced:calendar-usual-products";
+
+/** "What I usually use": what was saved last time, or failing that what was
+ *  used on the latest period day logged. */
+function usualProducts(fallback: ProductId[]): ProductId[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(USUAL_PRODUCTS_KEY) || "[]") as ProductId[];
+    return saved.length ? saved : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const CUSTOM_ICONS: IconName[] = ["star", "heart", "alert", "eye", "ear", "tooth", "drop", "moon", "hand", "breath"];
 
 type Screen = { id: string; title: string };
@@ -67,6 +88,8 @@ export default function LogFlow({
   readingLevel,
   practice,
   customSymptoms,
+  dayBeforeIsPeriod = false,
+  lastProducts = [],
   onAddCustomSymptom,
   onSave,
   onLogAnother,
@@ -79,6 +102,10 @@ export default function LogFlow({
   readingLevel: ReadingLevel;
   practice: boolean;
   customSymptoms: CustomSymptom[];
+  /** A period was logged the day before, so this one isn't the first day. */
+  dayBeforeIsPeriod?: boolean;
+  /** Products from the latest period day logged. */
+  lastProducts?: ProductId[];
   onAddCustomSymptom: (s: CustomSymptom) => void;
   onSave: (entry: CalendarEntry) => Promise<SaveResult>;
   onLogAnother: () => void;
@@ -104,7 +131,7 @@ export default function LogFlow({
 
   // The screens for this entry, in order (one at a time when logging for
   // yourself; all together on the helper's form).
-  const catScreens: Screen[] = picked ? categoryScreens(entry.category) : [];
+  const catScreens: Screen[] = picked ? categoryScreens(entry.category, mode === "caregiver") : [];
   const screens: Screen[] = [
     ...(isEdit ? [] : [{ id: "category", title: "What do you want to log?" }]),
     ...catScreens,
@@ -132,7 +159,16 @@ export default function LogFlow({
       ...e,
       category: id,
       customLabel: custom ? custom.label : null,
-      details: custom ? { customSymptomId: custom.id } : {},
+      details: custom
+        ? { customSymptomId: custom.id }
+        : id === "period"
+          ? {
+              firstDay: !dayBeforeIsPeriod,
+              flow: emptyFlow(),
+              flowProduct: "pad",
+              products: usualProducts(lastProducts),
+            }
+          : {},
       severity: null,
       severityScale: null,
       bodyLocations: null,
@@ -158,6 +194,10 @@ export default function LogFlow({
     };
     try {
       localStorage.setItem(LAST_REPORTER_KEY, toSave.reportedBy);
+      // "What I usually use" comes pre-picked next time.
+      if (toSave.category === "period" && toSave.details.products?.length) {
+        localStorage.setItem(USUAL_PRODUCTS_KEY, JSON.stringify(toSave.details.products));
+      }
     } catch {
       // ignore
     }
@@ -211,6 +251,146 @@ export default function LogFlow({
             )}
           </div>
         );
+      case "period-kind": {
+        const kinds = [
+          { id: "first", label: "First day of my period", icon: "drop" as IconName },
+          { id: "more", label: "My period, not the first day", icon: "drop" as IconName },
+          { id: "spotting", label: "Just spotting (between periods)", icon: "drop" as IconName },
+        ];
+        const kind = entry.details.spotting ? "spotting" : entry.details.firstDay ? "first" : "more";
+        return (
+          <OneOf
+            options={kinds}
+            value={kind}
+            onChange={(k) => patchDetails({ firstDay: k === "first", spotting: k === "spotting" })}
+            showText
+            required
+          />
+        );
+      }
+      case "period-flow": {
+        const flow = entry.details.flow ?? emptyFlow();
+        const product = entry.details.flowProduct ?? "pad";
+        return (
+          <div className="grid gap-5">
+            <div role="radiogroup" aria-label="What are you looking at?" className="flex flex-wrap gap-2">
+              {FLOW_PRODUCTS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={product === p.id}
+                  onClick={() => {
+                    patchDetails({ flowProduct: p.id });
+                    say(p.label);
+                  }}
+                  className={`flex min-h-[52px] items-center gap-2 rounded-full border-2 bg-white px-4 text-sm font-bold text-navy ${
+                    product === p.id ? "border-navy bg-sky-tint" : "border-navy/15 hover:border-sky"
+                  }`}
+                >
+                  <PeriodPicture product={p.id} fill={0.42} size={32} />
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {showText && <p className="text-15 text-body">Tap +1 each time you change it.</p>}
+            <ul className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))]">
+              {FLOW_LEVELS.map((l) => (
+                <li key={l.id} className={`grid justify-items-center gap-2 rounded-card border-2 bg-white p-3 text-center ${flow[l.id] > 0 ? "border-navy" : "border-navy/12"}`}>
+                  <PeriodPicture product={product} fill={l.fill} />
+                  <span className="text-15 font-bold text-navy">{l.label}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => patchDetails({ flow: { ...flow, [l.id]: Math.max(0, flow[l.id] - 1) } })}
+                      disabled={flow[l.id] === 0}
+                      aria-label={`Take one away: ${l.label}`}
+                      className="grid h-11 w-11 place-items-center rounded-full border-2 border-navy/20 text-lg font-bold text-navy disabled:opacity-30"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[2ch] text-21 font-extrabold text-navy" aria-live="polite">
+                      {flow[l.id]}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        patchDetails({ flow: { ...flow, [l.id]: flow[l.id] + 1 } });
+                        say(`${l.label}, plus one`);
+                      }}
+                      aria-label={`Add one: ${l.label}`}
+                      className="grid h-11 min-w-[56px] place-items-center rounded-full bg-coral px-3 text-15 font-extrabold text-navy hover:bg-coral-hover"
+                    >
+                      +1
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      }
+      case "period-products":
+        return (
+          <CheckList
+            options={PRODUCTS}
+            value={entry.details.products ?? []}
+            onChange={(products) => patchDetails({ products })}
+          />
+        );
+      case "period-leak":
+        return (
+          <OneOf
+            options={[
+              { id: "yes", label: "Yes, it leaked", icon: "drop" as IconName },
+              { id: "no", label: "No", icon: "check" as IconName },
+            ]}
+            value={entry.details.leak === undefined ? undefined : entry.details.leak ? "yes" : "no"}
+            onChange={(v) => patchDetails({ leak: v === undefined ? undefined : v === "yes" })}
+            showText
+          />
+        );
+      case "period-clots": {
+        const clots = entry.details.clots;
+        return (
+          <div className="grid gap-5">
+            <OneOf
+              options={[
+                { id: "yes", label: "Yes", icon: "eye" as IconName },
+                { id: "no", label: "No", icon: "check" as IconName },
+              ]}
+              value={clots === undefined ? undefined : clots === "none" ? "no" : "yes"}
+              onChange={(v) => patchDetails({ clots: v === undefined ? undefined : v === "no" ? "none" : "quarter" })}
+              showText
+            />
+            {clots && clots !== "none" && (
+              <div>
+                <p className="mb-3 text-15 font-bold text-navy">How big?</p>
+                <div role="radiogroup" aria-label="How big?" className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,150px),1fr))]">
+                  {CLOT_SIZES.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={clots === c.id}
+                      onClick={() => {
+                        patchDetails({ clots: c.id });
+                        say(c.label);
+                      }}
+                      className={`flex min-h-[96px] flex-col items-center justify-center gap-2 rounded-card border-2 bg-white p-3 text-center ${
+                        clots === c.id ? "border-navy bg-sky-tint" : "border-navy/12 hover:border-sky"
+                      }`}
+                    >
+                      <span className="block rounded-full bg-coral-hover" style={{ width: c.px, height: c.px }} aria-hidden="true" />
+                      <span className="text-15 font-bold text-navy">{c.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
       case "pain":
         return (
           <PainMap
@@ -612,6 +792,12 @@ export default function LogFlow({
                 }}
               />
               {summary}
+              {entry.category === "period" && (
+                <>
+                  <TellADoctor />
+                  <LearnMore />
+                </>
+              )}
             </>
           ) : (
             <div className="btd-card p-6">
@@ -660,6 +846,7 @@ export default function LogFlow({
                 {renderScreen(s.id)}
               </section>
             ))}
+          {picked && entry.category === "period" && <TellADoctor />}
           {picked && (
             <div className="flex flex-wrap items-center gap-3">
               <button
@@ -683,8 +870,16 @@ export default function LogFlow({
 }
 
 /** The category's own questions, each one screen when logging for yourself. */
-function categoryScreens(id: CategoryId): Screen[] {
+function categoryScreens(id: CategoryId, caregiver: boolean): Screen[] {
   switch (id) {
+    case "period":
+      return [
+        { id: "period-kind", title: "Is this the first day of your period?" },
+        { id: "period-flow", title: "What did your pad or period underwear look like?" },
+        { id: "period-products", title: "What did I use? Tap all that fit." },
+        { id: "period-leak", title: "Did it leak on my clothes?" },
+        { id: "period-clots", title: caregiver ? "Did I see blobs (clots)?" : "Did I see blobs?" },
+      ];
     case "pain":
       return [{ id: "pain", title: "Where does it hurt?" }];
     case "mood":
