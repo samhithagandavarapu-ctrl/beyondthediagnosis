@@ -1,9 +1,29 @@
 import { Link } from "react-router-dom";
 import { CTA_LABEL } from "../data/site";
 import Scribble, { inkLastWord } from "../components/Scribble";
+import PhotoCarousel, { type CarouselPhoto } from "../components/PhotoCarousel";
 
 // One centered column for the whole page, so every section shares its edges.
 const column = "mx-auto w-full max-w-[1000px] px-6";
+
+// In order: the board before, a visitor adding a sticker, the board after.
+const buddyWalk: CarouselPhoto[] = [
+  {
+    src: "/images/voiced-booth-table.jpg",
+    alt: "Smiling at the Voiced booth on a sunny field, behind a sign reading “Every voice matters” and table cards with a survey QR code",
+    caption: "Setting up the Voiced booth",
+  },
+  {
+    src: "/images/voiced-booth-sticker.jpg",
+    alt: "A volunteer kneels as a toddler, helped by an adult, adds a sticker to the Voiced sign",
+    caption: "A young visitor adds a sticker",
+  },
+  {
+    src: "/images/voiced-booth-sticker-board.jpg",
+    alt: "Standing behind the Voiced booth, with the “Every voice matters” sign now covered in colorful stickers",
+    caption: "By day’s end, a full board",
+  },
+];
 
 export default function Mission() {
   return (
@@ -75,6 +95,29 @@ export default function Mission() {
             </p>
           </div>
         </div>
+      </section>
+
+      <section
+        className={`${column} grid items-center gap-8 pt-16 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-10`}
+      >
+        <div>
+          <p className="text-sm font-bold uppercase tracking-[0.08em] text-coral-ink">
+            Out in the community
+          </p>
+          <h2 className="btd-section-h2 mt-2">2026 NCDSA Buddy Walk</h2>
+          <div className="mt-6 grid gap-5 text-lg leading-[1.75] text-body">
+            <p>
+              We brought Voiced to the Buddy Walk and met so many kids and families. Every
+              visitor added a sticker to our board, and by the end of the day it was full.
+            </p>
+            <p>
+              The conversations gave us valuable input on what would actually help at the
+              doctor, and a group of families told us they’d like to help test Voiced when
+              we start a pilot program.
+            </p>
+          </div>
+        </div>
+        <PhotoCarousel photos={buddyWalk} label="Photos from the 2026 NCDSA Buddy Walk" />
       </section>
 
       <section className={`${column} py-12 text-center`}>
