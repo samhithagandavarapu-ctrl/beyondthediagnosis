@@ -10,6 +10,14 @@ export type IconName =
   | "face-okay"
   | "face-bad"
   | "face-awful"
+  | "face-worst"
+  // "Where does it hurt?": what the hurt feels like
+  | "pain-sharp"
+  | "pain-achy"
+  | "pain-burning"
+  | "pain-heavy"
+  | "pain-cramping"
+  | "pain-itchy"
   // How long it's been going on
   | "since-today"
   | "since-few-days"
@@ -138,6 +146,13 @@ const squintEyes = (
   </>
 );
 
+const squeezedEyes = (
+  <>
+    <path d="M7.4 9.2 L10 10.4 L7.4 11.4" />
+    <path d="M16.6 9.2 L14 10.4 L16.6 11.4" />
+  </>
+);
+
 const worriedEyes = (
   <>
     <circle cx="9" cy="10.4" r="0.9" fill="currentColor" stroke="none" />
@@ -154,6 +169,43 @@ const PATHS: Record<IconName, JSX.Element> = {
   "face-okay": face(<path d="M8.6 15 L15.4 15" />, roundEyes),
   "face-bad": face(<path d="M8.4 16.2 Q12 13.4 15.6 16.2" />, roundEyes),
   "face-awful": face(<path d="M8.2 16.6 Q12 13 15.8 16.6" />, worriedEyes),
+  // The pain scale's top face: eyes squeezed shut, an open frown and a tear.
+  "face-worst": face(
+    <>
+      <path d="M8.4 17.2 Q12 12.6 15.6 17.2 Z" />
+      <path d="M16.6 12.4 q0.9 1.4 0 2.2 q-0.9 -0.8 0 -2.2 Z" fill="currentColor" />
+    </>,
+    squeezedEyes
+  ),
+
+  // ---- What the hurt feels like ----
+  "pain-sharp": <path d="M13.6 2.8 L6.4 13.4 h5.2 l-1.2 7.8 l7.2 -10.6 h-5.2 Z" />,
+  "pain-achy": (
+    <>
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="M7.6 7.6 a6.2 6.2 0 0 0 0 8.8 M16.4 7.6 a6.2 6.2 0 0 1 0 8.8" />
+      <path d="M4.8 4.8 a10.2 10.2 0 0 0 0 14.4 M19.2 4.8 a10.2 10.2 0 0 1 0 14.4" />
+    </>
+  ),
+  "pain-burning": (
+    <>
+      <path d="M12 2.8 C12 6 13.2 8.6 11.6 11.4 C13.2 11 14.4 9.8 14.6 7.6 C16 9 17.8 11.2 17.8 14.4 a5.8 5.8 0 0 1 -11.6 0 C6.2 9.4 12 6 12 2.8 Z" />
+      <path d="M12 14.6 c-1 1 -1.7 1.9 -1.7 2.9 a1.7 1.7 0 0 0 3.4 0 c0 -1 -0.7 -1.9 -1.7 -2.9 Z" />
+    </>
+  ),
+  "pain-heavy": (
+    <>
+      <path d="M9.2 7.6 a2.8 2.8 0 0 1 5.6 0" />
+      <path d="M7.2 7.6 h9.6 l2.8 11.6 a1 1 0 0 1 -1 1.2 H5.4 a1 1 0 0 1 -1 -1.2 Z" />
+      <path d="M12 11.4 v5 M10 14.6 l2 2 l2 -2" />
+    </>
+  ),
+  "pain-cramping": (
+    <path d="M12 12.4 a1.4 1.4 0 0 1 1.4 1.4 a2.8 2.8 0 0 1 -2.8 2.8 a4.2 4.2 0 0 1 -4.2 -4.2 a5.6 5.6 0 0 1 5.6 -5.6 a7 7 0 0 1 7 7 a8.4 8.4 0 0 1 -1.6 4.9" />
+  ),
+  "pain-itchy": (
+    <path d="M6.6 3.4 q2 2.1 0 4.3 t0 4.3 t0 4.3 t0 4.3 M12 3.4 q2 2.1 0 4.3 t0 4.3 t0 4.3 t0 4.3 M17.4 3.4 q2 2.1 0 4.3 t0 4.3 t0 4.3 t0 4.3" />
+  ),
 
   // ---- Since ----
   "since-today": (

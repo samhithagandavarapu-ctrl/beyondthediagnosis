@@ -329,3 +329,210 @@ export type EarnedSticker = {
   id: StickerId;
   at: string;
 };
+
+// ---- "Where does it hurt?" body map ----
+//
+// A pain report is a list of spots, each one a place on the body plus a
+// picture for how it feels and a face for how bad. It lives on this device
+// only (see MyVoiceContext) and is read from there by the Appointment Prep
+// summary and PDF — it never rides along on a draft into the account.
+
+export type PainView = "front" | "back";
+
+export type PainAreaId =
+  | "head"
+  | "neck"
+  | "chest"
+  | "upper-belly"
+  | "lower-belly"
+  | "head-back"
+  | "neck-back"
+  | "upper-back"
+  | "lower-back"
+  | "bottom"
+  | "arm-right"
+  | "arm-left"
+  | "hand-right"
+  | "hand-left"
+  | "leg-right"
+  | "leg-left"
+  | "leg-right-back"
+  | "leg-left-back"
+  | "foot-right"
+  | "foot-left";
+
+export type PainArea = {
+  id: PainAreaId;
+  short: string;
+  /** Lower-case, as it reads inside a sentence: "my lower belly". */
+  label: string;
+  /** Extra words at the full-sentence tier, e.g. where period pain is. */
+  hint?: string;
+};
+
+export const PAIN_AREAS: PainArea[] = [
+  { id: "head", short: "Head", label: "my head" },
+  { id: "neck", short: "Neck", label: "my neck or throat" },
+  { id: "chest", short: "Chest", label: "my chest" },
+  { id: "upper-belly", short: "Upper belly", label: "my upper belly" },
+  {
+    id: "lower-belly",
+    short: "Lower belly",
+    label: "my lower belly",
+    hint: "Below the belly button. Period pain is often here.",
+  },
+  { id: "head-back", short: "Back of head", label: "the back of my head" },
+  { id: "neck-back", short: "Back of neck", label: "the back of my neck" },
+  { id: "upper-back", short: "Upper back", label: "my upper back" },
+  { id: "lower-back", short: "Lower back", label: "my lower back" },
+  { id: "bottom", short: "Bottom", label: "my bottom" },
+  { id: "arm-right", short: "Right arm", label: "my right arm" },
+  { id: "arm-left", short: "Left arm", label: "my left arm" },
+  { id: "hand-right", short: "Right hand", label: "my right hand" },
+  { id: "hand-left", short: "Left hand", label: "my left hand" },
+  { id: "leg-right", short: "Right leg", label: "my right leg" },
+  { id: "leg-left", short: "Left leg", label: "my left leg" },
+  { id: "leg-right-back", short: "Back of right leg", label: "the back of my right leg" },
+  { id: "leg-left-back", short: "Back of left leg", label: "the back of my left leg" },
+  { id: "foot-right", short: "Right foot", label: "my right foot" },
+  { id: "foot-left", short: "Left foot", label: "my left foot" },
+];
+
+export function painArea(id: PainAreaId): PainArea {
+  return PAIN_AREAS.find((a) => a.id === id) ?? PAIN_AREAS[0];
+}
+
+/** A tappable place on the outline, in the outline's 100 x 200 units. Arms,
+ *  hands and feet appear on both views with the same id, so marking one shows
+ *  on both. Left and right are the person's own: on the front view their
+ *  right arm is on the viewer's left. */
+export type PainHotspot = { area: PainAreaId; x: number; y: number; w: number; h: number };
+
+export const PAIN_HOTSPOTS: Record<PainView, PainHotspot[]> = {
+  front: [
+    { area: "head", x: 50, y: 20, w: 30, h: 28 },
+    { area: "neck", x: 50, y: 40.5, w: 18, h: 11 },
+    { area: "chest", x: 50, y: 54.5, w: 40, h: 15 },
+    { area: "upper-belly", x: 50, y: 71, w: 40, h: 16 },
+    { area: "lower-belly", x: 50, y: 89.5, w: 40, h: 19 },
+    { area: "arm-right", x: 19, y: 72, w: 13, h: 34 },
+    { area: "arm-left", x: 81, y: 72, w: 13, h: 34 },
+    { area: "hand-right", x: 18, y: 99, w: 16, h: 15 },
+    { area: "hand-left", x: 82, y: 99, w: 16, h: 15 },
+    { area: "leg-right", x: 41, y: 136, w: 14, h: 62 },
+    { area: "leg-left", x: 59, y: 136, w: 14, h: 62 },
+    { area: "foot-right", x: 41, y: 186, w: 18, h: 14 },
+    { area: "foot-left", x: 59, y: 186, w: 18, h: 14 },
+  ],
+  back: [
+    { area: "head-back", x: 50, y: 20, w: 30, h: 28 },
+    { area: "neck-back", x: 50, y: 40.5, w: 18, h: 11 },
+    { area: "upper-back", x: 50, y: 58, w: 40, h: 22 },
+    { area: "lower-back", x: 50, y: 80, w: 40, h: 20 },
+    { area: "bottom", x: 50, y: 99, w: 36, h: 16 },
+    { area: "arm-left", x: 19, y: 72, w: 13, h: 34 },
+    { area: "arm-right", x: 81, y: 72, w: 13, h: 34 },
+    { area: "hand-left", x: 18, y: 99, w: 16, h: 15 },
+    { area: "hand-right", x: 82, y: 99, w: 16, h: 15 },
+    { area: "leg-left-back", x: 41, y: 139, w: 14, h: 54 },
+    { area: "leg-right-back", x: 59, y: 139, w: 14, h: 54 },
+    { area: "foot-left", x: 41, y: 186, w: 18, h: 14 },
+    { area: "foot-right", x: 59, y: 186, w: 18, h: 14 },
+  ],
+};
+
+/** The view an area is drawn on first — where its dot goes on the PDF. */
+export function painAreaView(id: PainAreaId): PainView {
+  return PAIN_HOTSPOTS.front.some((h) => h.area === id) ? "front" : "back";
+}
+
+export type PainKindId = "sharp" | "achy" | "burning" | "heavy" | "cramping" | "itchy";
+
+export type PainKind = {
+  id: PainKindId;
+  icon: IconName;
+  short: string;
+  /** What gets read aloud, and the full-sentence label. */
+  label: string;
+  /** How it reads inside "It feels ___." */
+  sentence: string;
+};
+
+export const PAIN_KINDS: PainKind[] = [
+  { id: "sharp", icon: "pain-sharp", short: "Sharp", label: "Sharp, like a poke or a zap", sentence: "sharp" },
+  { id: "achy", icon: "pain-achy", short: "Achy", label: "Achy and sore", sentence: "achy" },
+  { id: "burning", icon: "pain-burning", short: "Burning", label: "Burning or hot", sentence: "like burning" },
+  { id: "heavy", icon: "pain-heavy", short: "Heavy", label: "Heavy, like something pressing", sentence: "heavy" },
+  { id: "cramping", icon: "pain-cramping", short: "Cramping", label: "Cramping, like squeezing", sentence: "crampy" },
+  { id: "itchy", icon: "pain-itchy", short: "Itchy", label: "Itchy", sentence: "itchy" },
+];
+
+export function painKind(id: PainKindId): PainKind {
+  return PAIN_KINDS.find((k) => k.id === id) ?? PAIN_KINDS[0];
+}
+
+export type PainLevel = 1 | 2 | 3 | 4 | 5;
+
+export const PAIN_LEVELS: {
+  level: PainLevel;
+  icon: IconName;
+  short: string;
+  /** How it reads inside "It hurts ___." */
+  sentence: string;
+  tone: string;
+}[] = [
+  { level: 1, icon: "face-good", short: "A little bit", sentence: "a little bit", tone: "bg-sky-tint" },
+  { level: 2, icon: "face-okay", short: "A little more", sentence: "a little more", tone: "bg-butter/40" },
+  { level: 3, icon: "face-bad", short: "Even more", sentence: "even more", tone: "bg-coral/30" },
+  { level: 4, icon: "face-awful", short: "A whole lot", sentence: "a whole lot", tone: "bg-coral/50" },
+  { level: 5, icon: "face-worst", short: "The worst", sentence: "the worst it can", tone: "bg-coral/70" },
+];
+
+export function painLevel(level: PainLevel) {
+  return PAIN_LEVELS[level - 1] ?? PAIN_LEVELS[0];
+}
+
+export type PainSpot = {
+  area: PainAreaId;
+  kind: PainKindId | null;
+  level: PainLevel | null;
+};
+
+export type PainReport = {
+  createdAt: string;
+  spots: PainSpot[];
+};
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** "My lower belly hurts. It feels crampy. It hurts a whole lot — 4 out of 5." */
+export function painSpotSentence(spot: PainSpot): string {
+  const where = painArea(spot.area).label;
+  const parts = [spot.kind === "itchy" ? `${capitalize(where)} is itchy.` : `${capitalize(where)} hurts.`];
+  if (spot.kind && spot.kind !== "itchy") parts.push(`It feels ${painKind(spot.kind).sentence}.`);
+  if (spot.level) {
+    const verb = spot.kind === "itchy" ? "It bothers me" : "It hurts";
+    parts.push(`${verb} ${painLevel(spot.level).sentence} — ${spot.level} out of 5.`);
+  }
+  return parts.join(" ");
+}
+
+export function painSentences(report: PainReport | null): string[] {
+  return report ? report.spots.map(painSpotSentence) : [];
+}
+
+/** One line per spot for the summary and PDF, written for the clinician. */
+export function painSummaryLine(spot: PainSpot): { title: string; detail: string } {
+  const area = painArea(spot.area);
+  return {
+    title: area.short,
+    detail: [
+      spot.kind ? `Feels: ${painKind(spot.kind).short.toLowerCase()}` : "",
+      spot.level ? `How bad: ${spot.level} of 5 (${painLevel(spot.level).short.toLowerCase()})` : "",
+    ]
+      .filter(Boolean)
+      .join("   ·   "),
+  };
+}

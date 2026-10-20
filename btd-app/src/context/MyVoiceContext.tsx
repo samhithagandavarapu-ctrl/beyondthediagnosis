@@ -7,6 +7,7 @@ import { speak, speechSupported } from "../lib/speech";
 import {
   CheckIn,
   EarnedSticker,
+  PainReport,
   ReadingLevel,
   StickerId,
   checkInHasContent,
@@ -33,6 +34,13 @@ type MyVoiceState = {
   saveCheckIn: (checkIn: CheckIn) => void;
   clearCheckIn: () => void;
 
+  /** The last "Where does it hurt?" body map, or null. Kept on this device
+   *  only — never put on a draft or sent to the account — and never set in
+   *  practice mode. */
+  savedPain: PainReport | null;
+  savePain: (report: PainReport) => void;
+  clearPain: () => void;
+
   stickers: EarnedSticker[];
   earnSticker: (id: StickerId) => void;
   clearStickers: () => void;
@@ -44,6 +52,7 @@ const LEVEL_KEY = "verity-my-voice-reading-level";
 const READ_ALOUD_KEY = "verity-my-voice-read-aloud";
 const CHECKIN_KEY = "verity-my-voice-checkin";
 const STICKERS_KEY = "verity-my-voice-stickers";
+const PAIN_KEY = "verity-my-voice-pain";
 
 function isReadingLevel(value: unknown): value is ReadingLevel {
   return value === "icon" || value === "icon-text" || value === "full";
@@ -56,6 +65,7 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
   const [readingLevel, setReadingLevelState] = useState<ReadingLevel>("icon-text");
   const [readAloud, setReadAloud] = useState(true);
   const [savedCheckIn, setSavedCheckIn] = useState<CheckIn | null>(null);
+  const [savedPain, setSavedPain] = useState<PainReport | null>(null);
   const [stickers, setStickers] = useState<EarnedSticker[]>([]);
   // Mirrors AccessibilityContext: don't write a profile value back the moment
   // we just read it from there.
@@ -72,6 +82,9 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
 
       const checkIn = localStorage.getItem(CHECKIN_KEY);
       if (checkIn) setSavedCheckIn(JSON.parse(checkIn) as CheckIn);
+
+      const pain = localStorage.getItem(PAIN_KEY);
+      if (pain) setSavedPain(JSON.parse(pain) as PainReport);
 
       const earned = localStorage.getItem(STICKERS_KEY);
       if (earned) setStickers(JSON.parse(earned) as EarnedSticker[]);
@@ -151,6 +164,26 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function savePain(report: PainReport) {
+    if (practice) return;
+    if (!report.spots.length) return;
+    setSavedPain(report);
+    try {
+      localStorage.setItem(PAIN_KEY, JSON.stringify(report));
+    } catch {
+      // ignore
+    }
+  }
+
+  function clearPain() {
+    setSavedPain(null);
+    try {
+      localStorage.removeItem(PAIN_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
   function earnSticker(id: StickerId) {
     if (practice) return;
     setStickers((prev) => {
@@ -183,6 +216,9 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     savedCheckIn,
     saveCheckIn,
     clearCheckIn,
+    savedPain,
+    savePain,
+    clearPain,
     stickers,
     earnSticker,
     clearStickers,
