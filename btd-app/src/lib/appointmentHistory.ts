@@ -17,9 +17,16 @@ export type HistoryEntry = {
   /** When the summary was generated. */
   savedAt: string;
   form: AppointmentForm;
-  /** The My Voice check-in that was put on this summary, if one was. */
-  myVoice: CheckIn | null;
+  /** The My Voice check-ins that were put on this summary. */
+  checkIns?: CheckIn[];
+  /** Summaries saved before more than one check-in could go on them. */
+  myVoice?: CheckIn | null;
 };
+
+/** The check-ins on a past summary, whichever way it was saved. */
+export function entryCheckIns(e: HistoryEntry): CheckIn[] {
+  return e.checkIns ?? (e.myVoice ? [e.myVoice] : []);
+}
 
 const DRAFT_KEY = "voiced:appointment-draft";
 const HISTORY_KEY = "voiced:appointment-history";
@@ -72,19 +79,19 @@ function writeHistory(entries: HistoryEntry[]) {
  *  form twice in a row (back to edit, nothing changed, generate again) updates
  *  the date on the existing entry instead of adding a duplicate. Returns the
  *  new list. */
-export function addToHistory(form: AppointmentForm, myVoice: CheckIn | null): HistoryEntry[] {
+export function addToHistory(form: AppointmentForm, checkIns: CheckIn[]): HistoryEntry[] {
   const entries = loadHistory();
   const now = new Date().toISOString();
   const latest = entries[0];
   const same =
     latest &&
     JSON.stringify(latest.form) === JSON.stringify(form) &&
-    JSON.stringify(latest.myVoice ?? null) === JSON.stringify(myVoice);
+    JSON.stringify(entryCheckIns(latest)) === JSON.stringify(checkIns);
   let next: HistoryEntry[];
   if (same) {
     next = [{ ...latest, savedAt: now }, ...entries.slice(1)];
   } else {
-    next = [{ id: crypto.randomUUID(), savedAt: now, form, myVoice }, ...entries].slice(
+    next = [{ id: crypto.randomUUID(), savedAt: now, form, checkIns }, ...entries].slice(
       0,
       HISTORY_LIMIT
     );
