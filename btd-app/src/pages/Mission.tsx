@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CTA_LABEL, CTA_TO } from "../data/site";
+import { CTA_LABEL } from "../data/site";
 import Scribble, { inkLastWord } from "../components/Scribble";
 import PhotoCarousel, { type CarouselPhoto } from "../components/PhotoCarousel";
 
@@ -123,7 +123,7 @@ export default function Mission() {
       <section className={`${column} py-12 text-center`}>
         <h2 className="btd-section-h2">See what Voiced can do</h2>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
-          <Link to={CTA_TO} className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
+          <Link to="/assistant" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
             {CTA_LABEL}
           </Link>
           <a

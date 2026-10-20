@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import Icon from "./icons/Icon";
 import SiteSearch from "./SiteSearch";
-import { CTA_LABEL, CTA_TO } from "../data/site";
+import { CTA_LABEL } from "../data/site";
 
 const links = [
   { to: "/tools", label: "Tools" },
@@ -140,10 +140,10 @@ export default function Navbar() {
             <SiteSearch className="ml-2 w-44 xl:w-56" />
           </div>
           <Link
-            to={CTA_TO}
+            to="/assistant"
             className="btd-btn-coral ml-0 mr-0.5 whitespace-nowrap px-3.5 py-[9px] text-13 shadow-[0_1px_0_rgba(33,50,68,0.15)] sm:ml-2 sm:mr-1 sm:px-[18px] sm:py-[11px] sm:text-sm"
           >
-            <span className="sm:hidden">My Voice</span>
+            <span className="sm:hidden">AI advocate</span>
             <span className="hidden sm:inline">{CTA_LABEL}</span>
           </Link>
           {user ? (

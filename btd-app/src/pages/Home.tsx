@@ -1,28 +1,20 @@
 import { Link } from "react-router-dom";
-import { CTA_LABEL, CTA_TO, SURVEY_URL } from "../data/site";
+import { CTA_LABEL, SURVEY_URL } from "../data/site";
 import Reveal from "../components/Reveal";
 import Scribble from "../components/Scribble";
 
-// My Voice leads the page on its own; these are the tools for the grown-ups
-// around the visit.
-const myVoiceSteps = [
-  ["Show how you feel", "Tap where it hurts and pick a face. No reading needed."],
-  ["Tell my doctor", "Taps become a sentence you can say out loud or print."],
-  ["Practice the visit", "A picture walkthrough, from arriving to all done."],
-];
-
 const tools = [
-  {
-    to: "/appointment-prep",
-    title: "Appointment Prep Tool",
-    desc: "Turn symptoms, medications, and questions into a clean one-page summary you can hand straight to a provider.",
-    cta: "Build a summary →",
-  },
   {
     to: "/assistant",
     title: "AI Advocacy Assistant",
     desc: "Ask about your rights, accommodations, or how to describe a symptom clearly. It never diagnoses — it helps you advocate.",
     cta: "Open the assistant →",
+  },
+  {
+    to: "/appointment-prep",
+    title: "Appointment Prep Tool",
+    desc: "Turn symptoms, medications, and questions into a clean one-page summary you can hand straight to a provider.",
+    cta: "Build a summary →",
   },
   {
     to: "/resources",
@@ -46,7 +38,7 @@ export default function Home() {
     <div>
       {/* Hero */}
       <section className="btd-grain bg-gradient-to-b from-mist to-sky-tint border-b border-navy/[0.08]">
-        <div className="btd-container pt-10 pb-16">
+        <div className="btd-container pt-10 pb-[76px]">
           <div>
             <h1 className="btd-hero-h1 max-w-[18em] !text-[clamp(2.125rem,4.4vw,3.5rem)] !leading-[1.06]">
               {headline.map((w, i) => (
@@ -71,6 +63,27 @@ export default function Home() {
                 </span>
               </span>
             </h1>
+            {/* Event banner: right under the headline, so people who met us in
+                person go straight to the survey. */}
+            <div className="btd-event-banner mt-8 flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-navy bg-butter px-6 py-5">
+              <div className="max-w-[40em]">
+                <p className="font-display text-21 font-extrabold leading-tight text-navy">
+                  Met us at an event? Help shape Voiced.
+                </p>
+                <p className="mt-1 text-15 leading-[1.6] text-butter-ink">
+                  Tell us what would help you, your family, or your patients. It's a short
+                  survey and takes just a few minutes.
+                </p>
+              </div>
+              <a
+                href={SURVEY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
+              >
+                Take the survey →
+              </a>
+            </div>
             <p className="mt-8 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
               Voiced helps people with Down syndrome, their families, and their
               clinicians catch what diagnostic overshadowing hides: when a real,
@@ -80,12 +93,15 @@ export default function Home() {
               </Scribble>
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to={CTA_TO} className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
+              <Link to="/assistant" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
                 {CTA_LABEL}
               </Link>
-              <a href="#tools" className="btd-btn-outline min-h-[52px] px-[26px] py-3.5 text-17">
-                See all the tools
-              </a>
+              <Link
+                to="/appointment-prep"
+                className="btd-btn-outline min-h-[52px] px-[26px] py-3.5 text-17"
+              >
+                Prep for an appointment
+              </Link>
             </div>
             <Link
               to="/understanding-overshadowing"
@@ -97,8 +113,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* The tools: the heart of the site, straight after the hero. */}
-      <section id="tools" className="btd-container scroll-mt-24 pt-16 pb-6">
+      {/* The tools */}
+      <section className="btd-container pt-[76px] pb-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="btd-section-h2">
@@ -112,40 +128,6 @@ export default function Home() {
             See all tools →
           </Link>
         </div>
-
-        <article className="btd-card mt-[34px] grid gap-6 border-2 border-navy p-[30px] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:items-center">
-          <div>
-            <span className="btd-tag bg-sky">Made for kids and self-advocates</span>
-            <h3 className="mt-3.5 font-display text-[clamp(1.75rem,3.4vw,2.375rem)] font-extrabold leading-[1.1] text-navy">
-              My Voice
-            </h3>
-            <p className="mt-3 max-w-[34em] text-17 leading-[1.7] text-body">
-              Built for the person with Down syndrome to use themselves. Say how you feel
-              with pictures and taps, then tell the doctor in your own words. Every label
-              can be read aloud.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link to="/my-voice" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
-                Open My Voice →
-              </Link>
-              <Link
-                to="/my-voice/practice"
-                className="btd-btn-outline min-h-[52px] px-[26px] py-3.5 text-17"
-              >
-                Practice My Visit
-              </Link>
-            </div>
-          </div>
-          <ol className="grid gap-3">
-            {myVoiceSteps.map(([label, text]) => (
-              <li key={label} className="rounded-tile bg-mist p-4">
-                <p className="text-15 font-bold text-link">{label}</p>
-                <p className="mt-1 text-15 leading-[1.55] text-body">{text}</p>
-              </li>
-            ))}
-          </ol>
-        </article>
-
         <div className={`${cardGrid} md:grid-cols-3`}>
           {tools.map((t, i) => (
             <Link
@@ -160,27 +142,6 @@ export default function Home() {
               </span>
             </Link>
           ))}
-        </div>
-
-        {/* Event banner: after the tools, for people who met us in person. */}
-        <div className="btd-event-banner mt-12 flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-navy bg-butter px-6 py-5">
-          <div className="max-w-[40em]">
-            <p className="font-display text-21 font-extrabold leading-tight text-navy">
-              Met us at an event? Help shape Voiced.
-            </p>
-            <p className="mt-1 text-15 leading-[1.6] text-butter-ink">
-              Tell us what would help you, your family, or your patients. It's a short
-              survey and takes just a few minutes.
-            </p>
-          </div>
-          <a
-            href={SURVEY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
-          >
-            Take the survey →
-          </a>
         </div>
       </section>
 
@@ -249,7 +210,7 @@ export default function Home() {
             Built by listening directly to self-advocates and families first — not
             assumptions made on their behalf.
           </p>
-          <Link to={CTA_TO} className="btd-btn-coral mt-[30px] min-h-[52px] px-[30px] py-4 text-17">
+          <Link to="/assistant" className="btd-btn-coral mt-[30px] min-h-[52px] px-[30px] py-4 text-17">
             {CTA_LABEL}
           </Link>
         </Reveal>
