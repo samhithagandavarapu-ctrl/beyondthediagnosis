@@ -11,6 +11,8 @@ import { useMyVoice } from "../../context/MyVoiceContext";
 import {
   BATHROOM,
   BEHAVIORS,
+  SKIN_CHANGES,
+  SKIN_PLACES,
   CATEGORIES,
   CLOT_SIZES,
   CalendarEntry,
@@ -465,6 +467,18 @@ export default function LogFlow({
             <YesNo label="I threw up" on={!!entry.details.throwingUp} onChange={(v) => patchDetails({ throwingUp: v })} />
           </div>
         );
+      case "skin-what":
+        return (
+          <CheckList options={SKIN_CHANGES} value={entry.details.skin ?? []} onChange={(skin) => patchDetails({ skin })} />
+        );
+      case "skin-where":
+        return (
+          <CheckList
+            options={SKIN_PLACES}
+            value={entry.details.skinPlaces ?? []}
+            onChange={(skinPlaces) => patchDetails({ skinPlaces })}
+          />
+        );
       case "bathroom":
         return (
           <CheckList
@@ -898,6 +912,11 @@ function categoryScreens(id: CategoryId, caregiver: boolean): Screen[] {
       return [
         { id: "eating-amount", title: "How much did I eat?" },
         { id: "eating-more", title: "Anything else about eating?" },
+      ];
+    case "skin":
+      return [
+        { id: "skin-what", title: "What is my skin like? Tap all that fit." },
+        { id: "skin-where", title: "Where? Tap all that fit." },
       ];
     case "bathroom":
       return [{ id: "bathroom", title: "What happened? Tap all that fit." }];

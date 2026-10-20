@@ -45,7 +45,9 @@ function countables(e: CalendarEntry): string[] {
     return d.changes.map((c) => BEHAVIORS.find((b) => b.id === c)!.label.toLowerCase());
   }
   if (e.category === "mood" && d.feelings?.length) {
-    return d.feelings.filter((f) => f !== "dont-know").map((f) => `feeling ${EMOTIONS.find((x) => x.id === f)!.label.toLowerCase()}`);
+    return d.feelings
+      .filter((f) => f !== "dont-know")
+      .map((f) => (f === "mood-swings" ? "mood swings" : `feeling ${EMOTIONS.find((x) => x.id === f)!.label.toLowerCase()}`));
   }
   if (e.category === "pain" && d.spots?.length) {
     return d.spots.map((s) => `${painArea(s.area as PainAreaId).short.toLowerCase()} pain`);

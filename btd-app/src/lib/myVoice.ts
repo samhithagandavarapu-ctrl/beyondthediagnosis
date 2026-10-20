@@ -229,12 +229,13 @@ export function checkInSentences(c: CheckIn): string[] {
   if (c.overall || where) {
     out.push(`I feel ${c.overall ? feeling(c.overall).sentence : "not right"}${where}.`);
   }
-  const feelings = (c.feelings ?? []).filter((f) => f !== "dont-know");
+  const feelings = (c.feelings ?? []).filter((f) => f !== "dont-know" && f !== "mood-swings");
   if (feelings.length) {
     out.push(`I feel ${listOut(feelings.map((f) => EMOTIONS.find((e) => e.id === f)!.label.toLowerCase()))}.`);
   } else if (c.feelings?.includes("dont-know")) {
     out.push("I don't know how I feel.");
   }
+  if (c.feelings?.includes("mood-swings")) out.push("My mood has been going up and down.");
   out.push(...(c.pain ?? []).map(painSpotSentence));
   if (c.since) out.push(`It started ${sinceOption(c.since).sentence}.`);
   return out;

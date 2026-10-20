@@ -106,7 +106,8 @@ export type IconName =
   | "face-angry"
   | "face-worried"
   | "face-tired"
-  | "face-calm";
+  | "face-calm"
+  | "skin";
 
 type Props = {
   name: IconName;
@@ -723,6 +724,18 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M17.4 5.6 h2.4 l-2.4 2.6 h2.4" />
     </>,
     squintEyes
+  ),
+  // A face with a few spots on one cheek: "My skin".
+  skin: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="9" cy="10" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10" r="0.9" fill="currentColor" stroke="none" />
+      <path d="M9.4 15.4 Q12 17 14.6 15.4" />
+      <circle cx="16.6" cy="13.4" r="0.7" />
+      <circle cx="18" cy="15.4" r="0.55" />
+      <circle cx="15.8" cy="15.6" r="0.5" />
+    </>
   ),
   "face-calm": face(
     <path d="M8.6 14.6 Q12 16.8 15.4 14.6" />,

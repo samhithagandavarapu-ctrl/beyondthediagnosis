@@ -8,6 +8,7 @@ import PracticeModeToggle from "../components/PracticeModeToggle";
 import { BagChecklist, LearnMore, MealtimeReminder, MyPeriodCard, TellADoctor } from "../components/calendar/PeriodHelp";
 import { addDays, predictNext } from "../lib/cycles";
 import Patterns from "../components/calendar/Patterns";
+import QuickCheck from "../components/calendar/QuickCheck";
 import CalendarDataTools from "../components/calendar/CalendarDataTools";
 import { sampleEntries } from "../lib/calendarSample";
 import { useAuth } from "../context/AuthContext";
@@ -39,6 +40,7 @@ import { feeling, painSpotSentence } from "../lib/myVoice";
 type View =
   | { kind: "month" }
   | { kind: "patterns" }
+  | { kind: "quick" }
   | { kind: "data" }
   | { kind: "tray" }
   | { kind: "day"; date: string }
@@ -109,6 +111,15 @@ export default function Calendar() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  async function saveMany(list: CalendarEntry[]): Promise<CalendarStore | "practice"> {
+    if (practice) {
+      setPracticeEntries((prev) => list.reduce(upsert, prev));
+      return "practice";
+    }
+    setEntries((prev) => list.reduce(upsert, prev));
+    return saveEntries(userId, list);
+  }
+
   function toggleVisit(entry: CalendarEntry) {
     save({ ...entry, addToVisit: !entry.addToVisit, updatedAt: new Date().toISOString() });
   }
@@ -152,6 +163,10 @@ export default function Calendar() {
     }
   }
 
+  const quickToday = () => {
+    say("How's today?");
+    show({ kind: "quick" });
+  };
   const logToday = () => {
     say("Log today");
     show({ kind: "log", date: todayKey() });
@@ -233,6 +248,14 @@ export default function Calendar() {
 
         {!loaded ? (
           <p className="text-body">Loading your calendar…</p>
+        ) : view.kind === "quick" ? (
+          <QuickCheck
+            date={todayKey()}
+            readingLevel={readingLevel}
+            practice={practice}
+            onSave={saveMany}
+            onDone={() => show({ kind: "month" })}
+          />
         ) : view.kind === "patterns" ? (
           <Patterns entries={shown} readingLevel={readingLevel} />
         ) : view.kind === "data" ? (
@@ -285,10 +308,14 @@ export default function Calendar() {
           />
         ) : (
           <>
-            <div className="hidden sm:flex">
-              <button type="button" onClick={logToday} className="btd-btn-coral min-h-[56px] gap-2 px-7 py-3 text-base">
+            <div className="hidden flex-wrap gap-3 sm:flex">
+              <button type="button" onClick={quickToday} className="btd-btn-coral min-h-[56px] gap-2 px-7 py-3 text-base">
+                <Icon name="hub-feelings" size={22} />
+                How's today?
+              </button>
+              <button type="button" onClick={logToday} className="btd-btn-outline min-h-[56px] gap-2 px-6 py-3 text-base">
                 <Icon name="plus" size={22} />
-                Log today
+                Log something
               </button>
             </div>
             {periodOn(todayKey()) && <MealtimeReminder />}
@@ -322,14 +349,22 @@ export default function Calendar() {
               </section>
             )}
             {/* Pinned where a thumb can reach it on a phone. */}
-            <div className="fixed inset-x-4 bottom-4 z-30 sm:hidden">
+            <div className="fixed inset-x-4 bottom-4 z-30 flex gap-2 sm:hidden">
+              <button
+                type="button"
+                onClick={quickToday}
+                className="btd-btn-coral min-h-[56px] flex-1 gap-2 px-4 py-3 text-base shadow-[0_8px_24px_rgba(33,50,68,0.25)]"
+              >
+                <Icon name="hub-feelings" size={22} />
+                How's today?
+              </button>
               <button
                 type="button"
                 onClick={logToday}
-                className="btd-btn-coral min-h-[56px] w-full gap-2 px-6 py-3 text-base shadow-[0_8px_24px_rgba(33,50,68,0.25)]"
+                aria-label="Log something"
+                className="btd-btn min-h-[56px] bg-white px-4 text-navy shadow-[0_8px_24px_rgba(33,50,68,0.25)]"
               >
                 <Icon name="plus" size={22} />
-                Log today
               </button>
             </div>
           </>
