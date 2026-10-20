@@ -10,6 +10,7 @@ import {
   dateKey,
   dayAriaLabel,
   entryIcon,
+  isPeriodDay,
   fromDateKey,
   todayKey,
 } from "../../lib/calendar";
@@ -44,12 +45,15 @@ function monthDays(year: number, month: number): string[] {
 export default function MonthGrid({
   entries,
   customs,
+  predicted = [],
   month,
   onMonthChange,
   onOpenDay,
 }: {
   entries: CalendarEntry[];
   customs: CustomSymptom[];
+  /** Days the next period might cover: a dashed outline and "Maybe". */
+  predicted?: string[];
   /** Any day in the month being shown. */
   month: string;
   onMonthChange: (anyDayInMonth: string) => void;
@@ -190,7 +194,8 @@ export default function MonthGrid({
                 // One picture per kind of thing logged (custom symptoms count
                 // as their own kind, with their own picture).
                 const icons = [...new Set(shown.map((e) => entryIcon(e, customs)))];
-                const isPeriod = all.some((e) => e.category === "period") && shownIn({ category: "period" } as CalendarEntry);
+                const isPeriod = all.some(isPeriodDay) && shownIn({ category: "period" } as CalendarEntry);
+                const maybe = !isPeriod && predicted.includes(key) && (filter === "all" || filter === "period");
                 const isToday = key === today;
                 const future = key > today;
                 return (
@@ -208,10 +213,14 @@ export default function MonthGrid({
                       onClick={() => {
                         if (!future) onOpenDay(key);
                       }}
-                      aria-label={`${dayAriaLabel(key, shown)}${isToday ? ", today" : ""}`}
+                      aria-label={`${dayAriaLabel(key, shown)}${maybe ? ", period might start" : ""}${isToday ? ", today" : ""}`}
                       aria-current={isToday ? "date" : undefined}
                       className={`btd-cal-day flex min-h-[64px] w-full flex-col items-start gap-1 rounded-tile border p-1.5 text-left transition-colors sm:min-h-[84px] sm:p-2 ${
-                        isPeriod ? "btd-cal-period border-coral bg-coral/35" : "border-navy/10 bg-white"
+                        isPeriod
+                          ? "btd-cal-period border-coral bg-coral/35"
+                          : maybe
+                            ? "btd-cal-maybe border-2 border-dashed border-coral-hover bg-white"
+                            : "border-navy/10 bg-white"
                       } ${inMonth ? "" : "opacity-45"} ${
                         isToday ? "ring-[3px] ring-navy ring-offset-1" : ""
                       } ${future ? "cursor-default bg-mist/60" : "hover:border-sky"}`}
@@ -219,6 +228,7 @@ export default function MonthGrid({
                       <span className={`text-sm font-bold ${isToday ? "text-navy" : "text-body"}`}>
                         {fromDateKey(key).getDate()}
                       </span>
+                      {maybe && <span className="text-11 font-bold uppercase tracking-[0.06em] text-coral-ink">Maybe</span>}
                       {icons.length > 0 && (
                         <span className="flex flex-wrap items-center gap-0.5 text-navy" aria-hidden="true">
                           {icons.slice(0, 3).map((icon) => (
@@ -250,6 +260,10 @@ export default function MonthGrid({
               <Icon name="drop" size={12} className="text-navy" />
             </span>
             A period day (coral, with a drop)
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="btd-cal-maybe inline-block h-5 w-7 rounded border-2 border-dashed border-coral-hover" />
+            Maybe: my next period might start (dashed)
           </li>
           <li className="flex items-center gap-2">
             <span className="inline-block h-5 w-7 rounded ring-[3px] ring-navy" />

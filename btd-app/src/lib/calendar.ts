@@ -123,6 +123,63 @@ export const ENERGY_LEVELS = [
   { id: "low", label: "Very low" },
 ] as const;
 
+// ---- My period ----
+
+export type FlowId = "little" | "some" | "lot" | "soaked";
+export type FlowCounts = Record<FlowId, number>;
+
+/** Pictures of a pad (or tampon, or period underwear) after it's been worn,
+ *  with no score and no "heavy" or "normal": the doctor reads the counts. */
+export const FLOW_LEVELS: { id: FlowId; label: string; fill: number }[] = [
+  { id: "little", label: "Just a little", fill: 0.18 },
+  { id: "some", label: "Some", fill: 0.42 },
+  { id: "lot", label: "A lot", fill: 0.7 },
+  { id: "soaked", label: "Soaked through", fill: 1 },
+];
+
+export type FlowProduct = "pad" | "tampon" | "underwear";
+
+export const FLOW_PRODUCTS: { id: FlowProduct; label: string; noun: string }[] = [
+  { id: "pad", label: "Pad", noun: "pad" },
+  { id: "tampon", label: "Tampon", noun: "tampon" },
+  { id: "underwear", label: "Period underwear", noun: "period underwear" },
+];
+
+export type ProductId = "pad" | "pad_wings" | "pad_long" | "period_underwear" | "tampon" | "cup" | "other";
+
+export const PRODUCTS: { id: ProductId; label: string }[] = [
+  { id: "pad", label: "Pad" },
+  { id: "pad_wings", label: "Pad with wings" },
+  { id: "pad_long", label: "Long pad" },
+  { id: "period_underwear", label: "Period underwear" },
+  { id: "tampon", label: "Tampon" },
+  { id: "cup", label: "Cup" },
+  { id: "other", label: "Something else" },
+];
+
+export type ClotSize = "dime" | "quarter" | "bigger";
+
+export const CLOT_SIZES: { id: ClotSize; label: string; px: number }[] = [
+  { id: "dime", label: "Smaller than a dime", px: 10 },
+  { id: "quarter", label: "About a quarter", px: 18 },
+  { id: "bigger", label: "Bigger than a quarter", px: 26 },
+];
+
+export const emptyFlow = (): FlowCounts => ({ little: 0, some: 0, lot: 0, soaked: 0 });
+
+/** "2 Some, 1 Soaked through". Empty if nothing was counted. */
+export function flowWords(flow: FlowCounts | undefined): string {
+  if (!flow) return "";
+  return FLOW_LEVELS.filter((l) => flow[l.id] > 0)
+    .map((l) => `${flow[l.id]} ${l.label}`)
+    .join(", ");
+}
+
+/** A period day, rather than spotting between periods. */
+export function isPeriodDay(e: CalendarEntry): boolean {
+  return e.category === "period" && !e.details.spotting;
+}
+
 export type EntryDetails = {
   // How I feel (and My Voice check-ins)
   overall?: FeelingId;
@@ -152,6 +209,19 @@ export type EntryDetails = {
   // Something scary happened
   whatHappened?: string;
   howLong?: string;
+  // My period
+  /** "Is this the first day of your period?" Yes starts a new cycle. */
+  firstDay?: boolean;
+  /** Bleeding between periods; not counted as a period day. */
+  spotting?: boolean;
+  /** How many of each picture they tapped +1 on that day. */
+  flow?: FlowCounts;
+  /** Which pictures they were looking at. */
+  flowProduct?: FlowProduct;
+  products?: ProductId[];
+  leak?: boolean;
+  /** Blobs (clots), and how big; "none" if they said no. */
+  clots?: ClotSize | "none";
   /** Other: the custom symptom it was logged under, if any. */
   customSymptomId?: string;
 };
@@ -482,6 +552,20 @@ export function detailLines(e: CalendarEntry, feelingWord: (id: FeelingId) => st
       return d.bathroom?.length ? [d.bathroom.map((b) => labelOf(BATHROOM, b)).join(", ")] : [];
     case "energy":
       return d.energy ? [`Energy: ${d.energy === "normal" ? "Usual" : labelOf(ENERGY_LEVELS, d.energy)}`] : [];
+    case "period":
+      return [
+        ...(d.spotting ? ["Spotting (between periods)"] : d.firstDay ? ["First day of my period"] : []),
+        ...(flowWords(d.flow)
+          ? [`${labelOf(FLOW_PRODUCTS, d.flowProduct ?? "pad")}: ${flowWords(d.flow)}`]
+          : []),
+        ...(d.products?.length ? [`Used: ${d.products.map((p) => labelOf(PRODUCTS, p)).join(", ")}`] : []),
+        ...(d.leak === true ? ["Leaked on my clothes"] : d.leak === false ? ["No leaks"] : []),
+        ...(d.clots && d.clots !== "none"
+          ? [`Blobs (clots): ${labelOf(CLOT_SIZES, d.clots).toLowerCase()}`]
+          : d.clots === "none"
+            ? ["No blobs (clots)"]
+            : []),
+      ];
     case "event":
       return [
         ...(d.whatHappened?.trim() ? [d.whatHappened.trim()] : []),

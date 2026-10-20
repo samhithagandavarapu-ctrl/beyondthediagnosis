@@ -411,6 +411,9 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
 }
 /* High contrast: period days swap the coral fill for a thick navy outline;
    the drop icon still marks them, so color is never the only signal. */
+.a11y-high-contrast .btd-cal-maybe {
+  border-color: #213244 !important;
+}
 .a11y-high-contrast .btd-cal-period {
   background: transparent !important;
   border: 3px solid #213244 !important;

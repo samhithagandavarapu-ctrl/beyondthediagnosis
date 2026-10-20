@@ -5,6 +5,8 @@ import Icon from "../components/icons/Icon";
 import MonthGrid from "../components/calendar/MonthGrid";
 import LogFlow from "../components/calendar/LogFlow";
 import PracticeModeToggle from "../components/PracticeModeToggle";
+import { BagChecklist, LearnMore, MealtimeReminder, MyPeriodCard, TellADoctor } from "../components/calendar/PeriodHelp";
+import { addDays, predictNext } from "../lib/cycles";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
@@ -18,6 +20,7 @@ import {
   detailLines,
   entryIcon,
   entryTitle,
+  isPeriodDay,
   listCustomSymptoms,
   listEntries,
   longDate,
@@ -88,6 +91,9 @@ export default function Calendar() {
   }, [practice]);
 
   const shown = practice ? practiceEntries : entries;
+  const hasPeriods = shown.some((e) => e.category === "period");
+  const prediction = predictNext(shown);
+  const periodOn = (day: string) => shown.some((e) => e.entryDate === day && isPeriodDay(e));
 
   function show(next: View) {
     setView(next);
@@ -183,6 +189,8 @@ export default function Calendar() {
             readingLevel={readingLevel}
             practice={practice}
             customSymptoms={customs}
+            dayBeforeIsPeriod={periodOn(addDays(view.date, -1))}
+            lastProducts={shown.find((e) => e.category === "period" && e.details.products?.length)?.details.products ?? []}
             onAddCustomSymptom={addSymptom}
             onSave={save}
             onLogAnother={() => {
@@ -196,6 +204,7 @@ export default function Calendar() {
             date={view.date}
             entries={shown.filter((e) => e.entryDate === view.date)}
             customs={customs}
+            periodDay={periodOn(view.date)}
             onBack={() => show({ kind: "month" })}
             onAdd={() => show({ kind: "log", date: view.date })}
             onEdit={(entry) => show({ kind: "log", date: entry.entryDate, entry })}
@@ -209,13 +218,25 @@ export default function Calendar() {
                 Log today
               </button>
             </div>
+            {periodOn(todayKey()) && <MealtimeReminder />}
             <MonthGrid
               entries={shown}
               customs={customs}
+              predicted={prediction?.days ?? []}
               month={month}
               onMonthChange={setMonth}
               onOpenDay={(date) => show({ kind: "day", date })}
             />
+            {hasPeriods && (
+              <section aria-label="My period" className="grid gap-4">
+                <MyPeriodCard entries={shown} />
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <BagChecklist />
+                  <LearnMore />
+                </div>
+                <TellADoctor />
+              </section>
+            )}
             {/* Pinned where a thumb can reach it on a phone. */}
             <div className="fixed inset-x-4 bottom-4 z-30 sm:hidden">
               <button
@@ -242,6 +263,7 @@ function DayView({
   date,
   entries,
   customs,
+  periodDay,
   onBack,
   onAdd,
   onEdit,
@@ -250,6 +272,7 @@ function DayView({
   date: string;
   entries: CalendarEntry[];
   customs: CustomSymptom[];
+  periodDay: boolean;
   onBack: () => void;
   onAdd: () => void;
   onEdit: (e: CalendarEntry) => void;
@@ -270,6 +293,8 @@ function DayView({
           </button>
         )}
       </div>
+
+      {periodDay && date === todayKey() && <MealtimeReminder />}
 
       {entries.length === 0 ? (
         <div className="btd-card p-6">
