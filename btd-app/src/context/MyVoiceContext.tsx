@@ -4,6 +4,7 @@ import { fetchProfile, saveReadingLevel } from "../lib/profile";
 import { usePracticeMode } from "./PracticeModeContext";
 import { attachCheckIn } from "../lib/drafts";
 import { speak, speechSupported } from "../lib/speech";
+import { ABOUT_ME_KEY, AboutMe, aboutMeHasContent } from "../lib/aboutMe";
 import {
   CheckIn,
   EarnedSticker,
@@ -41,6 +42,11 @@ type MyVoiceState = {
   savePain: (report: PainReport) => void;
   clearPain: () => void;
 
+  /** "All About Me", kept on this device only. Never set in practice mode. */
+  savedAboutMe: AboutMe | null;
+  saveAboutMe: (aboutMe: AboutMe) => void;
+  clearAboutMe: () => void;
+
   stickers: EarnedSticker[];
   earnSticker: (id: StickerId) => void;
   clearStickers: () => void;
@@ -66,6 +72,7 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
   const [readAloud, setReadAloud] = useState(true);
   const [savedCheckIn, setSavedCheckIn] = useState<CheckIn | null>(null);
   const [savedPain, setSavedPain] = useState<PainReport | null>(null);
+  const [savedAboutMe, setSavedAboutMe] = useState<AboutMe | null>(null);
   const [stickers, setStickers] = useState<EarnedSticker[]>([]);
   // Mirrors AccessibilityContext: don't write a profile value back the moment
   // we just read it from there.
@@ -85,6 +92,9 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
 
       const pain = localStorage.getItem(PAIN_KEY);
       if (pain) setSavedPain(JSON.parse(pain) as PainReport);
+
+      const aboutMe = localStorage.getItem(ABOUT_ME_KEY);
+      if (aboutMe) setSavedAboutMe(JSON.parse(aboutMe) as AboutMe);
 
       const earned = localStorage.getItem(STICKERS_KEY);
       if (earned) setStickers(JSON.parse(earned) as EarnedSticker[]);
@@ -184,6 +194,26 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function saveAboutMe(aboutMe: AboutMe) {
+    if (practice) return;
+    if (!aboutMeHasContent(aboutMe)) return clearAboutMe();
+    setSavedAboutMe(aboutMe);
+    try {
+      localStorage.setItem(ABOUT_ME_KEY, JSON.stringify(aboutMe));
+    } catch {
+      // ignore
+    }
+  }
+
+  function clearAboutMe() {
+    setSavedAboutMe(null);
+    try {
+      localStorage.removeItem(ABOUT_ME_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
   function earnSticker(id: StickerId) {
     if (practice) return;
     setStickers((prev) => {
@@ -219,6 +249,9 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     savedPain,
     savePain,
     clearPain,
+    savedAboutMe,
+    saveAboutMe,
+    clearAboutMe,
     stickers,
     earnSticker,
     clearStickers,

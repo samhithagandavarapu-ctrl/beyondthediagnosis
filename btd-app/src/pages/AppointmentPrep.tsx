@@ -31,6 +31,7 @@ import {
 } from "../lib/drafts";
 import { shortDate } from "../lib/shortDate";
 import { CheckIn, PainReport, checkInLines, painSummaryLine } from "../lib/myVoice";
+import { AboutMe, aboutMeHasContent, aboutMeLines } from "../lib/aboutMe";
 import Icon from "../components/icons/Icon";
 import DictateButton from "../components/DictateButton";
 import SymptomTimeline from "../components/timeline/SymptomTimeline";
@@ -60,7 +61,7 @@ import {
 import { inkLastWord } from "../components/Scribble";
 
 export default function AppointmentPrep() {
-  const { clearCheckIn, savedPain, clearPain } = useMyVoice();
+  const { clearCheckIn, savedPain, clearPain, savedAboutMe, clearAboutMe } = useMyVoice();
   const { practice } = usePracticeMode();
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
@@ -88,6 +89,7 @@ export default function AppointmentPrep() {
   // The "Where does it hurt?" body map lives on this device only, so it's
   // read straight from there rather than from the draft.
   const [includePain, setIncludePain] = useState(true);
+  const [includeAboutMe, setIncludeAboutMe] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [refining, setRefining] = useState(false);
   const [refineError, setRefineError] = useState<string | null>(null);
@@ -390,6 +392,7 @@ export default function AppointmentPrep() {
         form={form}
         myVoice={myVoice}
         pain={includePain ? savedPain : null}
+        aboutMe={includeAboutMe && aboutMeHasContent(savedAboutMe) ? savedAboutMe : null}
         onBack={() => setShowSummary(false)}
       />
     );
@@ -522,6 +525,15 @@ export default function AppointmentPrep() {
             clearCheckIn();
           }}
         />
+
+        {savedAboutMe && aboutMeHasContent(savedAboutMe) && (
+          <AboutMeSection
+            aboutMe={savedAboutMe}
+            include={includeAboutMe}
+            onIncludeChange={setIncludeAboutMe}
+            onClear={clearAboutMe}
+          />
+        )}
 
         {savedPain && (
           <PainMapSection
@@ -1220,6 +1232,50 @@ function MyVoiceSection({
   );
 }
 
+function AboutMeSection({
+  aboutMe,
+  include,
+  onIncludeChange,
+  onClear,
+}: {
+  aboutMe: AboutMe;
+  include: boolean;
+  onIncludeChange: (include: boolean) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="rounded-tile border-2 border-butter bg-butter/20 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-ink">All About Me (from My Voice)</p>
+          <p className="text-xs text-slate-light">
+            Goes at the top of the summary · kept on this device only
+          </p>
+        </div>
+        <button type="button" onClick={onClear} className="text-xs text-clay hover:underline">
+          Remove All About Me
+        </button>
+      </div>
+      <ul className="mt-3 space-y-1">
+        {aboutMeLines(aboutMe).map((line) => (
+          <li key={line.label} className="border-l-2 border-butter pl-3 text-sm text-ink">
+            <span className="font-semibold">{line.label}:</span> {line.text}
+          </li>
+        ))}
+      </ul>
+      <label className="mt-3 flex items-center gap-2 text-sm font-medium text-ink">
+        <input
+          type="checkbox"
+          checked={include}
+          onChange={(e) => onIncludeChange(e.target.checked)}
+          className="h-4 w-4"
+        />
+        Put this on the summary
+      </label>
+    </div>
+  );
+}
+
 function PainMapSection({
   report,
   include,
@@ -1276,6 +1332,7 @@ function SummaryView({
   form,
   myVoice,
   pain = null,
+  aboutMe = null,
   onBack,
   date,
   backLabel = "← Back to edit",
@@ -1284,6 +1341,8 @@ function SummaryView({
   myVoice: CheckIn | null;
   /** The body map from this device; history summaries don't have one. */
   pain?: PainReport | null;
+  /** "All About Me" from this device; printed first. */
+  aboutMe?: AboutMe | null;
   onBack: () => void;
   /** When the summary was made; today, unless it's one from the history. */
   date?: string;
@@ -1298,7 +1357,7 @@ function SummaryView({
     setDownloading(true);
     setDownloadError(null);
     try {
-      const doc = await buildAppointmentPdf(form, myVoice, date, pain);
+      const doc = await buildAppointmentPdf(form, myVoice, date, pain, aboutMe);
       const namePart = form.patientName.trim()
         ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
         : "visit-summary";
@@ -1368,6 +1427,22 @@ function SummaryView({
         </header>
 
         <div className="px-8 py-7">
+          {aboutMe && (
+            <div className="btd-avoid-break mb-7 rounded-tile border-l-4 border-butter bg-butter/20 px-5 py-4">
+              <p className="text-11 font-bold uppercase tracking-[0.1em] text-butter-ink">
+                All About Me · in their own words
+              </p>
+              <dl className="mt-2 space-y-2">
+                {aboutMeLines(aboutMe).map((line) => (
+                  <div key={line.label}>
+                    <dt className="text-sm font-semibold text-navy">{line.label}</dt>
+                    <dd className="text-sm leading-relaxed text-body">{line.text}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+
           {form.reasonForVisit.trim() && (
             <Section title="Reason for visit">
               <p className="text-sm leading-relaxed text-body whitespace-pre-wrap">

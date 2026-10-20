@@ -82,7 +82,19 @@ export type IconName =
   | "lock"
   | "sign-out"
   | "trash"
-  | "chevron-right";
+  | "chevron-right"
+  // "Say it my way" cards, All About Me, practice stories
+  | "clock"
+  | "question"
+  | "repeat"
+  | "alert"
+  | "star"
+  | "star-filled"
+  | "book"
+  | "heart"
+  | "plus"
+  | "play"
+  | "doctor";
 
 type Props = {
   name: IconName;
@@ -505,6 +517,60 @@ const PATHS: Record<IconName, JSX.Element> = {
     </>
   ),
   "chevron-right": <path d="M9.4 5.6 L15.8 12 L9.4 18.4" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.8" />
+      <path d="M12 7 V12 L15.4 14.2" />
+    </>
+  ),
+  question: (
+    <>
+      <circle cx="12" cy="12" r="8.8" />
+      <path d="M9.4 9.6 a2.6 2.6 0 1 1 3.8 2.3 c-0.8 0.4 -1.2 1 -1.2 1.9 v0.4" />
+      <circle cx="12" cy="16.9" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
+  repeat: (
+    <>
+      <path d="M4.6 11 a7 7 0 0 1 12.4 -4.4 L18.8 8.4" />
+      <path d="M19 4 V8.6 H14.4" />
+      <path d="M19.4 13 a7 7 0 0 1 -12.4 4.4 L5.2 15.6" />
+      <path d="M5 20 V15.4 H9.6" />
+    </>
+  ),
+  alert: (
+    <>
+      <path d="M12 3.4 L21.2 19.4 H2.8 Z" />
+      <path d="M12 9.6 V14" />
+      <circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
+  star: <path d="M12 3.4 l2.6 5.4 l5.9 0.8 l-4.3 4.1 l1.1 5.8 L12 16.7 l-5.3 2.8 l1.1 -5.8 l-4.3 -4.1 l5.9 -0.8 Z" />,
+  "star-filled": (
+    <path
+      d="M12 3.4 l2.6 5.4 l5.9 0.8 l-4.3 4.1 l1.1 5.8 L12 16.7 l-5.3 2.8 l1.1 -5.8 l-4.3 -4.1 l5.9 -0.8 Z"
+      fill="currentColor"
+    />
+  ),
+  book: (
+    <>
+      <path d="M12 6.4 C10 5 7 4.6 3.6 5 V18.4 C7 18 10 18.4 12 19.8 C14 18.4 17 18 20.4 18.4 V5 C17 4.6 14 5 12 6.4 Z" />
+      <path d="M12 6.4 V19.8" />
+    </>
+  ),
+  heart: (
+    <path d="M12 19.6 C6.4 15.6 3.4 12.6 3.4 9.2 a4.2 4.2 0 0 1 8.6 -1.8 a4.2 4.2 0 0 1 8.6 1.8 c0 3.4 -3 6.4 -8.6 10.4 Z" />
+  ),
+  plus: <path d="M12 5 V19 M5 12 H19" />,
+  play: <path d="M8 5.2 L18.4 12 L8 18.8 Z" />,
+  doctor: (
+    <>
+      <circle cx="12" cy="7.4" r="3.6" />
+      <path d="M4.8 20.4 c0 -4.2 3.2 -6.8 7.2 -6.8 s7.2 2.6 7.2 6.8" />
+      <path d="M9.2 14.2 v2.4 a2.8 2.8 0 0 0 5.6 0 v-2.4" />
+      <path d="M10.6 5.2 h2.8" />
+    </>
+  ),
   clipboard: (
     <>
       <rect x="5" y="4.6" width="14" height="16.2" rx="2.2" />

@@ -8,6 +8,7 @@ import {
   painAreaView,
   painSummaryLine,
 } from "./myVoice";
+import { AboutMe, aboutMeLines } from "./aboutMe";
 import { usePdfFont } from "./pdfFonts";
 import {
   Timeline,
@@ -383,6 +384,52 @@ function myVoicePanel(ctx: Ctx, checkIn: CheckIn) {
   ctx.y = top + panelHeight + 22;
 }
 
+/** "All About Me" opens the document: who this person is, how they show
+ *  pain and upset, and how to talk with them — before any problem. */
+function aboutMePanel(ctx: Ctx, aboutMe: AboutMe) {
+  const { doc } = ctx;
+  const rows = aboutMeLines(aboutMe);
+  if (!rows.length) return;
+  const padX = 18;
+  const width = CONTENT_WIDTH - padX * 2;
+
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(10);
+  const wrapped = rows.map((r) => ({ label: r.label, lines: doc.splitTextToSize(r.text, width) as string[] }));
+  const panelHeight = 34 + wrapped.reduce((sum, r) => sum + 13 + r.lines.length * 13.5 + 8, 0) + 4;
+  ensure(ctx, panelHeight + 10);
+
+  const top = ctx.y - 12;
+  doc.setFillColor(255, 245, 224);
+  doc.roundedRect(MARGIN, top, CONTENT_WIDTH, panelHeight, 6, 6, "F");
+  doc.setFillColor(...BUTTER);
+  doc.rect(MARGIN, top, 3.5, panelHeight, "F");
+
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...BUTTER_INK);
+  doc.text("ALL ABOUT ME  ·  IN THEIR OWN WORDS", MARGIN + padX, top + 20, { charSpace: 0.9 });
+
+  let ty = top + 38;
+  wrapped.forEach((r) => {
+    doc.setFont(ctx.font, "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...NAVY);
+    doc.text(r.label, MARGIN + padX, ty);
+    ty += 13;
+    doc.setFont(ctx.font, "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...BODY);
+    r.lines.forEach((line) => {
+      doc.text(line, MARGIN + padX, ty);
+      ty += 13.5;
+    });
+    ty += 8;
+  });
+
+  ctx.y = top + panelHeight + 22;
+}
+
 /** The same outline as the on-screen body map, drawn small. `k` is points per
  *  outline unit (the outline is 100 x 200 units). */
 function bodyOutline(ctx: Ctx, view: PainView, x: number, y: number, k: number) {
@@ -607,7 +654,9 @@ export async function buildAppointmentPdf(
   /** When the summary was made; defaults to today. */
   date?: string,
   /** The "Where does it hurt?" body map, from this device. */
-  pain?: PainReport | null
+  pain?: PainReport | null,
+  /** "All About Me", from this device. Printed first. */
+  aboutMe?: AboutMe | null
 ): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   // Registered before the first draw, so no text is laid out in a font the
@@ -616,6 +665,8 @@ export async function buildAppointmentPdf(
   const ctx: Ctx = { doc, y: 0, font };
 
   drawHeader(ctx, form, date);
+
+  if (aboutMe) aboutMePanel(ctx, aboutMe);
 
   if (form.reasonForVisit.trim()) {
     reasonCard(ctx, form.reasonForVisit);

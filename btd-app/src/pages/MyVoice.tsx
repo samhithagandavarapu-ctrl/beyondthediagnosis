@@ -6,6 +6,10 @@ import PracticeModeToggle from "../components/PracticeModeToggle";
 import BodyMap from "../components/myvoice/BodyMap";
 import FaceScale from "../components/myvoice/FaceScale";
 import PainMap from "../components/myvoice/PainMap";
+import SayCards from "../components/myvoice/SayCards";
+import AboutMe from "../components/myvoice/AboutMe";
+import Scenarios from "../components/myvoice/Scenarios";
+import VoiceMemo from "../components/myvoice/VoiceMemo";
 import SentenceBuilder from "../components/myvoice/SentenceBuilder";
 import SpeakButton from "../components/myvoice/SpeakButton";
 import StickerBook from "../components/myvoice/StickerBook";
@@ -33,7 +37,17 @@ import {
   readJson,
 } from "../lib/practiceVisit";
 
-type Section = "home" | "check-in" | "pain" | "tell" | "visit" | "stickers";
+type Section =
+  | "home"
+  | "check-in"
+  | "pain"
+  | "tell"
+  | "cards"
+  | "about"
+  | "voice"
+  | "stories"
+  | "visit"
+  | "stickers";
 
 export default function MyVoice() {
   const [section, setSection] = useState<Section>("home");
@@ -97,6 +111,54 @@ export default function MyVoice() {
                 onEditPain={() => setSection("pain")}
                 readingLevel={readingLevel}
               />
+            )}
+            {section === "cards" && (
+              <ToolSection
+                title="Say it my way"
+                helper={{
+                  icon: "Tap a card.",
+                  short: "Tap a card to say it. Tap the star to keep it on top.",
+                  full: "Tap a card and it says the words out loud. Tap the star to make it a favorite. Tap Show the doctor to make it big.",
+                }}
+              >
+                <SayCards readingLevel={readingLevel} />
+              </ToolSection>
+            )}
+            {section === "about" && (
+              <ToolSection
+                title="All About Me"
+                helper={{
+                  icon: "Tap the pictures.",
+                  short: "Tap the pictures that are like me.",
+                  full: "Tap every picture that sounds like you. A helper can add words. This page goes at the top of your visit summary, so your doctor gets to know you.",
+                }}
+              >
+                <AboutMe readingLevel={readingLevel} />
+              </ToolSection>
+            )}
+            {section === "voice" && (
+              <ToolSection
+                title="Record my voice"
+                helper={{
+                  icon: "Tap to talk.",
+                  short: "Tap the big button and talk. Up to one minute.",
+                  full: "Tap the big button and say what you want your doctor to know. You have up to one minute. It stays on this device, and you can play it at your visit.",
+                }}
+              >
+                <VoiceMemo readingLevel={readingLevel} />
+              </ToolSection>
+            )}
+            {section === "stories" && (
+              <ToolSection
+                title="Practice stories"
+                helper={{
+                  icon: "Pick a story.",
+                  short: "Pick a story. Then pick what to do.",
+                  full: "Each story is a hard moment at the doctor. Look at the pictures, then pick what you could do. There are no wrong answers here — just practice.",
+                }}
+              >
+                <Scenarios readingLevel={readingLevel} />
+              </ToolSection>
             )}
             {section === "visit" && <VisitSection readingLevel={readingLevel} />}
             {section === "stickers" && <StickerSection />}
@@ -210,6 +272,26 @@ const TILES: { id: Section; icon: IconName; copy: { icon: string; short: string;
       short: "Tell my doctor",
       full: "Build a sentence to tell my doctor",
     },
+  },
+  {
+    id: "cards",
+    icon: "card",
+    copy: { icon: "My cards", short: "Say it my way", full: "Say it my way: picture cards that talk for me" },
+  },
+  {
+    id: "about",
+    icon: "person",
+    copy: { icon: "About me", short: "All about me", full: "All about me: help my doctor get to know me" },
+  },
+  {
+    id: "voice",
+    icon: "mic",
+    copy: { icon: "My voice", short: "Record my voice", full: "Record my voice to play for my doctor" },
+  },
+  {
+    id: "stories",
+    icon: "book",
+    copy: { icon: "Practice", short: "Practice stories", full: "Practice stories: what I can do when it's hard" },
   },
   {
     id: "visit",
@@ -692,6 +774,29 @@ function TellMyDoctor({
           </Link>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---- Cards, All About Me, recording, stories ----
+
+function ToolSection({
+  title,
+  helper,
+  children,
+}: {
+  title: string;
+  helper: { icon: string; short: string; full: string };
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-6">
+      <div className="flex items-center gap-2">
+        <h2 className="text-28 font-extrabold text-navy">{title}</h2>
+        <SpeakButton text={title} />
+      </div>
+      <HelperMessage copy={helper} />
+      {children}
     </div>
   );
 }
