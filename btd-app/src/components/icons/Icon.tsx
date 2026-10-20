@@ -94,7 +94,19 @@ export type IconName =
   | "heart"
   | "plus"
   | "play"
-  | "doctor";
+  | "doctor"
+  // Symptom Calendar categories
+  | "calendar"
+  | "moon"
+  | "utensils"
+  | "toilet"
+  | "battery"
+  | "shuffle"
+  // Feelings (emotions), next to the face scale
+  | "face-angry"
+  | "face-worried"
+  | "face-tired"
+  | "face-calm";
 
 type Props = {
   name: IconName;
@@ -660,6 +672,63 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <rect x="3.2" y="5.6" width="17.6" height="12.8" rx="2.2" />
       <path d="M7 10 h10M7 13.6 h6" />
+    </>
+  ),
+  // ---- Symptom Calendar ----
+  calendar: (
+    <>
+      <rect x="3.6" y="5" width="16.8" height="15.4" rx="2.2" />
+      <path d="M3.6 9.8 H20.4M8 3 V6.6M16 3 V6.6" />
+      <path d="M7.6 13.4 h1.6M11.2 13.4 h1.6M14.8 13.4 h1.6M7.6 16.6 h1.6M11.2 16.6 h1.6" />
+    </>
+  ),
+  moon: <path d="M19.6 14.6 A8 8 0 1 1 9.4 4.4 a6.4 6.4 0 0 0 10.2 10.2 Z" />,
+  utensils: (
+    <>
+      <path d="M7 3.2 V9.6 a2.2 2.2 0 0 0 4.4 0 V3.2M9.2 3.2 V20.8" />
+      <path d="M17.2 20.8 V3.4 c-2.4 0.8 -3.6 3.4 -3.6 6.4 c0 2 1 3.2 3.6 3.6" />
+    </>
+  ),
+  toilet: (
+    <>
+      <path d="M6.4 3.4 h5.2 v7.2 h-5.2 Z" />
+      <path d="M4.4 10.6 h15.2 a7.6 5.4 0 0 1 -15.2 0 Z" />
+      <path d="M8.4 15.6 L7.6 20.6 h8.8 L15.6 15.6" />
+    </>
+  ),
+  battery: (
+    <>
+      <rect x="2.8" y="7.4" width="16.4" height="9.2" rx="2" />
+      <path d="M21.2 10.6 V13.4" />
+      <path d="M5.8 10.4 V13.6M8.8 10.4 V13.6" />
+    </>
+  ),
+  shuffle: (
+    <>
+      <path d="M3.4 7.4 h3.4 c4.6 0 5.8 9.2 10.4 9.2 h3.4M17.6 13.6 l3 3 l-3 3" />
+      <path d="M3.4 16.6 h3.4 c1.4 0 2.4 -0.8 3.2 -2M13.8 9.4 c0.8 -1.2 1.8 -2 3.2 -2 h3.6M17.6 4.4 l3 3 l-3 3" />
+    </>
+  ),
+  "face-angry": face(
+    <>
+      <path d="M8.6 16.4 Q12 14 15.4 16.4" />
+      <path d="M7.4 8.2 L10.4 9.4M16.6 8.2 L13.6 9.4" />
+    </>,
+    roundEyes
+  ),
+  "face-worried": face(<path d="M9 16 q1.5 -1.4 3 0 t3 0" />, worriedEyes),
+  "face-tired": face(
+    <>
+      <path d="M9.6 15.8 h4.8" />
+      <path d="M17.4 5.6 h2.4 l-2.4 2.6 h2.4" />
+    </>,
+    squintEyes
+  ),
+  "face-calm": face(
+    <path d="M8.6 14.6 Q12 16.8 15.4 14.6" />,
+    <>
+      <path d="M7.6 10.4 q1.4 1.2 2.8 0" />
+      <path d="M13.6 10.4 q1.4 1.2 2.8 0" />
     </>
   ),
 };

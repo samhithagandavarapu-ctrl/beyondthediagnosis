@@ -42,6 +42,8 @@ type MyVoiceState = {
    *  practice mode; resolves to where it went, or null if nothing was saved. */
   saveCheckIn: (checkIn: CheckIn) => Promise<CheckInStore | null>;
   deleteCheckIn: (id: string) => void;
+  /** Read check-ins again, after the calendar changed some of their entries. */
+  reloadCheckIns: () => void;
   /** Check-ins that only exist on old Appointment Prep drafts, added to the
    *  list if they aren't there already. */
   importCheckIns: (list: CheckIn[]) => void;
@@ -76,6 +78,8 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
   const [checkInsLoaded, setCheckInsLoaded] = useState(false);
   const [checkInStore, setCheckInStore] = useState<CheckInStore>("device");
   const [checkInAccountMissing, setCheckInAccountMissing] = useState(false);
+  const [reloads, setReloads] = useState(0);
+  const reloadCheckIns = () => setReloads((n) => n + 1);
   const [savedAboutMe, setSavedAboutMe] = useState<AboutMe | null>(null);
   const [stickers, setStickers] = useState<EarnedSticker[]>([]);
   // Mirrors AccessibilityContext: don't write a profile value back the moment
@@ -117,7 +121,7 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading]);
+  }, [user, authLoading, reloads]);
 
   // Signed in: the profile copy wins, so the level follows them to any device
   // — the same way large text / high contrast / easy read already do.
@@ -169,14 +173,18 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     if (practice) return null;
     if (!checkInHasContent(checkIn)) return null;
     setCheckIns((prev) => sortCheckIns([checkIn, ...prev.filter((c) => c.id !== checkIn.id)]));
-    const where = await saveCheckInTo(user?.id ?? null, checkIn);
+    const { checkIn: saved, where } = await saveCheckInTo(user?.id ?? null, checkIn);
+    // Keep the ids of its calendar entries, so a later change updates them.
+    setCheckIns((prev) => prev.map((c) => (c.id === saved.id ? saved : c)));
     return where;
   }
 
   function deleteCheckIn(id: string) {
+    const checkIn = checkIns.find((c) => c.id === id);
     setCheckIns((prev) => prev.filter((c) => c.id !== id));
-    deleteCheckInFrom(user?.id ?? null, id);
+    if (checkIn) deleteCheckInFrom(user?.id ?? null, checkIn);
   }
+
 
   function importCheckIns(list: CheckIn[]) {
     if (practice || !checkInsLoaded) return;
@@ -240,6 +248,7 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     checkInAccountMissing,
     saveCheckIn,
     deleteCheckIn,
+    reloadCheckIns,
     importCheckIns,
     savedAboutMe,
     saveAboutMe,

@@ -19,6 +19,7 @@ const tools: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/my-voice", label: "My Voice", icon: "hub-feelings", end: true },
   { to: "/my-voice/practice", label: "Practice My Visit", icon: "hub-visit" },
   { to: "/appointment-prep", label: "Appointment Prep", icon: "clipboard" },
+  { to: "/calendar", label: "My Calendar", icon: "calendar" },
   { to: "/assistant", label: "AI Advocate", icon: "chat" },
   { to: "/resources", label: "Resources", icon: "file" },
 ];

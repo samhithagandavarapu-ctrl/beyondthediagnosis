@@ -1,36 +1,131 @@
 import { authEnabled, supabase } from "./supabaseClient";
 import { CheckIn, PainReport, normalizeCheckIn, sortCheckIns } from "./myVoice";
+import {
+  CalendarEntry,
+  CalendarStore,
+  dateKey,
+  deleteEntries,
+  listEntries,
+  newEntry,
+  saveEntries,
+} from "./calendar";
 
-// My Voice check-ins: every one kept as its own dated entry, so there's a
-// history to look back on and to choose from for the doctor sheet.
-//
-// Signed in, they're kept in your account (the my_voice_check_ins table — see
-// supabase/my-voice-check-ins.sql) so they follow you to any device. Signed
-// out, or before that table exists, they're kept in this browser. Signing in
-// moves any check-ins made on this device into the account, the same way
-// Appointment Prep drafts do.
+// My Voice check-ins live in the Symptom Calendar. Each one is saved as a
+// "How I feel" entry and, if they marked the body map, a "Something hurts"
+// entry on the day it was made; the two share a check_in_id, so My Voice can
+// show, change and delete them as one check-in. Where they're kept (account
+// or this device) is up to lib/calendar.ts.
 
-export type CheckInStore = "account" | "device";
+export type CheckInStore = CalendarStore;
 
-const LOCAL_KEY = "voiced:my-voice-check-ins";
+// ---- A check-in, as calendar entries, and back ----
+
+export function checkInToEntries(c: CheckIn): CalendarEntry[] {
+  const spots = c.pain ?? [];
+  const day = dateKey(new Date(c.createdAt));
+  const base = {
+    entryDate: day,
+    loggedAt: c.createdAt,
+    updatedAt: c.updatedAt ?? c.createdAt,
+    reportedBy: "self" as const,
+    checkInId: c.id,
+  };
+  const hasMood =
+    !!c.overall ||
+    !!c.feelings?.length ||
+    c.hasVoiceNote ||
+    !!c.ownWords?.length ||
+    c.bodyParts.length > 0 ||
+    spots.length === 0;
+  const note = c.note.trim() || null;
+  const out: CalendarEntry[] = [];
+
+  if (hasMood) {
+    out.push(
+      newEntry({
+        ...base,
+        id: c.entryIds?.mood ?? crypto.randomUUID(),
+        category: "mood",
+        note,
+        details: {
+          ...(c.overall ? { overall: c.overall } : {}),
+          ...(c.feelings?.length ? { feelings: c.feelings } : {}),
+          ...(c.since ? { since: c.since } : {}),
+          ...(c.hasVoiceNote ? { hasVoiceNote: true } : {}),
+          ...(c.ownWords?.length ? { ownWords: c.ownWords } : {}),
+          ...(c.bodyParts.length ? { bodyParts: c.bodyParts } : {}),
+        },
+      })
+    );
+  }
+  if (spots.length) {
+    const worst = Math.max(0, ...spots.map((s) => s.level ?? 0));
+    out.push(
+      newEntry({
+        ...base,
+        id: c.entryIds?.pain ?? crypto.randomUUID(),
+        category: "pain",
+        bodyLocations: spots.map((s) => s.area),
+        severity: worst || null,
+        severityScale: worst ? "five" : null,
+        note: hasMood ? null : note,
+        details: { spots, ...(c.since ? { since: c.since } : {}) },
+      })
+    );
+  }
+  return out;
+}
+
+/** Calendar entries that came from check-ins, put back together. */
+export function entriesToCheckIns(entries: CalendarEntry[]): CheckIn[] {
+  const groups = new Map<string, CalendarEntry[]>();
+  for (const e of entries) {
+    if (!e.checkInId) continue;
+    groups.set(e.checkInId, [...(groups.get(e.checkInId) ?? []), e]);
+  }
+  const out: CheckIn[] = [];
+  for (const [id, group] of groups) {
+    const mood = group.find((e) => e.category === "mood");
+    const pain = group.find((e) => e.category === "pain");
+    const first = [...group].sort((a, b) => a.loggedAt.localeCompare(b.loggedAt))[0];
+    const d = mood?.details ?? {};
+    out.push(
+      normalizeCheckIn({
+        id,
+        createdAt: first.loggedAt,
+        updatedAt: group.map((e) => e.updatedAt).sort().pop(),
+        overall: d.overall ?? null,
+        feelings: d.feelings ?? [],
+        bodyParts: d.bodyParts ?? [],
+        pain: pain?.details.spots ?? [],
+        since: d.since ?? pain?.details.since ?? null,
+        note: mood?.note ?? pain?.note ?? "",
+        hasVoiceNote: !!d.hasVoiceNote,
+        ownWords: d.ownWords,
+        entryIds: { mood: mood?.id, pain: pain?.id },
+      })
+    );
+  }
+  return sortCheckIns(out);
+}
+
+// ---- Check-ins saved before they moved into the calendar ----
+
+const OLD_LIST_KEY = "voiced:my-voice-check-ins";
 // What My Voice kept before there was a list: one check-in, and one body map.
 const OLD_CHECKIN_KEY = "verity-my-voice-checkin";
 const OLD_PAIN_KEY = "verity-my-voice-pain";
 
-// ---- This device ----
-
-function readLocal(): CheckIn[] {
+function readOldLocal(): CheckIn[] {
   try {
-    const raw = localStorage.getItem(LOCAL_KEY);
+    const raw = localStorage.getItem(OLD_LIST_KEY);
     const list = raw ? (JSON.parse(raw) as CheckIn[]).map(normalizeCheckIn) : [];
-
-    // The old single check-in and body map become the first entry (or two).
     const oldCheckIn = localStorage.getItem(OLD_CHECKIN_KEY);
     const oldPain = localStorage.getItem(OLD_PAIN_KEY);
     if (oldCheckIn || oldPain) {
       const checkIn = oldCheckIn ? normalizeCheckIn(JSON.parse(oldCheckIn) as CheckIn) : null;
       const pain = oldPain ? (JSON.parse(oldPain) as PainReport) : null;
-      // One entry if they were made in the same sitting; two if not.
+      // One check-in if they were made in the same sitting; two if not.
       const sameSitting =
         checkIn &&
         pain &&
@@ -39,93 +134,77 @@ function readLocal(): CheckIn[] {
         list.push({ ...checkIn, pain: pain.spots });
       } else {
         if (checkIn) list.push(checkIn);
-        if (pain?.spots.length) {
-          list.push(normalizeCheckIn({ createdAt: pain.createdAt, pain: pain.spots }));
-        }
+        if (pain?.spots.length) list.push(normalizeCheckIn({ createdAt: pain.createdAt, pain: pain.spots }));
       }
-      writeLocal(list);
-      localStorage.removeItem(OLD_CHECKIN_KEY);
-      localStorage.removeItem(OLD_PAIN_KEY);
     }
-    return sortCheckIns(list);
+    return list;
   } catch {
     return [];
   }
 }
 
-function writeLocal(list: CheckIn[]) {
+function clearOldLocal() {
   try {
-    if (list.length) localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
-    else localStorage.removeItem(LOCAL_KEY);
+    [OLD_LIST_KEY, OLD_CHECKIN_KEY, OLD_PAIN_KEY].forEach((k) => localStorage.removeItem(k));
   } catch {
-    // Full or blocked storage just means check-ins aren't kept on this device.
+    // ignore
   }
 }
 
-// ---- The account ----
+/** Move old check-ins (this device, and the my_voice_check_ins table if it
+ *  was set up) into the calendar. Each source is only cleared once its
+ *  check-ins are safely saved. */
+async function moveOldCheckIns(userId: string | null): Promise<void> {
+  const local = readOldLocal();
+  if (local.length) {
+    await saveEntries(userId, local.flatMap(checkInToEntries));
+    clearOldLocal();
+  }
+  if (!userId || !authEnabled) return;
+  const { data, error } = await supabase.from("my_voice_check_ins").select("id, data");
+  // No table (never set up) or nothing in it: nothing to move.
+  if (error || !data?.length) return;
+  const rows = data as { id: string; data: CheckIn }[];
+  const where = await saveEntries(
+    userId,
+    rows.flatMap((r) => checkInToEntries(normalizeCheckIn({ ...r.data, id: r.id })))
+  );
+  if (where === "account") {
+    await supabase.from("my_voice_check_ins").delete().in("id", rows.map((r) => r.id));
+  }
+}
 
-type Row = { id: string; data: CheckIn; created_at: string };
+// ---- What My Voice calls ----
 
-const toRow = (c: CheckIn) => ({
-  id: c.id,
-  data: c,
-  created_at: c.createdAt,
-  updated_at: c.updatedAt ?? c.createdAt,
-});
-
-/** Every check-in for whoever is here, newest first, and where they live.
- *  `accountMissing` is true when someone is signed in but the account can't
- *  hold check-ins yet (the SQL hasn't been run), so they're on this device. */
 export async function listCheckIns(
   userId: string | null
 ): Promise<{ checkIns: CheckIn[]; store: CheckInStore; accountMissing: boolean }> {
-  const local = readLocal();
-  if (!userId || !authEnabled) {
-    return { checkIns: local, store: "device", accountMissing: false };
-  }
-
-  // Bring anything made on this device into the account first.
-  if (local.length) {
-    const { error } = await supabase
-      .from("my_voice_check_ins")
-      .upsert(local.map(toRow), { onConflict: "id" });
-    if (!error) writeLocal([]);
-  }
-
-  const { data, error } = await supabase
-    .from("my_voice_check_ins")
-    .select("id, data, created_at")
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error("Couldn't load check-ins from the account:", error.message);
-    return { checkIns: readLocal(), store: "device", accountMissing: true };
-  }
-  return {
-    checkIns: sortCheckIns((data as Row[]).map((r) => normalizeCheckIn({ ...r.data, id: r.id }))),
-    store: "account",
-    accountMissing: false,
-  };
+  await moveOldCheckIns(userId);
+  const { entries, store, accountMissing } = await listEntries(userId);
+  return { checkIns: entriesToCheckIns(entries), store, accountMissing };
 }
 
-/** Save one check-in (new, or changed) where it lives. Returns where it
- *  actually went: if the account can't take it, it's kept on this device
- *  instead of lost. */
-export async function saveCheckInTo(userId: string | null, checkIn: CheckIn): Promise<CheckInStore> {
-  if (userId && authEnabled) {
-    const { error } = await supabase
-      .from("my_voice_check_ins")
-      .upsert(toRow(checkIn), { onConflict: "id" });
-    if (!error) return "account";
-    console.error("Couldn't save the check-in to the account:", error.message);
-  }
-  writeLocal([checkIn, ...readLocal().filter((c) => c.id !== checkIn.id)]);
-  return "device";
+/** Save a new check-in, or changes to one. Returns it with the ids of its
+ *  calendar entries, and where it went. A part emptied out on an edit (say,
+ *  the body map cleared) has its entry deleted. */
+export async function saveCheckInTo(
+  userId: string | null,
+  checkIn: CheckIn
+): Promise<{ checkIn: CheckIn; where: CheckInStore }> {
+  const entries = checkInToEntries(checkIn);
+  const mood = entries.find((e) => e.category === "mood");
+  const pain = entries.find((e) => e.category === "pain");
+  const stale = [checkIn.entryIds?.mood, checkIn.entryIds?.pain].filter(
+    (id): id is string => !!id && !entries.some((e) => e.id === id)
+  );
+  const where = await saveEntries(userId, entries);
+  await deleteEntries(userId, stale);
+  return { checkIn: { ...checkIn, entryIds: { mood: mood?.id, pain: pain?.id } }, where };
 }
 
-export async function deleteCheckInFrom(userId: string | null, id: string): Promise<void> {
-  writeLocal(readLocal().filter((c) => c.id !== id));
-  if (userId && authEnabled) {
-    const { error } = await supabase.from("my_voice_check_ins").delete().eq("id", id);
-    if (error) console.error("Couldn't delete the check-in from the account:", error.message);
-  }
+export async function deleteCheckInFrom(userId: string | null, checkIn: CheckIn): Promise<void> {
+  await deleteEntries(
+    userId,
+    [checkIn.entryIds?.mood, checkIn.entryIds?.pain].filter((id): id is string => !!id)
+  );
 }

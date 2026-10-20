@@ -31,8 +31,9 @@ import {
   setActiveDraftId,
 } from "../lib/drafts";
 import { shortDate } from "../lib/shortDate";
-import { CheckIn, checkInLines, feelingsOverTime, painSummaryLine } from "../lib/myVoice";
+import { CheckIn, checkInLines, emptyCheckIn, feelingsOverTime, painSummaryLine } from "../lib/myVoice";
 import { CheckInSummary, FeelingsOverTime } from "../components/myvoice/CheckInHistory";
+import CheckInFlow from "../components/myvoice/CheckInFlow";
 import { AboutMe, aboutMeHasContent, aboutMeLines } from "../lib/aboutMe";
 import Icon from "../components/icons/Icon";
 import DictateButton from "../components/DictateButton";
@@ -534,6 +535,7 @@ export default function AppointmentPrep() {
           loaded={checkInsLoaded}
           pickedIds={pickedIds}
           onToggle={togglePicked}
+          onAdded={(id) => setPicked([...pickedIds.filter((x) => x !== id), id])}
         />
 
         {savedAboutMe && aboutMeHasContent(savedAboutMe) && (
@@ -1178,26 +1180,63 @@ function MyVoiceSection({
   loaded,
   pickedIds,
   onToggle,
+  onAdded,
 }: {
   checkIns: CheckIn[];
   loaded: boolean;
   pickedIds: string[];
   onToggle: (id: string) => void;
+  /** A check-in made right here was saved; tick it. */
+  onAdded: (id: string) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
+  // A new check-in being made right here, without leaving the form.
+  const [adding, setAdding] = useState<CheckIn | null>(null);
+  const { readingLevel } = useMyVoice();
 
   if (!loaded) return null;
+
+  const addButton = (
+    <button
+      type="button"
+      onClick={() => setAdding(emptyCheckIn())}
+      className="btd-btn-sky mt-3 min-h-[46px] gap-2 px-5 py-3 text-sm"
+    >
+      <Icon name="hub-feelings" size={18} />+ Add a My Voice check-in
+    </button>
+  );
+
+  if (adding) {
+    return (
+      <div className="rounded-tile border-2 border-sky bg-sky-tint p-4">
+        <p className="mb-4 text-sm font-semibold text-ink">
+          New My Voice check-in · it's saved to My check-ins and put on this summary
+        </p>
+        <CheckInFlow
+          key={adding.id}
+          initial={adding}
+          readingLevel={readingLevel}
+          embedded={{
+            onSaved: (c) => {
+              setAdding(null);
+              onAdded(c.id);
+            },
+            onCancel: () => setAdding(null),
+          }}
+        />
+      </div>
+    );
+  }
+
   if (!checkIns.length) {
     return (
       <div className="rounded-tile border border-dashed border-navy/20 bg-mist p-4">
         <p className="text-sm font-semibold text-ink">In their own words</p>
         <p className="mt-1 text-sm text-slate">
-          No check-ins from My Voice yet. If the person this visit is for checks in with{" "}
-          <Link to="/my-voice" className="font-semibold text-link hover:underline">
-            My Voice
-          </Link>
-          , what they said can be printed on this summary — in their words, not yours.
+          No check-ins from My Voice yet. The person this visit is for can check in right
+          here, and what they say is printed on this summary — in their words, not yours.
         </p>
+        {addButton}
       </div>
     );
   }
@@ -1242,6 +1281,7 @@ function MyVoiceSection({
           Show all {checkIns.length} check-ins
         </button>
       )}
+      {addButton}
       <Link to="/my-voice" className="mt-3 block text-sm font-semibold text-link hover:underline">
         Change or delete check-ins in My Voice →
       </Link>
