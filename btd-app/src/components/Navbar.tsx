@@ -2,16 +2,33 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
-import Icon from "./icons/Icon";
+import Icon, { type IconName } from "./icons/Icon";
 import SiteSearch from "./SiteSearch";
 import { CTA_LABEL } from "../data/site";
 
 const links = [
-  { to: "/tools", label: "Tools" },
   { to: "/understanding-overshadowing", label: "The Problem" },
+  { to: "/stories", label: "Community Stories" },
   { to: "/provider-education", label: "For Providers" },
   { to: "/mission", label: "Mission" },
 ];
+
+// Every tool by name, in its own row under the bar, so nobody has to go
+// looking for them. My Voice first: it's the one people use themselves.
+const tools: { to: string; label: string; icon: IconName; end?: boolean }[] = [
+  { to: "/my-voice", label: "My Voice", icon: "hub-feelings", end: true },
+  { to: "/my-voice/practice", label: "Practice My Visit", icon: "hub-visit" },
+  { to: "/appointment-prep", label: "Appointment Prep", icon: "clipboard" },
+  { to: "/assistant", label: "AI Advocate", icon: "chat" },
+  { to: "/resources", label: "Resources", icon: "file" },
+];
+
+const toolLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border min-h-[40px] px-4 py-2 text-sm font-semibold transition-colors ${
+    isActive
+      ? "bg-navy text-mist border-navy"
+      : "bg-white text-navy border-navy/15 hover:border-sky hover:bg-sky/30"
+  }`;
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `inline-flex items-center min-h-[40px] px-3 py-[9px] rounded-lg text-sm font-medium transition-colors ${
@@ -175,8 +192,32 @@ export default function Navbar() {
           )}
         </nav>
       </div>
+      <div className="border-t border-navy/[0.08]">
+        <nav
+          aria-label="Tools"
+          className="btd-container flex items-center gap-2 overflow-x-auto py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <NavLink
+            to="/tools"
+            end
+            className={({ isActive }) =>
+              `mr-1 shrink-0 text-12 font-bold uppercase tracking-[0.1em] hover:underline ${
+                isActive ? "text-navy" : "text-link"
+              }`
+            }
+          >
+            Tools
+          </NavLink>
+          {tools.map((t) => (
+            <NavLink key={t.to} to={t.to} end={t.end} className={toolLinkClass}>
+              <Icon name={t.icon} size={18} />
+              {t.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
       {/* mobile nav */}
-      <div className="lg:hidden btd-container pb-2.5">
+      <div className="lg:hidden btd-container pt-2.5 pb-2.5">
         <SiteSearch />
       </div>
       <nav aria-label="Sections" className="lg:hidden btd-container flex flex-wrap gap-2 pb-3">
