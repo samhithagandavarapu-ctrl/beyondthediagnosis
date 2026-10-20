@@ -5,6 +5,11 @@ import HelperMessage, { forLevel } from "../components/HelperMessage";
 import PracticeModeToggle from "../components/PracticeModeToggle";
 import BodyMap from "../components/myvoice/BodyMap";
 import FaceScale from "../components/myvoice/FaceScale";
+import PainMap from "../components/myvoice/PainMap";
+import SayCards from "../components/myvoice/SayCards";
+import AboutMe from "../components/myvoice/AboutMe";
+import Scenarios from "../components/myvoice/Scenarios";
+import VoiceMemo from "../components/myvoice/VoiceMemo";
 import SentenceBuilder from "../components/myvoice/SentenceBuilder";
 import SpeakButton from "../components/myvoice/SpeakButton";
 import StickerBook from "../components/myvoice/StickerBook";
@@ -16,11 +21,13 @@ import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
 import {
   CheckIn,
+  PainSpot,
   READING_LEVELS,
   ReadingLevel,
   buildSentence,
   checkInHasContent,
   emptyCheckIn,
+  painSentences,
 } from "../lib/myVoice";
 import {
   PRACTICE_KEYS,
@@ -30,12 +37,28 @@ import {
   readJson,
 } from "../lib/practiceVisit";
 
-type Section = "home" | "check-in" | "tell" | "visit" | "stickers";
+type Section =
+  | "home"
+  | "check-in"
+  | "pain"
+  | "tell"
+  | "cards"
+  | "about"
+  | "voice"
+  | "stories"
+  | "visit"
+  | "stickers";
 
 export default function MyVoice() {
   const [section, setSection] = useState<Section>("home");
   const [checkIn, setCheckIn] = useState<CheckIn>(emptyCheckIn());
-  const { readingLevel, savedCheckIn } = useMyVoice();
+  const { readingLevel, savedCheckIn, savedPain } = useMyVoice();
+  const { practice } = usePracticeMode();
+  // The body map being worked on. Null until it's touched this visit, so the
+  // last saved map (on this device) shows in Tell my doctor until then —
+  // except in practice mode, which starts from nothing.
+  const [painDraft, setPainDraft] = useState<PainSpot[] | null>(null);
+  const pain = painDraft ?? (practice ? [] : savedPain?.spots ?? []);
 
   function patchCheckIn(patch: Partial<CheckIn>) {
     setCheckIn((c) => ({ ...c, ...patch }));
@@ -53,7 +76,7 @@ export default function MyVoice() {
         <SettingsStrip />
 
         {section === "home" ? (
-          <Home onPick={setSection} hasSaved={!!savedCheckIn} />
+          <Home onPick={setSection} hasSaved={!!savedCheckIn || !!savedPain} />
         ) : (
           <div>
             <button
@@ -72,8 +95,70 @@ export default function MyVoice() {
                 readingLevel={readingLevel}
               />
             )}
+            {section === "pain" && (
+              <PainSection
+                spots={pain}
+                onChange={setPainDraft}
+                onTellDoctor={() => setSection("tell")}
+                readingLevel={readingLevel}
+              />
+            )}
             {section === "tell" && (
-              <TellMyDoctor checkIn={checkIn} onPatch={patchCheckIn} readingLevel={readingLevel} />
+              <TellMyDoctor
+                checkIn={checkIn}
+                onPatch={patchCheckIn}
+                pain={pain}
+                onEditPain={() => setSection("pain")}
+                readingLevel={readingLevel}
+              />
+            )}
+            {section === "cards" && (
+              <ToolSection
+                title="Say it my way"
+                helper={{
+                  icon: "Tap a card.",
+                  short: "Tap a card to say it. Tap the star to keep it on top.",
+                  full: "Tap a card and it says the words out loud. Tap the star to make it a favorite. Tap Show the doctor to make it big.",
+                }}
+              >
+                <SayCards readingLevel={readingLevel} />
+              </ToolSection>
+            )}
+            {section === "about" && (
+              <ToolSection
+                title="All About Me"
+                helper={{
+                  icon: "Tap the pictures.",
+                  short: "Tap the pictures that are like me.",
+                  full: "Tap every picture that sounds like you. A helper can add words. This page goes at the top of your visit summary, so your doctor gets to know you.",
+                }}
+              >
+                <AboutMe readingLevel={readingLevel} />
+              </ToolSection>
+            )}
+            {section === "voice" && (
+              <ToolSection
+                title="Record my voice"
+                helper={{
+                  icon: "Tap to talk.",
+                  short: "Tap the big button and talk. Up to one minute.",
+                  full: "Tap the big button and say what you want your doctor to know. You have up to one minute. It stays on this device, and you can play it at your visit.",
+                }}
+              >
+                <VoiceMemo readingLevel={readingLevel} />
+              </ToolSection>
+            )}
+            {section === "stories" && (
+              <ToolSection
+                title="Practice stories"
+                helper={{
+                  icon: "Pick a story.",
+                  short: "Pick a story. Then pick what to do.",
+                  full: "Each story is a hard moment at the doctor. Look at the pictures, then pick what you could do. There are no wrong answers here — just practice.",
+                }}
+              >
+                <Scenarios readingLevel={readingLevel} />
+              </ToolSection>
             )}
             {section === "visit" && <VisitSection readingLevel={readingLevel} />}
             {section === "stickers" && <StickerSection />}
@@ -171,6 +256,15 @@ const TILES: { id: Section; icon: IconName; copy: { icon: string; short: string;
     copy: { icon: "How I feel", short: "How I feel today", full: "Check in: how does my body feel today?" },
   },
   {
+    id: "pain",
+    icon: "bandage",
+    copy: {
+      icon: "Where it hurts",
+      short: "Where does it hurt?",
+      full: "Show where it hurts on a body, and how it feels",
+    },
+  },
+  {
     id: "tell",
     icon: "hub-tell",
     copy: {
@@ -178,6 +272,26 @@ const TILES: { id: Section; icon: IconName; copy: { icon: string; short: string;
       short: "Tell my doctor",
       full: "Build a sentence to tell my doctor",
     },
+  },
+  {
+    id: "cards",
+    icon: "card",
+    copy: { icon: "My cards", short: "Say it my way", full: "Say it my way: picture cards that talk for me" },
+  },
+  {
+    id: "about",
+    icon: "person",
+    copy: { icon: "About me", short: "All about me", full: "All about me: help my doctor get to know me" },
+  },
+  {
+    id: "voice",
+    icon: "mic",
+    copy: { icon: "My voice", short: "Record my voice", full: "Record my voice to play for my doctor" },
+  },
+  {
+    id: "stories",
+    icon: "book",
+    copy: { icon: "Practice", short: "Practice stories", full: "Practice stories: what I can do when it's hard" },
   },
   {
     id: "visit",
@@ -452,24 +566,142 @@ function Step({
   );
 }
 
+// ---- Where does it hurt? ----
+
+function PainSection({
+  spots,
+  onChange,
+  onTellDoctor,
+  readingLevel,
+}: {
+  spots: PainSpot[];
+  onChange: (spots: PainSpot[]) => void;
+  onTellDoctor: () => void;
+  readingLevel: ReadingLevel;
+}) {
+  const { say, savePain, clearPain } = useMyVoice();
+  const { practice } = usePracticeMode();
+  const [done, setDone] = useState(false);
+  const sentences = painSentences({ createdAt: "", spots });
+
+  function finish() {
+    savePain({ createdAt: new Date().toISOString(), spots });
+    setDone(true);
+    say(`All done. ${sentences.join(" ")}`);
+  }
+
+  if (done) {
+    return (
+      <div className="grid gap-6">
+        <HelperMessage
+          copy={{
+            icon: "All done!",
+            short: "All done. Great job!",
+            full: "All done — thank you for showing where it hurts. Your doctor can see it now.",
+          }}
+        />
+        <div className="btd-card p-6">
+          <p className="btd-eyebrow">What I will tell my doctor</p>
+          <div className="mt-2 flex items-start gap-3">
+            <div className="grid flex-1 gap-1">
+              {sentences.map((line) => (
+                <p key={line} className="text-21 font-display font-extrabold leading-[1.35] text-navy">
+                  {line}
+                </p>
+              ))}
+            </div>
+            <SpeakButton text={sentences.join(" ")} className="mt-1" />
+          </div>
+          {practice ? (
+            <p className="mt-4 rounded-tile border border-butter bg-butter/30 px-4 py-3 text-13 font-semibold text-navy">
+              That was practice, so nothing was saved. Turn practice mode off when it's real.
+            </p>
+          ) : (
+            <p className="mt-4 text-13 text-muted">
+              Saved on this device only. It is not uploaded. It can go on the summary your family
+              brings to the doctor.
+            </p>
+          )}
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button onClick={onTellDoctor} className="btd-btn-coral min-h-[52px] px-6 py-3 text-sm">
+              Now tell my doctor →
+            </button>
+            <button
+              onClick={() => setDone(false)}
+              className="btd-btn-outline min-h-[52px] px-5 py-3 text-sm"
+            >
+              Change it
+            </button>
+            <button
+              onClick={() => {
+                onChange([]);
+                if (!practice) clearPain();
+                setDone(false);
+                say("Start again. Tap where it hurts.");
+              }}
+              className="btd-btn-outline min-h-[52px] px-5 py-3 text-sm"
+            >
+              Start again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-7">
+      <HelperMessage
+        copy={{
+          icon: "Tap where it hurts.",
+          short: "Tap where it hurts. Then tap how it feels.",
+          full: "Tap the place on the body that hurts — tap Back to see the back. Then pick a picture for how it feels, and a face for how much it hurts. You can tap more than one place.",
+        }}
+      />
+
+      <Step number={1} title="Where does it hurt?" showText={readingLevel !== "icon"}>
+        <PainMap spots={spots} onChange={onChange} readingLevel={readingLevel} />
+      </Step>
+
+      <button
+        type="button"
+        onClick={finish}
+        disabled={spots.length === 0}
+        className="btd-btn-coral min-h-[56px] justify-self-start gap-2 px-8 py-4 text-base disabled:opacity-40"
+      >
+        <Icon name="check" size={22} />
+        I'm done
+      </button>
+    </div>
+  );
+}
+
 // ---- Tell my doctor ----
 
 function TellMyDoctor({
   checkIn,
   onPatch,
+  pain,
+  onEditPain,
   readingLevel,
 }: {
   checkIn: CheckIn;
   onPatch: (patch: Partial<CheckIn>) => void;
+  pain: PainSpot[];
+  onEditPain: () => void;
   readingLevel: ReadingLevel;
 }) {
-  const { saveCheckIn, earnSticker, say } = useMyVoice();
+  const { saveCheckIn, savePain, earnSticker, say } = useMyVoice();
   const { practice } = usePracticeMode();
   const [saved, setSaved] = useState(false);
   const sentence = buildSentence(checkIn);
+  const painLines = painSentences({ createdAt: "", spots: pain });
+  const showText = readingLevel !== "icon";
 
   function save() {
     saveCheckIn(checkIn);
+    // The body map stays on this device: savePain never touches a draft.
+    if (pain.length) savePain({ createdAt: new Date().toISOString(), spots: pain });
     earnSticker("told-my-doctor");
     setSaved(true);
     say("Saved. You told your doctor something today.");
@@ -486,14 +718,35 @@ function TellMyDoctor({
       />
 
       <div className="btd-card p-6">
-        <SentenceBuilder value={checkIn} onChange={onPatch} readingLevel={readingLevel} />
+        <SentenceBuilder
+          value={checkIn}
+          onChange={onPatch}
+          readingLevel={readingLevel}
+          extraSentences={painLines}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            say(pain.length ? "Change where it hurts" : "Show where it hurts on a body");
+            onEditPain();
+          }}
+          className="btd-btn-outline mt-5 min-h-[52px] gap-2 px-5 py-3 text-sm"
+          aria-label={pain.length ? "Change where it hurts" : "Show where it hurts on a body"}
+        >
+          <Icon name="bandage" size={20} />
+          {showText ? (
+            pain.length ? "Change where it hurts" : "Show where it hurts on a body"
+          ) : (
+            <span className="sr-only">Show where it hurts on a body</span>
+          )}
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={save}
-          disabled={!sentence}
+          disabled={!sentence && !painLines.length}
           className="btd-btn-coral min-h-[56px] gap-2 px-8 py-4 text-base disabled:opacity-40"
         >
           <Icon name="save" size={22} />
@@ -521,6 +774,29 @@ function TellMyDoctor({
           </Link>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---- Cards, All About Me, recording, stories ----
+
+function ToolSection({
+  title,
+  helper,
+  children,
+}: {
+  title: string;
+  helper: { icon: string; short: string; full: string };
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-6">
+      <div className="flex items-center gap-2">
+        <h2 className="text-28 font-extrabold text-navy">{title}</h2>
+        <SpeakButton text={title} />
+      </div>
+      <HelperMessage copy={helper} />
+      {children}
     </div>
   );
 }

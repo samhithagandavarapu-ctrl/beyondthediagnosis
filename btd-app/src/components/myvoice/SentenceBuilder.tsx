@@ -22,12 +22,14 @@ type Props = {
   value: CheckIn;
   onChange: (patch: Partial<CheckIn>) => void;
   readingLevel: ReadingLevel;
+  /** More to say after the built sentence — the "Where does it hurt?" map. */
+  extraSentences?: string[];
 };
 
-export default function SentenceBuilder({ value, onChange, readingLevel }: Props) {
+export default function SentenceBuilder({ value, onChange, readingLevel, extraSentences = [] }: Props) {
   const { say } = useMyVoice();
   const showText = readingLevel !== "icon";
-  const sentence = buildSentence(value);
+  const sentence = [buildSentence(value), ...extraSentences].filter(Boolean).join(" ");
 
   function toggleBodyPart(id: BodyPartId) {
     const next = value.bodyParts.includes(id)

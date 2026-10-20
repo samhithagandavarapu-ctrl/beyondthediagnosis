@@ -1,5 +1,14 @@
 import { jsPDF } from "jspdf";
-import { CheckIn, checkInLines } from "./myVoice";
+import {
+  CheckIn,
+  PAIN_HOTSPOTS,
+  PainReport,
+  PainView,
+  checkInLines,
+  painAreaView,
+  painSummaryLine,
+} from "./myVoice";
+import { AboutMe, aboutMeLines } from "./aboutMe";
 import { usePdfFont } from "./pdfFonts";
 import {
   Timeline,
@@ -375,6 +384,174 @@ function myVoicePanel(ctx: Ctx, checkIn: CheckIn) {
   ctx.y = top + panelHeight + 22;
 }
 
+/** "All About Me" opens the document: who this person is, how they show
+ *  pain and upset, and how to talk with them — before any problem. */
+function aboutMePanel(ctx: Ctx, aboutMe: AboutMe) {
+  const { doc } = ctx;
+  const rows = aboutMeLines(aboutMe);
+  if (!rows.length) return;
+  const padX = 18;
+  const width = CONTENT_WIDTH - padX * 2;
+
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(10);
+  const wrapped = rows.map((r) => ({ label: r.label, lines: doc.splitTextToSize(r.text, width) as string[] }));
+  const panelHeight = 34 + wrapped.reduce((sum, r) => sum + 13 + r.lines.length * 13.5 + 8, 0) + 4;
+  ensure(ctx, panelHeight + 10);
+
+  const top = ctx.y - 12;
+  doc.setFillColor(255, 245, 224);
+  doc.roundedRect(MARGIN, top, CONTENT_WIDTH, panelHeight, 6, 6, "F");
+  doc.setFillColor(...BUTTER);
+  doc.rect(MARGIN, top, 3.5, panelHeight, "F");
+
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...BUTTER_INK);
+  doc.text("ALL ABOUT ME  ·  IN THEIR OWN WORDS", MARGIN + padX, top + 20, { charSpace: 0.9 });
+
+  let ty = top + 38;
+  wrapped.forEach((r) => {
+    doc.setFont(ctx.font, "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...NAVY);
+    doc.text(r.label, MARGIN + padX, ty);
+    ty += 13;
+    doc.setFont(ctx.font, "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...BODY);
+    r.lines.forEach((line) => {
+      doc.text(line, MARGIN + padX, ty);
+      ty += 13.5;
+    });
+    ty += 8;
+  });
+
+  ctx.y = top + panelHeight + 22;
+}
+
+/** The same outline as the on-screen body map, drawn small. `k` is points per
+ *  outline unit (the outline is 100 x 200 units). */
+function bodyOutline(ctx: Ctx, view: PainView, x: number, y: number, k: number) {
+  const { doc } = ctx;
+  doc.setFillColor(...WHITE);
+  doc.setDrawColor(...NAVY);
+  doc.setLineWidth(0.8);
+  const rr = (rx: number, ry: number, w: number, h: number, r: number) =>
+    doc.roundedRect(x + rx * k, y + ry * k, w * k, h * k, r * k, r * k, "FD");
+  rr(13, 52, 10, 54, 5);
+  rr(77, 52, 10, 54, 5);
+  rr(34, 96, 14, 88, 6);
+  rr(52, 96, 14, 88, 6);
+  rr(22, 46, 56, 54, 7);
+  rr(44, 36, 12, 10, 3);
+  doc.circle(x + 50 * k, y + 22 * k, 16 * k, "FD");
+  doc.ellipse(x + 41 * k, y + 188 * k, 9 * k, 6 * k, "FD");
+  doc.ellipse(x + 59 * k, y + 188 * k, 9 * k, 6 * k, "FD");
+  if (view === "front") {
+    doc.setFillColor(...NAVY);
+    doc.circle(x + 44 * k, y + 20 * k, 1.8 * k, "F");
+    doc.circle(x + 56 * k, y + 20 * k, 1.8 * k, "F");
+  } else {
+    doc.setFillColor(...MUTED);
+    doc.ellipse(x + 50 * k, y + 16 * k, 14 * k, 9 * k, "F");
+  }
+}
+
+/** "Where does it hurt?": a small front and back figure with a numbered dot
+ *  on each place, beside the same numbers listed with how it feels and how
+ *  bad. The figure answers "where" faster than any words, and it can't be
+ *  misread as the doctor's left and right. */
+function painPanel(ctx: Ctx, report: PainReport) {
+  const { doc } = ctx;
+  const spots = report.spots;
+  if (!spots.length) return;
+
+  const k = 0.5;
+  const figW = 100 * k;
+  const figH = 200 * k;
+  const padX = 18;
+  const listX = MARGIN + padX + figW * 2 + 14 + 26;
+  const listW = MARGIN + CONTENT_WIDTH - padX - listX - 18;
+
+  const rows = spots.map((spot) => {
+    const line = painSummaryLine(spot);
+    doc.setFont(ctx.font, "normal");
+    doc.setFontSize(9.5);
+    const detail: string[] = line.detail ? doc.splitTextToSize(line.detail, listW) : [];
+    return { title: line.title, detail, height: 14 + detail.length * 12.5 + 8 };
+  });
+  const listH = rows.reduce((sum, r) => sum + r.height, 0);
+  const panelHeight = Math.max(38 + figH + 26, 40 + listH + 8);
+  ensure(ctx, panelHeight + 10);
+
+  const top = ctx.y - 12;
+  doc.setFillColor(...SKY_TINT);
+  doc.roundedRect(MARGIN, top, CONTENT_WIDTH, panelHeight, 6, 6, "F");
+  doc.setFillColor(...SKY);
+  doc.rect(MARGIN, top, 3.5, panelHeight, "F");
+
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...LINK);
+  doc.text(
+    `WHERE IT HURTS  ·  THEIR OWN BODY MAP  ·  ${fmtDate(report.createdAt).toUpperCase()}`,
+    MARGIN + padX,
+    top + 20,
+    { charSpace: 0.9 }
+  );
+
+  const figTop = top + 34;
+  const views: PainView[] = ["front", "back"];
+  views.forEach((view, v) => {
+    const fx = MARGIN + padX + v * (figW + 14);
+    bodyOutline(ctx, view, fx, figTop, k);
+    doc.setFont(ctx.font, "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.text(view.toUpperCase(), fx + figW / 2, figTop + figH + 14, { align: "center", charSpace: 0.8 });
+
+    spots.forEach((spot, i) => {
+      if (painAreaView(spot.area) !== view) return;
+      const hot = PAIN_HOTSPOTS[view].find((h) => h.area === spot.area);
+      if (!hot) return;
+      numberDot(ctx, fx + hot.x * k, figTop + hot.y * k, i + 1);
+    });
+  });
+
+  let ry = top + 40;
+  rows.forEach((row, i) => {
+    numberDot(ctx, listX - 14, ry - 3.5, i + 1);
+    doc.setFont(ctx.font, "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(...NAVY);
+    doc.text(row.title, listX, ry);
+    ry += 14;
+    doc.setFont(ctx.font, "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...BODY);
+    row.detail.forEach((line) => {
+      doc.text(line, listX, ry);
+      ry += 12.5;
+    });
+    ry += 8;
+  });
+
+  ctx.y = top + panelHeight + 22;
+}
+
+function numberDot(ctx: Ctx, cx: number, cy: number, n: number) {
+  const { doc } = ctx;
+  doc.setFillColor(...CORAL);
+  doc.setDrawColor(...NAVY);
+  doc.setLineWidth(0.6);
+  doc.circle(cx, cy, 6, "FD");
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(...CORAL_INK);
+  doc.text(String(n), cx, cy + 2.4, { align: "center" });
+}
+
 /** Footers go on last, once the page count is known. */
 function drawFooters(doc: jsPDF, font: string) {
   const total = doc.getNumberOfPages();
@@ -475,7 +652,11 @@ export async function buildAppointmentPdf(
   form: AppointmentForm,
   myVoice: CheckIn | null,
   /** When the summary was made; defaults to today. */
-  date?: string
+  date?: string,
+  /** The "Where does it hurt?" body map, from this device. */
+  pain?: PainReport | null,
+  /** "All About Me", from this device. Printed first. */
+  aboutMe?: AboutMe | null
 ): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   // Registered before the first draw, so no text is laid out in a font the
@@ -484,6 +665,8 @@ export async function buildAppointmentPdf(
   const ctx: Ctx = { doc, y: 0, font };
 
   drawHeader(ctx, form, date);
+
+  if (aboutMe) aboutMePanel(ctx, aboutMe);
 
   if (form.reasonForVisit.trim()) {
     reasonCard(ctx, form.reasonForVisit);
@@ -507,6 +690,7 @@ export async function buildAppointmentPdf(
   }
 
   if (myVoice) myVoicePanel(ctx, myVoice);
+  if (pain) painPanel(ctx, pain);
 
   timelineSections(ctx, form.timeline);
 

@@ -10,6 +10,14 @@ export type IconName =
   | "face-okay"
   | "face-bad"
   | "face-awful"
+  | "face-worst"
+  // "Where does it hurt?": what the hurt feels like
+  | "pain-sharp"
+  | "pain-achy"
+  | "pain-burning"
+  | "pain-heavy"
+  | "pain-cramping"
+  | "pain-itchy"
   // How long it's been going on
   | "since-today"
   | "since-few-days"
@@ -74,7 +82,19 @@ export type IconName =
   | "lock"
   | "sign-out"
   | "trash"
-  | "chevron-right";
+  | "chevron-right"
+  // "Say it my way" cards, All About Me, practice stories
+  | "clock"
+  | "question"
+  | "repeat"
+  | "alert"
+  | "star"
+  | "star-filled"
+  | "book"
+  | "heart"
+  | "plus"
+  | "play"
+  | "doctor";
 
 type Props = {
   name: IconName;
@@ -138,6 +158,13 @@ const squintEyes = (
   </>
 );
 
+const squeezedEyes = (
+  <>
+    <path d="M7.4 9.2 L10 10.4 L7.4 11.4" />
+    <path d="M16.6 9.2 L14 10.4 L16.6 11.4" />
+  </>
+);
+
 const worriedEyes = (
   <>
     <circle cx="9" cy="10.4" r="0.9" fill="currentColor" stroke="none" />
@@ -154,6 +181,43 @@ const PATHS: Record<IconName, JSX.Element> = {
   "face-okay": face(<path d="M8.6 15 L15.4 15" />, roundEyes),
   "face-bad": face(<path d="M8.4 16.2 Q12 13.4 15.6 16.2" />, roundEyes),
   "face-awful": face(<path d="M8.2 16.6 Q12 13 15.8 16.6" />, worriedEyes),
+  // The pain scale's top face: eyes squeezed shut, an open frown and a tear.
+  "face-worst": face(
+    <>
+      <path d="M8.4 17.2 Q12 12.6 15.6 17.2 Z" />
+      <path d="M16.6 12.4 q0.9 1.4 0 2.2 q-0.9 -0.8 0 -2.2 Z" fill="currentColor" />
+    </>,
+    squeezedEyes
+  ),
+
+  // ---- What the hurt feels like ----
+  "pain-sharp": <path d="M13.6 2.8 L6.4 13.4 h5.2 l-1.2 7.8 l7.2 -10.6 h-5.2 Z" />,
+  "pain-achy": (
+    <>
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="M7.6 7.6 a6.2 6.2 0 0 0 0 8.8 M16.4 7.6 a6.2 6.2 0 0 1 0 8.8" />
+      <path d="M4.8 4.8 a10.2 10.2 0 0 0 0 14.4 M19.2 4.8 a10.2 10.2 0 0 1 0 14.4" />
+    </>
+  ),
+  "pain-burning": (
+    <>
+      <path d="M12 2.8 C12 6 13.2 8.6 11.6 11.4 C13.2 11 14.4 9.8 14.6 7.6 C16 9 17.8 11.2 17.8 14.4 a5.8 5.8 0 0 1 -11.6 0 C6.2 9.4 12 6 12 2.8 Z" />
+      <path d="M12 14.6 c-1 1 -1.7 1.9 -1.7 2.9 a1.7 1.7 0 0 0 3.4 0 c0 -1 -0.7 -1.9 -1.7 -2.9 Z" />
+    </>
+  ),
+  "pain-heavy": (
+    <>
+      <path d="M9.2 7.6 a2.8 2.8 0 0 1 5.6 0" />
+      <path d="M7.2 7.6 h9.6 l2.8 11.6 a1 1 0 0 1 -1 1.2 H5.4 a1 1 0 0 1 -1 -1.2 Z" />
+      <path d="M12 11.4 v5 M10 14.6 l2 2 l2 -2" />
+    </>
+  ),
+  "pain-cramping": (
+    <path d="M12 12.4 a1.4 1.4 0 0 1 1.4 1.4 a2.8 2.8 0 0 1 -2.8 2.8 a4.2 4.2 0 0 1 -4.2 -4.2 a5.6 5.6 0 0 1 5.6 -5.6 a7 7 0 0 1 7 7 a8.4 8.4 0 0 1 -1.6 4.9" />
+  ),
+  "pain-itchy": (
+    <path d="M6.6 3.4 q2 2.1 0 4.3 t0 4.3 t0 4.3 t0 4.3 M12 3.4 q2 2.1 0 4.3 t0 4.3 t0 4.3 t0 4.3 M17.4 3.4 q2 2.1 0 4.3 t0 4.3 t0 4.3 t0 4.3" />
+  ),
 
   // ---- Since ----
   "since-today": (
@@ -453,6 +517,60 @@ const PATHS: Record<IconName, JSX.Element> = {
     </>
   ),
   "chevron-right": <path d="M9.4 5.6 L15.8 12 L9.4 18.4" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.8" />
+      <path d="M12 7 V12 L15.4 14.2" />
+    </>
+  ),
+  question: (
+    <>
+      <circle cx="12" cy="12" r="8.8" />
+      <path d="M9.4 9.6 a2.6 2.6 0 1 1 3.8 2.3 c-0.8 0.4 -1.2 1 -1.2 1.9 v0.4" />
+      <circle cx="12" cy="16.9" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
+  repeat: (
+    <>
+      <path d="M4.6 11 a7 7 0 0 1 12.4 -4.4 L18.8 8.4" />
+      <path d="M19 4 V8.6 H14.4" />
+      <path d="M19.4 13 a7 7 0 0 1 -12.4 4.4 L5.2 15.6" />
+      <path d="M5 20 V15.4 H9.6" />
+    </>
+  ),
+  alert: (
+    <>
+      <path d="M12 3.4 L21.2 19.4 H2.8 Z" />
+      <path d="M12 9.6 V14" />
+      <circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
+  star: <path d="M12 3.4 l2.6 5.4 l5.9 0.8 l-4.3 4.1 l1.1 5.8 L12 16.7 l-5.3 2.8 l1.1 -5.8 l-4.3 -4.1 l5.9 -0.8 Z" />,
+  "star-filled": (
+    <path
+      d="M12 3.4 l2.6 5.4 l5.9 0.8 l-4.3 4.1 l1.1 5.8 L12 16.7 l-5.3 2.8 l1.1 -5.8 l-4.3 -4.1 l5.9 -0.8 Z"
+      fill="currentColor"
+    />
+  ),
+  book: (
+    <>
+      <path d="M12 6.4 C10 5 7 4.6 3.6 5 V18.4 C7 18 10 18.4 12 19.8 C14 18.4 17 18 20.4 18.4 V5 C17 4.6 14 5 12 6.4 Z" />
+      <path d="M12 6.4 V19.8" />
+    </>
+  ),
+  heart: (
+    <path d="M12 19.6 C6.4 15.6 3.4 12.6 3.4 9.2 a4.2 4.2 0 0 1 8.6 -1.8 a4.2 4.2 0 0 1 8.6 1.8 c0 3.4 -3 6.4 -8.6 10.4 Z" />
+  ),
+  plus: <path d="M12 5 V19 M5 12 H19" />,
+  play: <path d="M8 5.2 L18.4 12 L8 18.8 Z" />,
+  doctor: (
+    <>
+      <circle cx="12" cy="7.4" r="3.6" />
+      <path d="M4.8 20.4 c0 -4.2 3.2 -6.8 7.2 -6.8 s7.2 2.6 7.2 6.8" />
+      <path d="M9.2 14.2 v2.4 a2.8 2.8 0 0 0 5.6 0 v-2.4" />
+      <path d="M10.6 5.2 h2.8" />
+    </>
+  ),
   clipboard: (
     <>
       <rect x="5" y="4.6" width="14" height="16.2" rx="2.2" />
