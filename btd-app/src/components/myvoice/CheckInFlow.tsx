@@ -20,6 +20,7 @@ import {
   painArea,
   sinceOption,
 } from "../../lib/myVoice";
+import { EMOTIONS } from "../../lib/calendar";
 
 /** Where "Put it on my doctor sheet" goes: Appointment Prep, with this
  *  check-in ticked. */
@@ -43,7 +44,13 @@ function toldSentences(c: CheckIn): string[] {
 
 /** What each step's answer was, for the look-over screen. */
 function stepAnswer(step: number, c: CheckIn): string {
-  if (step === 0) return c.overall ? feeling(c.overall).short : "Skipped";
+  if (step === 0) {
+    const parts = [
+      c.overall ? feeling(c.overall).short : "",
+      ...(c.feelings ?? []).map((f) => EMOTIONS.find((e) => e.id === f)!.label),
+    ].filter(Boolean);
+    return parts.length ? parts.join(", ") : "Skipped";
+  }
   if (step === 1) {
     return c.pain?.length ? c.pain.map((s) => painArea(s.area).short).join(", ") : "Nothing hurts";
   }
@@ -199,11 +206,45 @@ export default function CheckInFlow({
             </div>
 
             {step === 0 && (
-              <FaceScale
-                value={checkIn.overall}
-                onChange={(id) => patch({ overall: id })}
-                readingLevel={readingLevel}
-              />
+              <div className="grid gap-7">
+                <FaceScale
+                  value={checkIn.overall}
+                  onChange={(id) => patch({ overall: id })}
+                  readingLevel={readingLevel}
+                />
+                <div>
+                  <div className="mb-3 flex items-center justify-center gap-2">
+                    <p className="text-17 font-bold text-navy">
+                      {showText ? "Any feelings? Tap all that fit." : <span className="sr-only">Any feelings?</span>}
+                    </p>
+                    <SpeakButton text="Any feelings? Tap all that fit." />
+                  </div>
+                  <div role="group" aria-label="Any feelings?" className="flex flex-wrap justify-center gap-2.5">
+                    {EMOTIONS.map((e) => {
+                      const on = !!checkIn.feelings?.includes(e.id);
+                      return (
+                        <button
+                          key={e.id}
+                          type="button"
+                          aria-pressed={on}
+                          aria-label={e.label}
+                          onClick={() => {
+                            const now = checkIn.feelings ?? [];
+                            patch({ feelings: on ? now.filter((f) => f !== e.id) : [...now, e.id] });
+                            say(e.label);
+                          }}
+                          className={`flex min-h-[84px] w-[92px] flex-col items-center justify-center gap-1 rounded-card border-2 bg-white p-2 transition-colors ${
+                            on ? "border-navy bg-sky-tint" : "border-navy/12 hover:border-sky"
+                          }`}
+                        >
+                          <Icon name={e.icon} size={34} className="text-navy" />
+                          {showText && <span className="text-13 font-bold text-navy">{e.label}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             )}
             {step === 1 && (
               <PainMap

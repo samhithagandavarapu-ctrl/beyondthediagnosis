@@ -5,6 +5,7 @@
 // Prep export without re-deriving anything from the UI.
 
 import type { IconName } from "../components/icons/Icon";
+import { EMOTIONS, type EmotionId } from "./calendar";
 
 export type ReadingLevel = "icon" | "icon-text" | "full";
 
@@ -151,6 +152,10 @@ export type CheckIn = {
   bodyParts: BodyPartId[];
   /** "Where does it hurt?": each place, how it feels, and how bad. */
   pain?: PainSpot[];
+  /** "Any feelings?": the emotion faces, after the body face. */
+  feelings?: EmotionId[];
+  /** Its calendar entries (see lib/checkIns.ts), once saved. */
+  entryIds?: { mood?: string; pain?: string };
   since: SinceId | null;
   /** Optional typed note — never required to finish a check-in. */
   note: string;
@@ -179,6 +184,7 @@ export function checkInHasContent(c: CheckIn): boolean {
   return (
     !!c.ownWords?.length ||
     !!c.overall ||
+    !!c.feelings?.length ||
     c.bodyParts.length > 0 ||
     !!c.pain?.length ||
     !!c.since ||
@@ -195,6 +201,7 @@ export function normalizeCheckIn(c: Partial<CheckIn> & { createdAt: string }): C
     id: c.id || crypto.randomUUID(),
     bodyParts: c.bodyParts ?? [],
     pain: c.pain ?? [],
+    feelings: c.feelings ?? [],
     note: c.note ?? "",
   };
 }
@@ -221,6 +228,12 @@ export function checkInSentences(c: CheckIn): string[] {
     : "";
   if (c.overall || where) {
     out.push(`I feel ${c.overall ? feeling(c.overall).sentence : "not right"}${where}.`);
+  }
+  const feelings = (c.feelings ?? []).filter((f) => f !== "dont-know");
+  if (feelings.length) {
+    out.push(`I feel ${listOut(feelings.map((f) => EMOTIONS.find((e) => e.id === f)!.label.toLowerCase()))}.`);
+  } else if (c.feelings?.includes("dont-know")) {
+    out.push("I don't know how I feel.");
   }
   out.push(...(c.pain ?? []).map(painSpotSentence));
   if (c.since) out.push(`It started ${sinceOption(c.since).sentence}.`);

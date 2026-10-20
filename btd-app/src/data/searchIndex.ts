@@ -34,6 +34,13 @@ const PAGES: SearchEntry[] = [
     kind: "Page",
   },
   {
+    to: "/calendar",
+    title: "My Calendar",
+    description: "Log symptoms day by day — periods, pain, feelings, sleep — and see them on a month.",
+    keywords: "symptom calendar period tracker log diary day month pain mood sleep",
+    kind: "Page",
+  },
+  {
     to: "/my-voice",
     title: "My Voice",
     description: "Say how you feel with pictures, build a sentence for your doctor, and earn stickers.",

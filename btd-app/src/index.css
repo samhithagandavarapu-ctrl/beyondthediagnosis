@@ -398,3 +398,20 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
     break-after: avoid;
   }
 }
+
+/* Symptom Calendar: the "Saved!" check pops in, unless motion is off. */
+@media (prefers-reduced-motion: no-preference) {
+  .btd-cal-check {
+    animation: btd-cal-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+  }
+}
+@keyframes btd-cal-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+/* High contrast: period days swap the coral fill for a thick navy outline;
+   the drop icon still marks them, so color is never the only signal. */
+.a11y-high-contrast .btd-cal-period {
+  background: transparent !important;
+  border: 3px solid #213244 !important;
+}
