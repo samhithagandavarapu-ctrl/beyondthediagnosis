@@ -1157,7 +1157,7 @@ function TextBox({
 }
 
 /** "Just for me": the owner's own switch; linked grown-ups never see it. */
-function JustForMe({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+export function JustForMe({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   const { say } = useMyVoice();
   return (
     <button

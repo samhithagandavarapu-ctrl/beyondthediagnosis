@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "../icons/Icon";
 import { useMyVoice } from "../../context/MyVoiceContext";
+import { GROUPS, groupOf } from "../../lib/calendarGroups";
 import {
-  CATEGORIES,
   CalendarEntry,
   CustomSymptom,
   FILTERS,
@@ -10,14 +10,13 @@ import {
   category,
   dateKey,
   dayAriaLabel,
-  entryIcon,
   isPeriodDay,
   fromDateKey,
   todayKey,
 } from "../../lib/calendar";
 
-// The month: a real table, Sunday first, with up to three icons per day for
-// what was logged. Arrow keys move between days (and into the next or last
+// The month: a real table, Sunday first, with a coloured dot per day for
+// each kind of thing logged (the same colours as the tiles on Today). Arrow keys move between days (and into the next or last
 // month); Enter opens the day. Future days can't be opened — nothing can be
 // logged for them.
 
@@ -48,6 +47,7 @@ export default function MonthGrid({
   customs,
   predicted = [],
   month,
+  selected,
   onMonthChange,
   onOpenDay,
 }: {
@@ -57,6 +57,8 @@ export default function MonthGrid({
   predicted?: string[];
   /** Any day in the month being shown. */
   month: string;
+  /** The day shown under the month. */
+  selected?: string;
   onMonthChange: (anyDayInMonth: string) => void;
   onOpenDay: (key: string) => void;
 }) {
@@ -196,9 +198,7 @@ export default function MonthGrid({
                 const inMonth = key.slice(0, 7) === month.slice(0, 7);
                 const all = byDay.get(key) ?? [];
                 const shown = all.filter(shownIn);
-                // One picture per kind of thing logged (custom symptoms count
-                // as their own kind, with their own picture).
-                const icons = [...new Set(shown.map((e) => entryIcon(e, customs)))];
+                const dots = GROUPS.filter((g) => shown.some((e) => groupOf(e).id === g.id));
                 const isPeriod = all.some(isPeriodDay) && shownIn({ category: "period" } as CalendarEntry);
                 const maybe = !isPeriod && predicted.includes(key) && (filter === "all" || filter === "period");
                 const isToday = key === today;
@@ -230,7 +230,7 @@ export default function MonthGrid({
                             ? "btd-cal-maybe border-2 border-dashed border-coral-hover bg-white"
                             : "border-navy/10 bg-white"
                       } ${inMonth ? "" : "opacity-45"} ${
-                        isToday ? "ring-[3px] ring-navy ring-offset-1" : ""
+                        key === selected ? "!border-navy !bg-navy [&_*]:!text-mist" : isToday ? "ring-[3px] ring-navy ring-offset-1" : ""
                       } ${future ? "cursor-default bg-mist/60" : "hover:border-sky"}`}
                     >
                       <span className="flex w-full items-center justify-between">
@@ -240,12 +240,11 @@ export default function MonthGrid({
                         {forVisit && <Icon name="star-filled" size={14} className="text-coral-hover" />}
                       </span>
                       {maybe && <span className="text-11 font-bold uppercase tracking-[0.06em] text-coral-ink">Maybe</span>}
-                      {icons.length > 0 && (
-                        <span className="flex flex-wrap items-center gap-0.5 text-navy" aria-hidden="true">
-                          {icons.slice(0, 3).map((icon) => (
-                            <Icon key={icon} name={icon} size={16} />
+                      {dots.length > 0 && (
+                        <span className="mt-auto flex flex-wrap items-center gap-1" aria-hidden="true">
+                          {dots.map((g) => (
+                            <span key={g.id} className={`h-2.5 w-2.5 rounded-full ${g.dot}`} />
                           ))}
-                          {icons.length > 3 && <span className="text-11 font-bold">+{icons.length - 3}</span>}
                         </span>
                       )}
                     </button>
@@ -258,12 +257,12 @@ export default function MonthGrid({
       </table>
 
       <div className="btd-card p-4">
-        <p className="btd-eyebrow mb-3">What the pictures mean</p>
+        <p className="btd-eyebrow mb-3">What the colours mean</p>
         <ul className="grid gap-x-5 gap-y-2 text-sm text-body sm:grid-cols-2 lg:grid-cols-3">
-          {CATEGORIES.map((c) => (
-            <li key={c.id} className="flex items-center gap-2">
-              <Icon name={c.icon} size={18} className="text-navy" />
-              {c.label}
+          {GROUPS.map((g) => (
+            <li key={g.id} className="flex items-center gap-2">
+              <span className={`h-3 w-3 rounded-full ${g.dot}`} />
+              {g.label}
             </li>
           ))}
           <li className="flex items-center gap-2">

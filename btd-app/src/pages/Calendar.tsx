@@ -1,30 +1,32 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import PageHero from "../components/PageHero";
 import Icon from "../components/icons/Icon";
 import MonthGrid from "../components/calendar/MonthGrid";
 import LogFlow from "../components/calendar/LogFlow";
+import QuickLog from "../components/calendar/QuickLog";
+import PeriodScreen from "../components/calendar/PeriodScreen";
+import WeekStrip from "../components/calendar/WeekStrip";
+import DayList from "../components/calendar/DayList";
 import PracticeModeToggle from "../components/PracticeModeToggle";
-import { BagChecklist, LearnMore, MealtimeReminder, MyPeriodCard, TellADoctor } from "../components/calendar/PeriodHelp";
+import { MealtimeReminder, MyPeriodCard } from "../components/calendar/PeriodHelp";
 import { addDays, predictNext } from "../lib/cycles";
 import Patterns from "../components/calendar/Patterns";
-import QuickCheck from "../components/calendar/QuickCheck";
 import CalendarDataTools from "../components/calendar/CalendarDataTools";
 import { sampleEntries } from "../lib/calendarSample";
 import { useFamily } from "../lib/useFamily";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
+import { GROUPS, GroupId, group } from "../lib/calendarGroups";
 import {
   CalendarEntry,
   CalendarStore,
   CustomSymptom,
-  aboutLines,
   addCustomSymptom,
   deleteEntries,
-  detailLines,
   entryIcon,
   entryTitle,
+  fromDateKey,
   isPeriodDay,
   listCustomSymptoms,
   listCustomSymptomsOf,
@@ -32,23 +34,26 @@ import {
   listEntriesOf,
   saveEntryFor,
   longDate,
+  newEntry,
   saveEntries,
   sortEntries,
   todayKey,
 } from "../lib/calendar";
-import { feeling, painSpotSentence } from "../lib/myVoice";
 
-// The Symptom Calendar: log symptoms day by day, see them on a month, and
-// look at any day. Nothing here is ever sent to the AI assistant.
+// The Symptom Calendar. It opens on Today: a week strip, six big tiles, and
+// what's been logged so far. Logging is one question per screen (QuickLog);
+// the period has its own screen; the month, patterns and the rest are one
+// tap away. Nothing here is ever sent to the AI assistant.
 
 type View =
+  | { kind: "today" }
+  | { kind: "log"; start: Exclude<GroupId, "period">; date: string }
+  | { kind: "period" }
+  | { kind: "edit"; entry: CalendarEntry }
   | { kind: "month" }
   | { kind: "patterns" }
-  | { kind: "quick" }
   | { kind: "data" }
-  | { kind: "tray" }
-  | { kind: "day"; date: string }
-  | { kind: "log"; date: string; entry?: CalendarEntry };
+  | { kind: "tray" };
 
 const PRIVACY_SEEN_KEY = "voiced:calendar-privacy-seen";
 
@@ -69,8 +74,10 @@ export default function Calendar() {
   const [accountMissing, setAccountMissing] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [customs, setCustoms] = useState<CustomSymptom[]>([]);
-  const [view, setView] = useState<View>({ kind: "month" });
+  const [view, setView] = useState<View>({ kind: "today" });
   const [month, setMonth] = useState(todayKey());
+  // The day Today is showing (the week strip and the month pick it).
+  const [day, setDay] = useState(todayKey());
   // Bumped to start a fresh log after "Log something else".
   const [logRun, setLogRun] = useState(0);
   const [privacySeen, setPrivacySeen] = useState(() => {
@@ -147,15 +154,6 @@ export default function Calendar() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function saveMany(list: CalendarEntry[]): Promise<CalendarStore | "practice"> {
-    if (practice) {
-      setPracticeEntries((prev) => list.reduce(upsert, prev));
-      return "practice";
-    }
-    setEntries((prev) => list.reduce(upsert, prev));
-    return saveEntries(userId, list);
-  }
-
   function toggleVisit(entry: CalendarEntry) {
     save({ ...entry, addToVisit: !entry.addToVisit, updatedAt: new Date().toISOString() });
   }
@@ -214,24 +212,51 @@ export default function Calendar() {
     }
   }
 
-  const quickToday = () => {
-    say("How's today?");
-    show({ kind: "quick" });
-  };
-  const logToday = () => {
-    say("Log today");
-    show({ kind: "log", date: todayKey() });
-  };
+  const today = todayKey();
+  const isToday = day === today;
+  const ownerName = child?.name;
+  const canChange = (e: CalendarEntry) => (child ? e.loggedBy === userId : !e.loggedBy || e.loggedBy === userId);
+  const canDelete = (e: CalendarEntry) => !child || e.loggedBy === userId;
+  const listWriter = (e: CalendarEntry) => (child ? (e.loggedBy === userId ? "you" : null) : writerName(e));
+  const teller = child
+    ? (e: CalendarEntry) => {
+        const mine = e.loggedBy === userId;
+        if (e.reportedBy === "self") return child.name;
+        if (e.reportedBy === "both") return `${child.name} and ${mine ? "you" : "a grown-up"}`;
+        return mine ? "You" : "A grown-up";
+      }
+    : undefined;
+  const dayList = (key: string, empty?: string) => (
+    <DayList
+      entries={shown.filter((e) => e.entryDate === key)}
+      all={shown}
+      canChange={canChange}
+      canDelete={canDelete}
+      canPlan={!child}
+      writerName={listWriter}
+      teller={teller}
+      onEdit={(entry) => show({ kind: "edit", entry })}
+      onDelete={remove}
+      onToggleVisit={toggleVisit}
+      empty={empty}
+    />
+  );
+
+  function startLog(g: GroupId) {
+    say(group(g).label);
+    if (g === "period") {
+      if (isToday) return show({ kind: "period" });
+      // A day gone by: the full period form for that day.
+      return show({ kind: "edit", entry: newEntry({ entryDate: day, category: "period", reportedBy: child ? "caregiver" : "self", details: {} }) });
+    }
+    show({ kind: "log", start: g, date: day });
+  }
+
+  const back = () => show({ kind: "today" });
 
   return (
     <div>
-      <PageHero
-        eyebrow="My Calendar"
-        title="Log how things are, day by day"
-        lede="Tap a day to see it, or log something for today. Periods, pain, feelings, sleep — anything. Pick what to bring to your next appointment."
-      />
-
-      <section className="btd-container grid gap-6 pt-8 pb-28 sm:pb-20">
+      <section className="btd-container grid gap-6 pt-8 pb-20">
         {!privacySeen && !child && family.grownUps.length === 0 && (
           <div className="flex flex-wrap items-center gap-4 rounded-card border-2 border-sky bg-sky-tint p-5">
             <Icon name="lock" size={28} className="text-navy" />
@@ -257,7 +282,7 @@ export default function Calendar() {
                   onClick={() => {
                     setWhose(o.id);
                     say(o.id ? `${o.label}'s calendar` : "My calendar");
-                    show({ kind: "month" });
+                    show({ kind: "today" });
                   }}
                   className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-bold ${
                     whose === o.id ? "border-navy bg-sky text-navy" : "border-navy/15 bg-white text-navy hover:border-sky"
@@ -293,338 +318,250 @@ export default function Calendar() {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-13 text-muted">
-            {child
-              ? `${child.name}'s calendar, from their account.`
-              : practice
-              ? "Practice mode is on. Nothing you log here is saved."
-              : store === "account"
-                ? "Saved to your account."
-                : accountMissing
-                  ? "Saved on this device for now. Your account can't hold the calendar yet."
-                  : "Saved on this device only."}{" "}
-            {!user && !practice && (
-              <Link to="/login" className="font-semibold text-link hover:underline">
-                Sign in to keep it safe on any device.
-              </Link>
-            )}
-          </p>
-          <PracticeModeToggle tone="light" />
-        </div>
-
         {practice && (
           <p className="rounded-tile border border-butter bg-butter/30 px-4 py-3 text-15 font-semibold text-navy">
             Practice mode: this is made-up sample data. Try anything; nothing is saved.
           </p>
         )}
 
-        {loaded && (view.kind === "month" || view.kind === "patterns") && (
-          <div role="tablist" aria-label="Calendar views" className="flex flex-wrap gap-2">
-            {(
-              [
-                { id: "month", label: child ? `${child.name}'s calendar` : "My calendar", icon: "calendar" },
-                { id: "patterns", label: child ? `${child.name}'s patterns` : "My patterns", icon: "repeat" },
-              ] as const
-            ).map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={view.kind === t.id}
-                onClick={() => {
-                  say(t.label);
-                  show({ kind: t.id });
-                }}
-                className={`flex min-h-[48px] items-center gap-2 rounded-full border-2 px-5 text-15 font-bold ${
-                  view.kind === t.id ? "border-navy bg-navy text-mist" : "border-navy/15 bg-white text-navy hover:border-sky"
-                }`}
-              >
-                <Icon name={t.icon} size={20} />
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-
         {!loaded || (child && !childLoaded) ? (
           <p className="text-body">Loading your calendar…</p>
-        ) : view.kind === "quick" ? (
-          <QuickCheck
-            date={todayKey()}
-            readingLevel={readingLevel}
-            practice={practice}
-            canHide={canHide}
-            onSave={saveMany}
-            onDone={() => show({ kind: "month" })}
-          />
-        ) : view.kind === "patterns" ? (
-          <Patterns entries={shown} readingLevel={readingLevel} />
-        ) : view.kind === "data" ? (
-          <div className="grid gap-5">
-            <button type="button" onClick={() => show({ kind: "month" })} className="justify-self-start text-sm font-bold text-link hover:underline">
-              ← Back to the month
-            </button>
-            <h2 className="font-display text-28 font-extrabold text-navy">My calendar data</h2>
-            <p className="text-15 text-body">
-              Saved on this device. Download a copy any time, or delete it for good.
-            </p>
-            <CalendarDataTools onChanged={reload} />
-          </div>
         ) : view.kind === "log" ? (
-          <LogFlow
-            key={`${view.entry?.id ?? "new"}-${logRun}`}
+          <QuickLog
+            key={`${view.start}-${logRun}`}
+            start={view.start}
             date={view.date}
+            practice={practice}
+            customSymptoms={shownCustoms}
+            asCaregiverFor={child?.name}
+            canHide={canHide}
+            canPlan={!child}
+            onSave={save}
+            onAddCustomSymptom={addSymptom}
+            onDone={back}
+            onLogAnother={back}
+          />
+        ) : view.kind === "period" ? (
+          <PeriodScreen
+            entries={shown}
+            practice={practice}
+            asCaregiverFor={child?.name}
+            mine={canChange}
+            onSave={save}
+            onMore={(entry) => show({ kind: "edit", entry })}
+            onBack={back}
+          />
+        ) : view.kind === "edit" ? (
+          <LogFlow
+            key={view.entry.id}
+            date={view.entry.entryDate}
             initial={view.entry}
             readingLevel={readingLevel}
             practice={practice}
             customSymptoms={shownCustoms}
             asCaregiverFor={child?.name}
             canHide={canHide}
-            dayBeforeIsPeriod={periodOn(addDays(view.date, -1))}
+            dayBeforeIsPeriod={periodOn(addDays(view.entry.entryDate, -1))}
             lastProducts={shown.find((e) => e.category === "period" && e.details.products?.length)?.details.products ?? []}
             onAddCustomSymptom={addSymptom}
             onSave={save}
-            onLogAnother={() => {
-              setLogRun((n) => n + 1);
-              show({ kind: "log", date: view.date });
-            }}
-            onDone={() => show({ kind: "day", date: view.date })}
+            onLogAnother={back}
+            onDone={back}
           />
-        ) : view.kind === "day" ? (
-          <DayView
-            date={view.date}
-            entries={shown.filter((e) => e.entryDate === view.date)}
-            customs={shownCustoms}
-            periodDay={periodOn(view.date)}
-            canChange={(e) => (child ? e.loggedBy === userId : !e.loggedBy || e.loggedBy === userId)}
-            canDelete={(e) => !child || e.loggedBy === userId}
-            canPlan={!child}
-            writerName={(e) => (child ? (e.loggedBy === userId ? "you" : null) : writerName(e))}
-            teller={
-              child
-                ? (e) => {
-                    const mine = e.loggedBy === userId;
-                    if (e.reportedBy === "self") return child.name;
-                    if (e.reportedBy === "both") return `${child.name} and ${mine ? "you" : "a grown-up"}`;
-                    return mine ? "You" : "A grown-up";
-                  }
-                : undefined
-            }
-            onBack={() => show({ kind: "month" })}
-            onAdd={() => show({ kind: "log", date: view.date })}
-            onEdit={(entry) => show({ kind: "log", date: entry.entryDate, entry })}
-            onDelete={remove}
-            onToggleVisit={toggleVisit}
-          />
+        ) : view.kind === "patterns" ? (
+          <div className="grid gap-5">
+            <MonthTabs current="patterns" child={ownerName} onPick={(k) => show({ kind: k })} onBack={back} />
+            <Patterns entries={shown} readingLevel={readingLevel} />
+          </div>
+        ) : view.kind === "data" ? (
+          <div className="grid gap-5">
+            <button type="button" onClick={back} className="justify-self-start text-sm font-bold text-link hover:underline">
+              ← Back to today
+            </button>
+            <h2 className="font-display text-28 font-extrabold text-navy">My calendar data</h2>
+            <p className="text-15 text-body">Saved on this device. Download a copy any time, or delete it for good.</p>
+            <CalendarDataTools onChanged={reload} />
+          </div>
         ) : view.kind === "tray" ? (
-          <VisitTray
-            entries={tray}
-            customs={customs}
-            onBack={() => show({ kind: "month" })}
-            onRemove={toggleVisit}
-          />
-        ) : (
-          <>
-            <div className="hidden flex-wrap gap-3 sm:flex">
-              {!child && <button type="button" onClick={quickToday} className="btd-btn-coral min-h-[56px] gap-2 px-7 py-3 text-base">
-                <Icon name="hub-feelings" size={22} />
-                How's today?
-              </button>}
-              <button type="button" onClick={logToday} className="btd-btn-outline min-h-[56px] gap-2 px-6 py-3 text-base">
-                <Icon name="plus" size={22} />
-                {child ? `Add a note to ${child.name}'s calendar` : "Log something"}
-              </button>
-            </div>
-            {periodOn(todayKey()) && <MealtimeReminder />}
-            {!child && tray.length > 0 && (
-              <div className="flex flex-wrap items-center gap-3 rounded-card border-2 border-navy bg-butter px-5 py-3">
-                <Icon name="star-filled" size={22} className="text-navy" />
-                <p className="flex-1 text-15 font-bold text-navy">
-                  {tray.length} {tray.length === 1 ? "thing" : "things"} saved for your visit
-                </p>
-                <button type="button" onClick={() => show({ kind: "tray" })} className="btd-btn min-h-[44px] bg-navy px-5 py-2 text-sm text-mist hover:bg-navy/90">
-                  View
-                </button>
+          <VisitTray entries={tray} customs={customs} onBack={back} onRemove={toggleVisit} />
+        ) : view.kind === "month" ? (
+          <div className="grid gap-5">
+            <MonthTabs current="month" child={ownerName} onPick={(k) => show({ kind: k })} onBack={back} />
+            {!child && tray.length > 0 && <TrayBanner count={tray.length} onOpen={() => show({ kind: "tray" })} />}
+            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+              <MonthGrid
+                entries={shown}
+                customs={shownCustoms}
+                predicted={prediction?.days ?? []}
+                month={month}
+                selected={day}
+                onMonthChange={setMonth}
+                onOpenDay={(key) => setDay(key)}
+              />
+              <div className="grid gap-4 rounded-card bg-white p-5 lg:sticky lg:top-28">
+                <h2 className="text-21 font-extrabold text-navy">{longDate(day)}</h2>
+                {dayList(day, "Nothing logged on this day.")}
+                {day <= today && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      say("Log something for this day");
+                      show({ kind: "today" });
+                    }}
+                    className="btd-btn-coral min-h-[56px] w-full px-6 py-3 text-base"
+                  >
+                    Log something for this day
+                  </button>
+                )}
               </div>
-            )}
-            <MonthGrid
-              entries={shown}
-              customs={shownCustoms}
-              predicted={prediction?.days ?? []}
-              month={month}
-              onMonthChange={setMonth}
-              onOpenDay={(date) => show({ kind: "day", date })}
-            />
-            {hasPeriods && (
-              <section aria-label="My period" className="grid gap-4">
-                <MyPeriodCard entries={shown} />
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <BagChecklist />
-                  <LearnMore />
-                </div>
-                <TellADoctor />
-              </section>
-            )}
-            {/* Pinned where a thumb can reach it on a phone. */}
-            <div className="fixed inset-x-4 bottom-4 z-30 flex gap-2 sm:hidden">
-              <button
-                type="button"
-                onClick={child ? logToday : quickToday}
-                className="btd-btn-coral min-h-[56px] flex-1 gap-2 px-4 py-3 text-base shadow-[0_8px_24px_rgba(33,50,68,0.25)]"
-              >
-                <Icon name={child ? "plus" : "hub-feelings"} size={22} />
-                {child ? "Add a note" : "How's today?"}
-              </button>
-              <button
-                type="button"
-                onClick={logToday}
-                aria-label="Log something"
-                className="btd-btn min-h-[56px] bg-white px-4 text-navy shadow-[0_8px_24px_rgba(33,50,68,0.25)]"
-              >
-                <Icon name="plus" size={22} />
-              </button>
             </div>
-          </>
+            {hasPeriods && <MyPeriodCard entries={shown} />}
+          </div>
+        ) : (
+          <div className="mx-auto grid w-full max-w-2xl gap-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="btd-eyebrow">{child ? `${child.name}'s calendar` : "My calendar"}</p>
+                <h1 className="font-display text-[2rem] font-extrabold leading-tight text-navy sm:text-[2.4rem]">
+                  {isToday
+                    ? `Today, ${fromDateKey(day).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`
+                    : longDate(day)}
+                </h1>
+              </div>
+              {!isToday && (
+                <button type="button" onClick={() => setDay(today)} className="btd-btn-outline min-h-[44px] px-4 py-2 text-sm">
+                  Back to today
+                </button>
+              )}
+            </div>
+
+            <WeekStrip entries={shown} selected={day} onPick={setDay} onMonth={() => { setMonth(day); show({ kind: "month" }); }} />
+
+            {!child && tray.length > 0 && <TrayBanner count={tray.length} onOpen={() => show({ kind: "tray" })} />}
+            {isToday && periodOn(today) && <MealtimeReminder />}
+
+            <h2 className="font-display text-23 font-extrabold text-navy">
+              {child ? `Add a note for ${child.name}` : isToday ? "What's happening?" : "What happened that day?"}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {GROUPS.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => startLog(g.id)}
+                  className={`flex min-h-[88px] items-center gap-3 rounded-card border-2 p-3 text-left transition-transform hover:scale-[1.02] ${g.tile}`}
+                >
+                  <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white ${g.ink}`}>
+                    <Icon name={g.icon} size={22} />
+                  </span>
+                  <span className="text-17 font-extrabold leading-tight text-navy">{child && g.id === "period" ? "Period" : g.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-3 rounded-card bg-white p-5">
+              <h2 className="text-17 font-extrabold text-navy">{isToday ? "Today so far" : "That day"}</h2>
+              {dayList(day, isToday ? "Nothing yet. Tap a button above to start." : "Nothing logged on this day.")}
+            </div>
+          </div>
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-13 text-muted">
             Voiced never diagnoses or suggests medicine. If someone is in danger, call 911.
           </p>
-          {/* Signed in, the tools live on the Profile page; signed out, the
-              calendar is only on this device, so they open right here. */}
-          {child ? null : user ? (
-            <Link to="/profile?section=calendar" className="text-13 font-semibold text-link hover:underline">
-              Manage my data
-            </Link>
-          ) : (
-            <button type="button" onClick={() => show({ kind: "data" })} className="text-13 font-semibold text-link hover:underline">
-              Manage my data
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-4">
+            <p className="text-13 text-muted">
+              {child
+                ? `${child.name}'s calendar, from their account.`
+                : practice
+                  ? "Practice mode is on. Nothing is saved."
+                  : store === "account"
+                    ? "Saved to your account."
+                    : accountMissing
+                      ? "Saved on this device for now."
+                      : "Saved on this device only."}{" "}
+              {!user && !practice && (
+                <Link to="/login" className="font-semibold text-link hover:underline">
+                  Sign in to keep it safe.
+                </Link>
+              )}
+            </p>
+            {child ? null : user ? (
+              <Link to="/profile?section=calendar" className="text-13 font-semibold text-link hover:underline">
+                Manage my data
+              </Link>
+            ) : (
+              <button type="button" onClick={() => show({ kind: "data" })} className="text-13 font-semibold text-link hover:underline">
+                Manage my data
+              </button>
+            )}
+            <PracticeModeToggle tone="light" />
+          </div>
         </div>
       </section>
     </div>
   );
 }
 
-function DayView({
-  date,
-  entries,
-  customs,
-  periodDay,
+/** The month's own tabs: the calendar, and patterns. */
+function MonthTabs({
+  current,
+  child,
+  onPick,
   onBack,
-  onAdd,
-  onEdit,
-  onDelete,
-  onToggleVisit,
-  canChange,
-  canDelete,
-  canPlan,
-  writerName,
-  teller,
 }: {
-  date: string;
-  entries: CalendarEntry[];
-  customs: CustomSymptom[];
-  periodDay: boolean;
+  current: "month" | "patterns";
+  child?: string;
+  onPick: (k: "month" | "patterns") => void;
   onBack: () => void;
-  onAdd: () => void;
-  onEdit: (e: CalendarEntry) => void;
-  onDelete: (e: CalendarEntry) => void;
-  onToggleVisit: (e: CalendarEntry) => void;
-  /** Whether Edit and Delete show (a grown-up only changes what they wrote). */
-  // Change what it says: only whoever wrote it.
-  canChange: (e: CalendarEntry) => boolean;
-  // Delete it: the writer, or the calendar's owner (a grown-up's note too).
-  canDelete: (e: CalendarEntry) => boolean;
-  /** Whether "Add to my next appointment" shows (the owner's own tray). */
-  canPlan: boolean;
-  /** "you" or a grown-up's name, when someone other than the owner wrote it. */
-  writerName: (e: CalendarEntry) => string | null;
-  /** "Told by", worded for a grown-up looking at a child's calendar. */
-  teller?: (e: CalendarEntry) => string;
 }) {
-  const future = date > todayKey();
   return (
-    <div className="grid gap-5">
-      <button type="button" onClick={onBack} className="justify-self-start text-sm font-bold text-link hover:underline">
-        ← Back to the month
+    <div className="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        onClick={onBack}
+        aria-label="Back to today"
+        className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-navy shadow-sm hover:bg-sky-tint"
+      >
+        <Icon name="chevron-right" size={22} className="rotate-180" />
       </button>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-28 font-extrabold text-navy">{longDate(date)}</h2>
-        {!future && (
-          <button type="button" onClick={onAdd} className="btd-btn-coral min-h-[52px] gap-2 px-6 py-3 text-base">
-            <Icon name="plus" size={20} />
-            Add something for this day
+      <div role="tablist" aria-label="Calendar views" className="flex flex-wrap gap-2">
+        {(
+          [
+            { id: "month", label: child ? `${child}'s month` : "My month", icon: "calendar" },
+            { id: "patterns", label: child ? `${child}'s patterns` : "My patterns", icon: "repeat" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={current === t.id}
+            onClick={() => onPick(t.id)}
+            className={`flex min-h-[48px] items-center gap-2 rounded-full border-2 px-5 text-15 font-bold ${
+              current === t.id ? "border-navy bg-navy text-mist" : "border-navy/15 bg-white text-navy hover:border-sky"
+            }`}
+          >
+            <Icon name={t.icon} size={20} />
+            {t.label}
           </button>
-        )}
+        ))}
       </div>
+    </div>
+  );
+}
 
-      {periodDay && date === todayKey() && <MealtimeReminder />}
-
-      {entries.length === 0 ? (
-        <div className="btd-card p-6">
-          <p className="text-17 text-body">Nothing logged on this day yet.</p>
-        </div>
-      ) : (
-        <ul className="grid gap-4">
-          {entries.map((e) => (
-            <li key={e.id} className="btd-card p-5">
-              <div className="flex items-start gap-4">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-sky-tint text-navy">
-                  <Icon name={entryIcon(e, customs)} size={26} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-17 font-extrabold text-navy">{entryTitle(e)}</p>
-                    {e.checkInId && <span className="btd-tag bg-butter">From My Voice</span>}
-                    {e.private && (
-                      <span className="btd-tag flex items-center gap-1 bg-navy text-mist">
-                        <Icon name="lock" size={12} />
-                        Just for me
-                      </span>
-                    )}
-                    {writerName(e) && <span className="btd-tag bg-sky">Logged by {writerName(e)}</span>}
-                    {e.typical === "new" && <span className="btd-tag bg-coral/40">New or different</span>}
-                  </div>
-                  <p className="text-13 font-semibold text-muted">
-                    {new Date(e.loggedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-                  </p>
-                  <ul className="mt-2 grid gap-0.5 text-15 text-navy">
-                    {[...detailLines(e, (id) => feeling(id).short, painSpotSentence), ...aboutLines(e, false, teller)].map((l) => (
-                      <li key={l}>{l}</li>
-                    ))}
-                    {e.note && <li className="italic">“{e.note}”</li>}
-                  </ul>
-                </div>
-              </div>
-              {canPlan && !e.checkInId && (
-                <label className="mt-4 flex min-h-[44px] items-center gap-3 rounded-tile bg-mist px-4 text-15 font-semibold text-navy">
-                  <input type="checkbox" className="h-5 w-5" checked={e.addToVisit} onChange={() => onToggleVisit(e)} />
-                  Add to my next appointment
-                  {e.addToVisit && <Icon name="star-filled" size={16} className="text-coral-hover" />}
-                </label>
-              )}
-              {canDelete(e) && <div className="mt-4 flex flex-wrap gap-2">
-                {canChange(e) && (
-                  <button type="button" onClick={() => onEdit(e)} className="btd-btn-outline min-h-[44px] px-4 py-2 text-sm">
-                    Edit
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => onDelete(e)}
-                  className="min-h-[44px] px-3 text-sm font-semibold text-clay hover:underline"
-                >
-                  Delete
-                </button>
-              </div>}
-            </li>
-          ))}
-        </ul>
-      )}
+function TrayBanner({ count, onOpen }: { count: number; onOpen: () => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-card border-2 border-navy bg-butter px-5 py-3">
+      <Icon name="star-filled" size={22} className="text-navy" />
+      <p className="flex-1 text-15 font-bold text-navy">
+        {count} {count === 1 ? "thing" : "things"} saved for your visit
+      </p>
+      <button type="button" onClick={onOpen} className="btd-btn min-h-[44px] bg-navy px-5 py-2 text-sm text-mist hover:bg-navy/90">
+        View
+      </button>
     </div>
   );
 }
@@ -644,7 +581,7 @@ function VisitTray({
   return (
     <div className="grid gap-5">
       <button type="button" onClick={onBack} className="justify-self-start text-sm font-bold text-link hover:underline">
-        ← Back to the month
+        ← Back to today
       </button>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-28 font-extrabold text-navy">Saved for my visit</h2>
