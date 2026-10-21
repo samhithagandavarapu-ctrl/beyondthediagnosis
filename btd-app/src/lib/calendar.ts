@@ -452,6 +452,9 @@ export async function listEntries(
   const { data, error } = await supabase
     .from("calendar_entries")
     .select(ENTRY_COLUMNS)
+    // Only this person's own calendar: a linked grown-up can also read their
+    // children's, and those must never mix in here.
+    .eq("user_id", userId)
     .order("entry_date", { ascending: false });
   if (error) {
     console.error("Couldn't load the calendar from the account:", error.message);
@@ -504,6 +507,7 @@ export async function listCustomSymptoms(userId: string | null): Promise<CustomS
   const { data, error } = await supabase
     .from("custom_symptoms")
     .select("id, label, icon, created_at")
+    .eq("user_id", userId)
     .order("created_at", { ascending: true });
   if (error) return readLocal(LOCAL_SYMPTOMS);
   return (data as SymptomRow[]).map((r) => ({ id: r.id, label: r.label, icon: r.icon, createdAt: r.created_at }));
@@ -645,7 +649,7 @@ export function dayAriaLabel(key: string, entries: CalendarEntry[]): string {
 export async function deleteCustomSymptoms(userId: string | null): Promise<void> {
   writeLocal(LOCAL_SYMPTOMS, []);
   if (userId && authEnabled) {
-    const { error } = await supabase.from("custom_symptoms").delete().not("id", "is", null);
+    const { error } = await supabase.from("custom_symptoms").delete().eq("user_id", userId);
     if (error) console.error("Couldn't delete custom symptoms from the account:", error.message);
   }
 }
@@ -702,16 +706,17 @@ export function calendarCsv(entries: CalendarEntry[], answers: (e: CalendarEntry
 }
 
 /** "Delete all my period data" (periodOnly) or "Delete my whole calendar":
- *  real deletes, on this device and in the account. Row-level security
- *  limits the account delete to the person's own rows. */
+ *  real deletes, on this device and in the account, of this person's own
+ *  calendar only. */
 export async function deleteAllEntries(userId: string | null, periodOnly: boolean): Promise<boolean> {
   writeLocal(
     LOCAL_ENTRIES,
     periodOnly ? readLocal<CalendarEntry>(LOCAL_ENTRIES).filter((e) => e.category !== "period") : []
   );
   if (!userId || !authEnabled) return true;
-  const query = supabase.from("calendar_entries").delete();
-  const { error } = periodOnly ? await query.eq("category", "period") : await query.not("id", "is", null);
+  // Only this person's own calendar, never entries they wrote in a child's.
+  const query = supabase.from("calendar_entries").delete().eq("user_id", userId);
+  const { error } = periodOnly ? await query.eq("category", "period") : await query;
   if (error) {
     console.error("Couldn't delete from the calendar in the account:", error.message);
     return false;
