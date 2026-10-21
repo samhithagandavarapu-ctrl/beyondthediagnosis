@@ -27,7 +27,7 @@ export type FamilyInvite = {
 
 export type FamilyNotice = {
   id: string;
-  kind: "linked" | "unlinked";
+  kind: "linked" | "unlinked" | "deleted";
   actorName: string;
   createdAt: string;
   read: boolean;
@@ -162,7 +162,7 @@ export async function listNotices(): Promise<FamilyNotice[]> {
     .order("created_at", { ascending: false })
     .limit(20);
   if (error) return [];
-  return (data as { id: string; kind: "linked" | "unlinked"; actor_name: string | null; created_at: string; read_at: string | null }[]).map((r) => ({
+  return (data as { id: string; kind: "linked" | "unlinked" | "deleted"; actor_name: string | null; created_at: string; read_at: string | null }[]).map((r) => ({
     id: r.id,
     kind: r.kind,
     actorName: r.actor_name || "Someone",

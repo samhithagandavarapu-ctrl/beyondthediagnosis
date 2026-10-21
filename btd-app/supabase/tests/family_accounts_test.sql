@@ -135,8 +135,11 @@ insert into calendar_entries (id, user_id, entry_date, category, reported_by, no
   values ('33333333-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', current_date, 'mood', 'caregiver', 'from B');
 select pg_temp.as_user('c0000000-0000-4000-8000-000000000001');
 update calendar_entries set logged_by = null where id = '33333333-0000-4000-8000-000000000001';
-\echo == 11b. B deletes their account: it goes through, and the note stays in K’s calendar with no writer
+\echo == 11b. B deletes their account: it goes through, the note stays in K’s calendar with no writer, and K is told
 reset role;
 delete from auth.users where id = 'b0000000-0000-4000-8000-000000000001';
 select '   B gone: ' || (count(*) = 0) from auth.users where id = 'b0000000-0000-4000-8000-000000000001';
 select '   note kept, writer cleared: ' || note || ', ' || coalesce(logged_by::text, 'none') from calendar_entries where id = '33333333-0000-4000-8000-000000000001';
+select pg_temp.as_user('c0000000-0000-4000-8000-000000000001'); set role authenticated;
+select '   K notices: ' || string_agg(kind || ' by ' || coalesce(actor_name, '?'), ',' order by created_at) from family_events;
+reset role;

@@ -101,16 +101,23 @@ function storyNotification(s: StoryRow): Raw {
   };
 }
 
-/** "Mom linked to your account" / "Maya unlinked from your account". */
+/** "Mom linked to your account" / "Maya unlinked from your account" /
+ *  "Mom deleted their account". */
 function familyNotification(n: FamilyNotice): Raw {
   const linked = n.kind === "linked";
   return {
     id: `family:${n.id}`,
     kind: linked ? "family-linked" : "family-unlinked",
-    title: linked ? `${n.actorName} linked accounts with you` : `${n.actorName} unlinked from your account`,
+    title: linked
+      ? `${n.actorName} linked accounts with you`
+      : n.kind === "deleted"
+        ? `${n.actorName} deleted their Voiced account`
+        : `${n.actorName} unlinked from your account`,
     body: linked
       ? "You're now linked on Voiced. See who's linked, and what each of you can see, in Profile → Family."
-      : "You're no longer linked on Voiced. Anything already logged stays where it is.",
+      : n.kind === "deleted"
+        ? "So you're no longer linked. Your own calendar isn't changed."
+        : "You're no longer linked on Voiced. Anything already logged stays where it is.",
     href: "/profile?section=family",
     action: "See my family",
     at: n.createdAt,

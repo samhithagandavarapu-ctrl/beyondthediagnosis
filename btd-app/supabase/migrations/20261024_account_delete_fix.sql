@@ -36,3 +36,30 @@ begin
   return new;
 end;
 $$;
+
+-- When someone deletes their account, everyone linked with them is told.
+-- The notice is written just before the account goes, while their name can
+-- still be looked up; the links themselves go with the account.
+alter table public.family_events drop constraint if exists family_events_kind_check;
+alter table public.family_events
+  add constraint family_events_kind_check check (kind in ('linked', 'unlinked', 'deleted'));
+
+create or replace function public.family_tell_on_account_delete()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.family_events (recipient_id, actor_id, kind)
+  select case when l.caregiver_id = old.id then l.child_id else l.caregiver_id end, old.id, 'deleted'
+  from public.family_links l
+  where l.caregiver_id = old.id or l.child_id = old.id;
+  return old;
+end;
+$$;
+
+drop trigger if exists family_tell_on_account_delete on auth.users;
+create trigger family_tell_on_account_delete
+  before delete on auth.users
+  for each row execute function public.family_tell_on_account_delete();
