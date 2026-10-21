@@ -89,6 +89,16 @@ export function MealtimeReminder() {
 const BAG = ["Pads", "Wipes", "Spare underwear", "My picture story"];
 const BAG_KEY = "voiced:period-bag";
 
+/** "2 of 4 packed", for the row that opens the bag. */
+export function bagPacked(): { packed: number; of: number } {
+  try {
+    const ticked = JSON.parse(localStorage.getItem(BAG_KEY) || "[]") as string[];
+    return { packed: ticked.filter((t) => BAG.includes(t)).length, of: BAG.length };
+  } catch {
+    return { packed: 0, of: BAG.length };
+  }
+}
+
 export function BagChecklist() {
   const [ticked, setTicked] = useState<string[]>(() => {
     try {
@@ -175,7 +185,7 @@ export function MyPeriodCard({ entries }: { entries: CalendarEntry[] }) {
         )}
         {all.length > 0 && (
           <li>
-            Last period: {all[all.length - 1].periodDays} days, starting {longDate(all[all.length - 1].start)}
+            Last period: {all[all.length - 1].periodDays} {all[all.length - 1].periodDays === 1 ? "day" : "days"}, starting {longDate(all[all.length - 1].start)}
           </li>
         )}
       </ul>

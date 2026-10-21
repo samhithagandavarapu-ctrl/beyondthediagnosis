@@ -25,6 +25,7 @@ const RING: Record<StickerId, string> = {
   "knows-the-visit": "#FFDE9E",
   "used-my-voice": "#8FCBF2",
   "practiced-my-visit": "#FFA694",
+  "logged-my-day": "#FFDE9E",
 };
 
 const NAVY = "#213244";
@@ -90,6 +91,16 @@ const GLYPHS: Record<StickerId, (color: string) => JSX.Element> = {
       <rect x="103" y="88" width="18" height="6" rx="3" fill="#fff" />
       <path d="M80 118 l6 6 l11 -12" fill="none" stroke="#fff" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
       <rect x="103" y="114" width="18" height="6" rx="3" fill="#fff" />
+    </>
+  ),
+  "logged-my-day": (c) => (
+    <>
+      {/* A calendar page with today's dot on it. */}
+      <rect x="66" y="74" width="68" height="62" rx="10" fill={c} />
+      <rect x="80" y="64" width="7" height="20" rx="3.5" fill={c} />
+      <rect x="113" y="64" width="7" height="20" rx="3.5" fill={c} />
+      <rect x="74" y="94" width="52" height="34" rx="5" fill="#fff" />
+      <path d="M88 111 l8 8 l16 -16" fill="none" stroke={c} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
     </>
   ),
 };

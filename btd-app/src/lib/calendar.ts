@@ -201,7 +201,7 @@ export function flowWords(flow: FlowCounts | undefined): string {
 
 /** A period day, rather than spotting between periods. */
 export function isPeriodDay(e: CalendarEntry): boolean {
-  return e.category === "period" && !e.details.spotting;
+  return e.category === "period" && !e.details.spotting && !e.details.ended;
 }
 
 export type EntryDetails = {
@@ -241,6 +241,8 @@ export type EntryDetails = {
   firstDay?: boolean;
   /** Bleeding between periods; not counted as a period day. */
   spotting?: boolean;
+  /** "It stopped": the period ended. Not a period day itself. */
+  ended?: boolean;
   /** How many of each picture they tapped +1 on that day. */
   flow?: FlowCounts;
   /** Which pictures they were looking at. */
@@ -646,7 +648,13 @@ export function detailLines(e: CalendarEntry, feelingWord: (id: FeelingId) => st
       return d.energy ? [`Energy: ${d.energy === "normal" ? "Usual" : labelOf(ENERGY_LEVELS, d.energy)}`] : [];
     case "period":
       return [
-        ...(d.spotting ? ["Spotting (between periods)"] : d.firstDay ? ["First day of my period"] : []),
+        ...(d.ended
+          ? ["My period stopped"]
+          : d.spotting
+            ? ["Spotting (between periods)"]
+            : d.firstDay
+              ? ["First day of my period"]
+              : []),
         ...(flowWords(d.flow)
           ? [`${labelOf(FLOW_PRODUCTS, d.flowProduct ?? "pad")}: ${flowWords(d.flow)}`]
           : []),
@@ -683,7 +691,7 @@ export function aboutLines(
    *  grown-up looking at a child's calendar). */
   teller?: (e: CalendarEntry) => string
 ): string[] {
-  const strength = e.category === "pain" ? "" : strengthWords(e);
+  const strength = e.category === "pain" && e.severityScale !== "faces" ? "" : strengthWords(e);
   return [
     ...(strength ? [`How strong: ${strength}`] : []),
     ...(e.details.since ? [SINCE_WORDS[e.details.since]] : []),

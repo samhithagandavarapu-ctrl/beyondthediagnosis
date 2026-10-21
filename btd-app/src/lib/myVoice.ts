@@ -351,7 +351,8 @@ export type StickerId =
   | "said-how-i-feel"
   | "knows-the-visit"
   | "used-my-voice"
-  | "practiced-my-visit";
+  | "practiced-my-visit"
+  | "logged-my-day";
 
 export type StickerKind = {
   id: StickerId;
@@ -391,6 +392,12 @@ export const STICKER_KINDS: StickerKind[] = [
     art: "sticker-map",
     label: "I practiced my visit",
     earnedFor: "You practiced your visit from start to finish.",
+  },
+  {
+    id: "logged-my-day",
+    art: "calendar",
+    label: "I logged how I am",
+    earnedFor: "You put something on your calendar. Your doctor can see the whole picture.",
   },
 ];
 
