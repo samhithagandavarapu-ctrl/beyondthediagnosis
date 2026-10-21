@@ -12,6 +12,7 @@ import {
   streamChatReply,
 } from "../api/_lib/claude.js";
 import { accountDeletionStatus, deleteAccount } from "../api/_lib/account.js";
+import { familyAction } from "../api/_lib/family.js";
 
 /** Local development only.
  *
@@ -91,6 +92,11 @@ app.post("/api/refine-appointment", async (req, res) => {
 app.post("/api/delete-account", async (req, res) => {
   const { status, error } = await deleteAccount(req.headers.authorization);
   res.status(status).json(error ? { error } : { ok: true });
+});
+
+app.post("/api/family", async (req, res) => {
+  const { status, error, data } = await familyAction(req.headers.authorization, req.body ?? {});
+  res.status(status).json(error ? { error } : { ok: true, ...(data ?? {}) });
 });
 
 app.listen(PORT, () => {

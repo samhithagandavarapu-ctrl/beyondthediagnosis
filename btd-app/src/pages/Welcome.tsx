@@ -10,7 +10,7 @@ import { BoardGrid, NoteEditor, noteQuestion } from "../components/meboard/MeBoa
 import SpeakButton from "../components/myvoice/SpeakButton";
 import StickerBadge from "../components/myvoice/StickerBadge";
 import Icon, { IconName } from "../components/icons/Icon";
-import { RELATIONS } from "./Me";
+import { AddChildForm } from "../components/family/ChildCards";
 
 // The welcome setup, right after an account is made (and once for accounts
 // made before it existed). Who are you? Then, for someone here for
@@ -61,7 +61,6 @@ export default function Welcome() {
   // The board being filled in here, starting from whatever is already saved.
   const [board, setBoard] = useState<MeBoard>(() => meBoard ?? emptyBoard());
   const [helpName, setHelpName] = useState(meBoard?.aboutName ?? "");
-  const [relation, setRelation] = useState(meBoard?.relation ?? "");
 
   // The saved board can arrive after this page opens (it loads with the
   // account): start from it, unless something has been typed here already.
@@ -71,7 +70,6 @@ export default function Welcome() {
     if (!meBoardLoaded || touched.current) return;
     setBoard(meBoard ?? emptyBoard());
     setHelpName(meBoard?.aboutName ?? "");
-    setRelation(meBoard?.relation ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meBoardLoaded]);
 
@@ -324,53 +322,53 @@ export default function Welcome() {
 
   if (step.kind === "who") {
     const q = "Who are you helping?";
+    const startBoard = (childName: string) => {
+      // A new child's board starts empty; it saves to their profile.
+      touched.current = true;
+      setHelpName(childName);
+      setBoard(emptyBoard());
+      setKeepGoing(false);
+      go({ kind: "tip" });
+    };
     return (
-      <Frame title={q} spoken={q} dots={dots} onBack={back} topRight={skipAll}>
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const b = { ...board, aboutName: helpName.trim(), relation };
-            await keepBoard(b);
-            go({ kind: "tip" });
-          }}
-          className="grid gap-5"
-        >
-          <label className="grid gap-1.5 text-15 font-bold text-navy">
-            Their first name or nickname
-            <input
-              className="btd-input text-base"
-              value={helpName}
-              required
-              autoComplete="off"
-              onChange={(e) => {
-                touched.current = true;
-                setHelpName(e.target.value);
-              }}
-            />
-          </label>
-          <fieldset>
-            <legend className="mb-2 text-15 font-bold text-navy">How are you related?</legend>
-            <div className="flex flex-wrap gap-2">
-              {RELATIONS.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  aria-pressed={relation === r}
-                  onClick={() => setRelation(r)}
-                  className={`min-h-[48px] rounded-full border-2 px-5 text-15 font-bold transition-colors ${
-                    relation === r ? "border-navy bg-navy text-mist" : "border-navy/15 bg-white text-navy hover:border-sky"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <button type="submit" disabled={!helpName.trim()} className="btd-btn-coral min-h-[56px] justify-self-start gap-2 px-8 text-base disabled:opacity-40">
-            Next
-            <Icon name="chevron-right" size={20} />
+      <Frame title={q} spoken={`${q} Add their name and the year they were born.`} dots={dots} onBack={back} topRight={skipAll}>
+        <p className="-mt-2 mb-5 text-15 text-body">
+          This is the only place their details go. Later they can have their own login to the same
+          profile — you'll find that on your Family dashboard.
+        </p>
+        {practice ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              startBoard(helpName.trim());
+            }}
+            className="grid gap-4"
+          >
+            <label className="grid gap-1.5 text-15 font-bold text-navy">
+              Their first name or nickname
+              <input className="btd-input text-base" value={helpName} required onChange={(e) => setHelpName(e.target.value)} />
+            </label>
+            <p className="text-13 font-semibold text-navy">Practice mode: nobody is added.</p>
+            <button type="submit" disabled={!helpName.trim()} className="btd-btn-coral min-h-[56px] justify-self-start px-8 text-base disabled:opacity-40">
+              Next
+            </button>
+          </form>
+        ) : (
+          <AddChildForm submitLabel="Next" onAdded={(_, childName) => startBoard(childName)} />
+        )}
+        <p className="mt-6 text-13 text-muted">
+          Did someone who made their own account send you a code?{" "}
+          <button
+            type="button"
+            onClick={async () => {
+              await saveSetup({ status: "done" });
+              navigate("/profile?section=family", { replace: true });
+            }}
+            className="font-bold text-link underline underline-offset-2"
+          >
+            Enter it instead
           </button>
-        </form>
+        </p>
       </Frame>
     );
   }
@@ -485,6 +483,19 @@ export default function Welcome() {
           Let's go
           <Icon name="chevron-right" size={20} />
         </button>
+        {forOther && (
+          <button
+            type="button"
+            onClick={() => {
+              setHelpName("");
+              go({ kind: "who" });
+            }}
+            className="btd-btn-sky min-h-[56px] gap-2 px-6 text-sm"
+          >
+            <Icon name="plus" size={18} />
+            Add another child
+          </button>
+        )}
         <button type="button" onClick={() => navigate("/me", { replace: true })} className="btd-btn-outline min-h-[56px] px-6 text-sm">
           See {forOther ? "the" : "my"} whole board
         </button>

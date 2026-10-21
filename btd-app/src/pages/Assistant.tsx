@@ -2,6 +2,7 @@ import { FormEvent, useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { sendChatMessage, prepNotesFromChat, ChatMessage } from "../lib/api";
 import { addNotesToDraft, draftLabel } from "../lib/drafts";
+import { useAccountMode } from "../context/AccountModeContext";
 import { useAuth } from "../context/AuthContext";
 import { Chat, ChatStore, chatLabel, deleteChat, listChats, newChat, saveChat, sortChats } from "../lib/chats";
 import DictateButton from "../components/DictateButton";
@@ -38,6 +39,8 @@ export default function Assistant() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
+  // Notes go on the drafts of whoever this account is for (a parent's child).
+  const { subjectId } = useAccountMode();
   const userId = user?.id ?? null;
   // Chat history: every saved chat, and which one is open (null = a new chat
   // that hasn't been sent yet, so isn't saved).
@@ -213,7 +216,7 @@ export default function Assistant() {
         );
         return;
       }
-      const draft = await addNotesToDraft(user?.id ?? null, notes, where);
+      const draft = await addNotesToDraft(user?.id ?? null, notes, where, subjectId);
       const parts = [
         notes.symptoms.length && `${notes.symptoms.length} symptom${notes.symptoms.length > 1 ? "s" : ""}`,
         notes.questions.length && `${notes.questions.length} question${notes.questions.length > 1 ? "s" : ""}`,

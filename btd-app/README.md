@@ -245,6 +245,41 @@ and run it. It adds the `me_boards` table (only the owner can read their board)
 and three profile columns: role, age group, and whether setup is done. Until
 then, the board and the setup answers are kept in the browser they were made in.
 
+### Family: one profile per person
+
+Each person exists once. A parent adds their child (name, birth year) on the
+Family dashboard or in setup — the only place a child's details are entered —
+and the child's calendar, Me board and Appointment Prep drafts belong to that
+profile. Logins connect to it:
+
+- **12 and under:** "Give [name] their own login". The parent picks a username
+  and password; the child signs in on the normal sign-in page with the
+  username (no email). The parent can set a new password later.
+- **13 and up:** "Invite [name]" makes a one-time code and link (`/join/CODE`,
+  7 days). The teen makes their own login with their own email, and it
+  connects to the existing profile.
+- **A self-advocate who signs up alone** has their own profile and can
+  "Invite a caregiver" from Profile → Family.
+
+Parent and child see the same information, except calendar notes the child
+marks "Just for me". Only the person and their linked grown-ups can see it.
+
+To turn it on:
+
+1. Run [`supabase/migrations/20261025_one_profile_per_person.sql`](supabase/migrations/20261025_one_profile_per_person.sql)
+   in the SQL Editor, after `supabase/appointment-drafts.sql` and
+   `supabase/me-board.sql`. Safe to run again.
+2. Make sure `SUPABASE_SERVICE_ROLE_KEY` is set in Vercel (the same key "Delete
+   account" uses). Adding a child and making a child's login happen on the
+   server ([`api/family.js`](api/family.js)), because they create sign-ins.
+
+A child's profile, until it has a login, is a sign-in nobody can use (an
+`@people.voiced.invalid` address with a random password). A username login is
+`<username>@kids.voiced.invalid`. Neither address is ever emailed. Parents
+who used Voiced before this see a one-time card on their dashboard to move
+their notes onto their child's profile. The security rules are tested in
+[`supabase/tests/one_profile_test.sql`](supabase/tests/one_profile_test.sql).
+
 ### Story credits
 
 When someone shares a story they choose how it's credited: their first name,
@@ -361,8 +396,9 @@ Deploys pull from a Git repo, so this has to happen first.
      `claude-opus-5` for stronger answers at higher cost per message.
    - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` → only if you've set up
      login (see "Setting up login" above)
-   - `SUPABASE_SERVICE_ROLE_KEY` → only if you want the "Delete account"
-     button to work (see "Setting up login" above)
+   - `SUPABASE_SERVICE_ROLE_KEY` → needed for the "Delete account" button,
+     and for adding a child and making a child's login (see "Family: one
+     profile per person" above)
    - `VITE_ADMIN_EMAILS` → optional; `withvoiced@gmail.com` and `voiced@gmail.com`
      are always admins, and
      anyone listed here (comma-separated) can also reach `/admin/stories`

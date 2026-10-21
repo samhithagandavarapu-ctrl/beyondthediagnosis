@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
+import { useAccountMode } from "./AccountModeContext";
 import { fetchProfile, saveReadingLevel } from "../lib/profile";
 import { usePracticeMode } from "./PracticeModeContext";
 import { CheckInStore, deleteCheckInFrom, listCheckIns, saveCheckInTo } from "../lib/checkIns";
@@ -77,6 +78,12 @@ function isReadingLevel(value: unknown): value is ReadingLevel {
 export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { practice } = usePracticeMode();
+  // Whose profile: a parent's tools work on the child they're managing.
+  const { subjectId } = useAccountMode();
+  const userId = user?.id ?? null;
+  const ownerId = userId ? subjectId : null;
+  // Signed in, but nobody to show yet (a parent who hasn't added a child).
+  const noOne = Boolean(userId && !ownerId);
 
   const [readingLevel, setReadingLevelState] = useState<ReadingLevel>("icon-text");
   const [readAloud, setReadAloud] = useState(true);
@@ -117,7 +124,12 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     if (authLoading) return;
     let cancelled = false;
     setCheckInsLoaded(false);
-    listCheckIns(user?.id ?? null).then((res) => {
+    if (noOne) {
+      setCheckIns([]);
+      setCheckInsLoaded(true);
+      return;
+    }
+    listCheckIns(userId, ownerId).then((res) => {
       if (cancelled) return;
       setCheckIns(res.checkIns);
       setCheckInStore(res.store);
@@ -127,7 +139,8 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading, reloads]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading, reloads, ownerId]);
 
   // The Me board: loaded the same way, and again when someone signs in
   // (which brings a board made on this device into the account).
@@ -135,7 +148,12 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     if (authLoading) return;
     let cancelled = false;
     setMeBoardLoaded(false);
-    loadBoard(user?.id ?? null).then((res) => {
+    if (noOne) {
+      setMeBoard(null);
+      setMeBoardLoaded(true);
+      return;
+    }
+    loadBoard(userId, ownerId).then((res) => {
       if (cancelled) return;
       setMeBoard(res.board);
       setMeBoardStore(res.store);
@@ -145,7 +163,8 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading, ownerId]);
 
   // Signed in: the profile copy wins, so the level follows them to any device
   // — the same way large text / high contrast / easy read already do.
@@ -203,7 +222,8 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     if (practice) return null;
     if (!checkInHasContent(checkIn)) return null;
     setCheckIns((prev) => sortCheckIns([checkIn, ...prev.filter((c) => c.id !== checkIn.id)]));
-    const { checkIn: saved, where } = await saveCheckInTo(user?.id ?? null, checkIn);
+    if (noOne) return null;
+    const { checkIn: saved, where } = await saveCheckInTo(userId, checkIn, ownerId);
     // Keep the ids of its calendar entries, so a later change updates them.
     setCheckIns((prev) => prev.map((c) => (c.id === saved.id ? saved : c)));
     return where;
@@ -228,15 +248,16 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     if (practice) return null;
     const next = { ...board, updatedAt: new Date().toISOString() };
     setMeBoard(next);
-    const where = await saveBoard(user?.id ?? null, next);
-    setMeBoardStore(where);
+    if (noOne) return null;
+    const where = await saveBoard(userId, next, ownerId);
+    if (where) setMeBoardStore(where);
     return where;
   }
 
   function deleteMeBoard() {
     if (practice) return;
     setMeBoard(null);
-    deleteBoard(user?.id ?? null);
+    deleteBoard(userId, ownerId);
   }
 
   function earnSticker(id: StickerId) {

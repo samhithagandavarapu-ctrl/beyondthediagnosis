@@ -7,7 +7,8 @@ import { BoardGrid, NoteEditor, boardSpoken } from "../components/meboard/MeBoar
 import SpeakButton from "../components/myvoice/SpeakButton";
 import Icon from "../components/icons/Icon";
 import { ForLabel } from "../components/ModeBanner";
-import { useAccountMode } from "../context/AccountModeContext";
+import NeedsChild from "../components/family/NeedsChild";
+import { possessive, useAccountMode } from "../context/AccountModeContext";
 
 // The Me page: the "All about me" board. Eight sticky notes; tap one to fill
 // it in. It goes at the top of the Appointment Prep summary, so a new doctor
@@ -19,7 +20,7 @@ export default function Me() {
   const { meBoard, meBoardLoaded, meBoardStore, meBoardAccountMissing, saveMeBoard, deleteMeBoard, readingLevel, say } =
     useMyVoice();
   const { practice } = usePracticeMode();
-  const { mode, view, forName, managedList } = useAccountMode();
+  const { mode, view, forName, subjectId, family } = useAccountMode();
   // Changes made in practice mode live only here, and are dropped when it ends.
   const [practiceBoard, setPracticeBoard] = useState<MeBoard | null>(null);
   useEffect(() => {
@@ -31,20 +32,12 @@ export default function Me() {
   const [working, setWorking] = useState<MeBoard | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editingWho, setEditingWho] = useState(false);
-  // A parent's board is about the person they manage, even before it has a
-  // name on it. In a parent's preview of the child's view, it reads as "me".
-  const parentName = mode === "parent" ? board.aboutName.trim() || forName : null;
-  const name = view === "self" ? null : board.aboutName.trim() || parentName;
+  // Each person has their own board. A parent's tools show their child's,
+  // named for them; in the person's own space (or a parent's preview) it's "me".
+  const name = view === "self" ? null : mode === "parent" ? forName : board.aboutName.trim() || null;
   const title = boardTitle({ aboutName: name ?? "" });
-  // One board per account: with several children, it's about one of them.
-  const otherChild =
-    mode === "parent" && !practice && board.aboutName.trim() && forName && board.aboutName.trim() !== forName && managedList.length > 1
-      ? board.aboutName.trim()
-      : null;
 
   async function keep(next: MeBoard) {
-    // A parent's first save names the board after the person they manage.
-    if (mode === "parent" && !next.aboutName.trim() && parentName) next = { ...next, aboutName: parentName };
     if (practice) {
       setPracticeBoard(next);
       setNotice("That was practice, so nothing was saved.");
@@ -72,6 +65,14 @@ export default function Me() {
     if (save && working) await keep(working);
     setOpen(null);
     setWorking(null);
+  }
+
+  if (mode === "parent" && !subjectId) {
+    return (
+      <div className="btd-container max-w-3xl py-10">
+        <NeedsChild what="The Me board" />
+      </div>
+    );
   }
 
   if (!meBoardLoaded) {
@@ -137,26 +138,26 @@ export default function Me() {
           : "The things a doctor can't learn from a chart: how I usually am, how I show pain, and how to talk with me. Tap a note to fill it in."}
       </p>
 
-      {otherChild && (
-        <p className="mt-4 max-w-[46em] rounded-tile border border-butter bg-butter/30 px-4 py-3 text-15 text-navy">
-          This board is about {otherChild}. Each parent account has one Me board for now.
-        </p>
-      )}
-
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-13">
         <span className="inline-flex items-center gap-1.5 font-semibold text-muted">
           <Icon name="lock" size={14} />
           {practice
             ? "Practice mode: nothing on this page is saved."
             : meBoardStore === "account"
-              ? "Saved to your account. Only you can see it."
+              ? mode === "parent" && forName
+                ? `Saved to ${possessive(forName)} profile. Only ${forName} and their linked grown-ups can see it.`
+                : family.grownUps.length
+                  ? "Saved to your profile. Only you and your linked grown-ups can see it."
+                  : "Saved to your account. Only you can see it."
               : meBoardAccountMissing
                 ? "Saved on this device for now. Your account isn't ready to keep it yet."
                 : "Saved on this device. Sign in to keep it on every device."}
         </span>
+        {mode === "none" && (
         <button type="button" onClick={() => setEditingWho((v) => !v)} className="font-bold text-link hover:underline">
           {editingWho ? "Close" : name ? `Not about ${name}? Change who this is about` : "Filling this in for someone else?"}
         </button>
+        )}
       </div>
 
       {editingWho && <WhoEditor board={board} onSave={(b) => keep(b).then(() => setEditingWho(false))} />}

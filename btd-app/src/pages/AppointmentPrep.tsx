@@ -81,6 +81,7 @@ import {
 } from "../lib/appointmentPdf";
 import { inkLastWord } from "../components/Scribble";
 import { ForLabel } from "../components/ModeBanner";
+import NeedsChild from "../components/family/NeedsChild";
 import { useAccountMode, useWhose } from "../context/AccountModeContext";
 
 export default function AppointmentPrep() {
@@ -89,11 +90,14 @@ export default function AppointmentPrep() {
   const { user, loading: authLoading } = useAuth();
   // Whose visit this is, so every label says so: "Maya's symptoms" for a
   // parent, "My symptoms" in someone's own space.
-  const { view, mode, forName } = useAccountMode();
+  const { view, mode, forName, subjectId, forOther } = useAccountMode();
+  // Drafts and the calendar belong to the person the visit is for: a parent
+  // works on their child's (the same ones the child sees).
+  const userId = user?.id ?? null;
+  const ownerId = userId ? subjectId : null;
   const whose = useWhose();
   const self = view === "self";
   const parentFor = mode === "parent" && !self ? forName : null;
-  const userId = user?.id ?? null;
 
   // Drafts: the one open now, and the rest. They live in the account when
   // signed in and on this device otherwise (see lib/drafts.ts).
@@ -138,7 +142,10 @@ export default function AppointmentPrep() {
   useEffect(() => {
     if (authLoading) return;
     let cancelled = false;
-    Promise.all([listEntries(userId), listCustomSymptoms(userId)]).then(([res, customs]) => {
+    const load = forOther && ownerId
+      ? Promise.all([listEntriesOf(ownerId).then((entries) => ({ entries })), listCustomSymptomsOf(ownerId)])
+      : Promise.all([listEntries(userId), listCustomSymptoms(userId)]);
+    load.then(([res, customs]) => {
       if (cancelled) return;
       setCalEntries(res.entries);
       setCalCustoms(customs);
@@ -147,7 +154,7 @@ export default function AppointmentPrep() {
     return () => {
       cancelled = true;
     };
-  }, [userId, authLoading]);
+  }, [userId, authLoading, ownerId, forOther]);
   // A linked grown-up can bring in from a child's calendar too (only what the
   // child hasn't marked "Just for me" ever reaches here).
   const family = useFamily();
@@ -405,7 +412,13 @@ export default function AppointmentPrep() {
     if (authLoading) return;
     let cancelled = false;
     setLoaded(false);
-    listDrafts(userId).then((res) => {
+    if (userId && !ownerId) {
+      // A parent who hasn't added a child yet: nothing to open.
+      openDraft(newDraft());
+      setLoaded(true);
+      return;
+    }
+    listDrafts(userId, ownerId).then((res) => {
       if (cancelled) return;
       setDrafts(res.drafts);
       setStore(res.store);
@@ -418,7 +431,7 @@ export default function AppointmentPrep() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, authLoading]);
+  }, [userId, authLoading, ownerId]);
 
   // A draft keeps its own copy of the Me board, taken the first time it's
   // open with a board to copy (so, for a new draft, when it's started). A
@@ -464,7 +477,7 @@ export default function AppointmentPrep() {
         updatedAt: new Date().toISOString(),
       };
       lastSaved.current = snap;
-      saveDraft(userId, d).then((where) => {
+      saveDraft(userId, d, ownerId).then((where) => {
         setSaveState(userId && where === "device" && store === "account" ? "failed" : "saved");
         setDrafts((prev) => [d, ...prev.filter((x) => x.id !== d.id)]);
       });
@@ -484,7 +497,7 @@ export default function AppointmentPrep() {
     }
     const renamed = { ...d, name: name.trim(), updatedAt: new Date().toISOString() };
     setDrafts((prev) => [renamed, ...prev.filter((x) => x.id !== d.id)]);
-    saveDraft(userId, renamed);
+    saveDraft(userId, renamed, ownerId);
   }
 
   /** "Save to my drafts" at the end of the form: name it and save now. */
@@ -498,7 +511,7 @@ export default function AppointmentPrep() {
     };
     setDraftName(name);
     lastSaved.current = snapshot(name, form, draftMyVoice);
-    const where = await saveDraft(userId, d);
+    const where = await saveDraft(userId, d, ownerId);
     setDrafts((prev) => [d, ...prev.filter((x) => x.id !== d.id)]);
     setSaveState(userId && where === "device" && store === "account" ? "failed" : "saved");
     return where;
@@ -574,6 +587,7 @@ export default function AppointmentPrep() {
   return (
     <div className="btd-container py-10 max-w-2xl">
       <ForLabel className="mb-3" />
+      <NeedsChild what="Appointment Prep" />
       <h1 className="text-3xl font-display font-semibold mb-2">
         {inkLastWord(self ? "Get ready for my visit" : parentFor ? `Appointment Prep for ${parentFor}` : "Appointment Prep Tool")}
       </h1>
@@ -602,7 +616,7 @@ export default function AppointmentPrep() {
       />
 
       <div className="mb-8 grid gap-3">
-        {importing && family.children.length > 0 && (
+        {importing && family.children.length > 0 && mode !== "parent" && (
           <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Whose calendar?</span>
             {[{ id: null as string | null, name: "Mine" }, ...family.children.map((c) => ({ id: c.personId as string | null, name: c.name }))].map(

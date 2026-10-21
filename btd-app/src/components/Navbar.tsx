@@ -8,6 +8,7 @@ import { CTA_LABEL } from "../data/site";
 import { possessive, useAccountMode } from "../context/AccountModeContext";
 import { openCalmingScreen } from "./CalmingScreen";
 import { ModeBadge } from "./ModeBanner";
+import { usernameOf } from "../lib/family";
 
 const links = [
   { to: "/understanding-overshadowing", label: "The Problem" },
@@ -48,15 +49,15 @@ function useNavFor(): { tools: ToolLink[]; links: typeof links; self: boolean; s
     };
   }
   if (mode === "parent") {
-    const whose = forName ? possessive(forName) : "Their";
+    const whose = forName ? `${possessive(forName)} ` : "";
     return {
       self: false,
       showCta: true,
       links,
       tools: [
         { to: "/appointment-prep", label: "Appointment Prep", icon: "clipboard" },
-        { to: "/calendar", label: `${whose} Calendar`, icon: "calendar" },
-        { to: "/me", label: `${whose} Me board`, icon: "person" },
+        { to: "/calendar", label: `${whose}Calendar`, icon: "calendar" },
+        { to: "/me", label: `${whose}Me board`, icon: "person" },
         { to: "/resources", label: "Resources", icon: "file" },
         { to: "/assistant", label: "AI Advocate", icon: "chat" },
       ],
@@ -237,7 +238,7 @@ export default function Navbar() {
                   </span>
                 )}
               </NavLink>
-              <AccountMenu isAdmin={isAdmin} account={user.email || user.phone || ""} onSignOut={signOut} />
+              <AccountMenu isAdmin={isAdmin} account={usernameOf(user.email) || user.email || user.phone || ""} onSignOut={signOut} />
             </>
           ) : (
             <NavLink to="/login" className={linkClass}>

@@ -30,8 +30,8 @@ import AdminMessages from "./pages/AdminMessages";
 import Calendar from "./pages/Calendar";
 import Me from "./pages/Me";
 import Welcome from "./pages/Welcome";
+import Join from "./pages/Join";
 import { useSetup } from "./context/SetupContext";
-import FamilyGate from "./components/family/FamilyGate";
 import ModeBanner from "./components/ModeBanner";
 
 export default function App() {
@@ -63,7 +63,7 @@ export default function App() {
   const { search } = useLocation();
   useEffect(() => {
     if (!user || !setupLoaded || setup.status || passwordRecoveryMode) return;
-    if (["/welcome", "/auth/callback", "/reset-password", "/login"].includes(pathname)) return;
+    if (["/welcome", "/auth/callback", "/reset-password", "/login"].includes(pathname) || pathname.startsWith("/join")) return;
     navigate(`/welcome?next=${encodeURIComponent(pathname + search)}`, { replace: true });
   }, [user, setupLoaded, setup.status, passwordRecoveryMode, pathname, search, navigate]);
 
@@ -72,7 +72,6 @@ export default function App() {
       <AccessibilityBar />
       <Navbar />
       <ModeBanner />
-      <FamilyGate />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -85,6 +84,8 @@ export default function App() {
           <Route path="/my-voice/practice" element={<PracticeVisit />} />
           <Route path="/me" element={<Me />} />
           <Route path="/welcome" element={<Welcome />} />
+          <Route path="/join" element={<Join />} />
+          <Route path="/join/:code" element={<Join />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/provider-education" element={<ProviderEducation />} />
           <Route path="/stories" element={<Stories />} />

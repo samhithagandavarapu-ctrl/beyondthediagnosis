@@ -1,10 +1,12 @@
 import { authEnabled, supabase } from "./supabaseClient";
+import { API_BASE } from "./api";
 
-// Family accounts: a grown-up linked with a child's account, so the grown-up
-// can see (and add to) the child's Symptom Calendar. Every rule — who can
-// see what, under-13 consent, at most 2 grown-ups — is enforced by the
-// database (supabase/migrations/20261021_family_accounts.sql); this file only
-// asks it things.
+// Family: each person has one profile, and grown-ups are linked to it. A
+// parent adds their child's profile; the child's own login (a username, or
+// their own email from an invite) connects to that same profile. Every rule —
+// who can see what, under-13 consent, at most 2 grown-ups — is enforced by
+// the database (supabase/migrations/20261021_family_accounts.sql and
+// 20261025_one_profile_per_person.sql); this file only asks it things.
 
 export type FamilyPerson = {
   linkId: string;
@@ -15,6 +17,13 @@ export type FamilyPerson = {
   linkedAt: string;
   /** For a child under 13: this link holds the parent's consent. */
   consent: boolean;
+  /** For a child: the year they were born, and their sign-in — none yet, a
+   *  username their parent made, or their own email. */
+  birthYear: number | null;
+  login: "none" | "username" | "email" | null;
+  username: string | null;
+  /** How the grown-up is related ("Mom"). */
+  relation: string | null;
 };
 
 export type FamilyInvite = {
@@ -50,9 +59,30 @@ export async function listFamily(): Promise<FamilyPerson[]> {
     console.error("Couldn't load family links:", error.message);
     return [];
   }
-  return (data as { link_id: string; person_id: string; name: string; role: "child" | "caregiver"; linked_at: string; consent: boolean }[]).map(
-    (r) => ({ linkId: r.link_id, personId: r.person_id, name: r.name, role: r.role, linkedAt: r.linked_at, consent: r.consent })
-  );
+  type Row = {
+    link_id: string;
+    person_id: string;
+    name: string;
+    role: "child" | "caregiver";
+    linked_at: string;
+    consent: boolean;
+    birth_year?: number | null;
+    login?: FamilyPerson["login"];
+    username?: string | null;
+    relation?: string | null;
+  };
+  return (data as Row[]).map((r) => ({
+    linkId: r.link_id,
+    personId: r.person_id,
+    name: r.name,
+    role: r.role,
+    linkedAt: r.linked_at,
+    consent: r.consent,
+    birthYear: r.birth_year ?? null,
+    login: r.login ?? null,
+    username: r.username ?? null,
+    relation: r.relation ?? null,
+  }));
 }
 
 export async function listMyInvites(): Promise<FamilyInvite[]> {
@@ -73,8 +103,9 @@ export async function listMyInvites(): Promise<FamilyInvite[]> {
   }));
 }
 
-/** Make a code: as a grown-up to give a child ("caregiver"), or as a child to
- *  give a grown-up ("child"). */
+/** Make a code for a grown-up to enter ("child": the person inviting is the
+ *  one they'll look after). Grown-ups don't make codes for children any more:
+ *  they add the child's profile instead. */
 export async function createInvite(
   creatorRole: "caregiver" | "child",
   forUnder13 = false
@@ -101,55 +132,81 @@ export async function unlink(linkId: string): Promise<{ error: string | null }> 
   return { error: error ? message(error, "Couldn't unlink. Please try again.") : null };
 }
 
-// ---- Birth year (for the under-13 rule) ----
+// ---- One profile per person ----
+// A parent adds each child once; logins connect to that profile. Making a
+// profile or a child's login needs the server (api/family.js).
 
-export async function getBirthYear(userId: string): Promise<number | null> {
+/** Might still be 12 this year (born no more than 13 years ago): the parent
+ *  makes them a username login. Otherwise they're invited with a code. */
+export const getsUsernameLogin = (birthYear: number) => new Date().getFullYear() - birthYear <= 13;
+
+/** A child's username, as typed at sign-in, is this address underneath. */
+export const USERNAME_DOMAIN = "kids.voiced.invalid";
+export const usernameEmail = (username: string) => `${username.trim().toLowerCase()}@${USERNAME_DOMAIN}`;
+/** "maya7" for a child's username login, or null for anyone else. */
+export function usernameOf(email: string | null | undefined): string | null {
+  return email?.endsWith(`@${USERNAME_DOMAIN}`) ? email.split("@")[0] : null;
+}
+
+export async function familyApi<T = Record<string, unknown>>(
+  action: "add-child" | "child-login" | "remove-child" | "move-mine" | "claim",
+  body: Record<string, unknown>
+): Promise<{ data: T | null; error: string | null }> {
+  if (!authEnabled) return { data: null, error: "Accounts aren't available right now." };
+  const { data: session } = await supabase.auth.getSession();
+  const token = session?.session?.access_token;
+  try {
+    const res = await fetch(`${API_BASE}/api/family`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ action, ...body }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return { data: null, error: json.error || "Something went wrong. Please try again." };
+    return { data: json as T, error: null };
+  } catch {
+    return { data: null, error: "We couldn't reach the server. Check your connection and try again." };
+  }
+}
+
+/** A 6-letter invite for a child 13 or older to make their own login. */
+export async function createProfileClaim(personId: string): Promise<{ code: string | null; error: string | null }> {
+  const { data, error } = await supabase.rpc("create_profile_claim", { p_person: personId });
+  if (error) return { code: null, error: message(error, "Couldn't make an invite. Please try again.") };
+  return { code: data as string, error: null };
+}
+
+/** The unused invite for a child, if there is one. */
+export async function profileClaimFor(personId: string): Promise<{ code: string; expiresAt: string } | null> {
   if (!authEnabled) return null;
-  const { data } = await supabase.from("account_ages").select("birth_year").eq("user_id", userId).maybeSingle();
-  return (data as { birth_year: number } | null)?.birth_year ?? null;
+  const { data } = await supabase
+    .from("profile_claims")
+    .select("code, expires_at")
+    .eq("person_id", personId)
+    .is("used_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+  return data ? { code: (data as { code: string }).code, expiresAt: (data as { expires_at: string }).expires_at } : null;
 }
 
-/** Set once; the database won't let it change afterwards. */
-export async function setBirthYear(year: number): Promise<{ error: string | null }> {
-  const { error } = await supabase.from("account_ages").insert({ birth_year: year });
-  return { error: error ? message(error, "Couldn't save that. Please try again.") : null };
-}
-
-/** Under 13 this year, counted on the safe side (as the database does). */
-export const isUnder13 = (birthYear: number) => birthYear > new Date().getFullYear() - 13;
-
-// Sign-up asks the birth year (and, under 13, a parent's code) before the
-// account exists — and with email confirmation, before anyone is signed in.
-// They wait here until the first sign-in, then go to the database.
-const PENDING_KEY = "voiced:pending-family-signup";
-
-export function savePendingSignup(p: { birthYear: number; code?: string }) {
-  try {
-    localStorage.setItem(PENDING_KEY, JSON.stringify(p));
-  } catch {
-    // ignore
-  }
-}
-
-/** After sign-in: save the birth year and use the parent's code, if any are
- *  waiting. Returns an error to show if the code didn't work. */
-export async function finishPendingSignup(userId: string): Promise<{ error: string | null }> {
-  let pending: { birthYear: number; code?: string } | null = null;
-  try {
-    pending = JSON.parse(localStorage.getItem(PENDING_KEY) || "null");
-  } catch {
-    pending = null;
-  }
-  if (!pending) return { error: null };
-  if ((await getBirthYear(userId)) === null) await setBirthYear(pending.birthYear);
-  let error: string | null = null;
-  if (pending.code) error = (await acceptInvite(pending.code)).error;
-  try {
-    localStorage.removeItem(PENDING_KEY);
-  } catch {
-    // ignore
-  }
-  return { error };
+/** Notes a parent kept on their own account before each child had a profile
+ *  (their "All about …" board, drafts, calendar). Shown once, so they can be
+ *  moved onto the child's profile. Null when there's nothing. */
+export async function myOldNotes(userId: string): Promise<{ name: string; count: number } | null> {
+  if (!authEnabled) return null;
+  const count = async (table: string) => {
+    const { count } = await supabase.from(table).select("*", { count: "exact", head: true }).eq("user_id", userId);
+    return count ?? 0;
+  };
+  const [{ data: board }, drafts, entries] = await Promise.all([
+    supabase.from("me_boards").select("about_name, answers").eq("user_id", userId).maybeSingle(),
+    count("appointment_drafts"),
+    count("calendar_entries"),
+  ]);
+  const b = board as { about_name: string; answers: Record<string, unknown> } | null;
+  const boardCount = b && Object.keys(b.answers ?? {}).length ? 1 : 0;
+  const total = boardCount + drafts + entries;
+  return total ? { name: b?.about_name?.trim() ?? "", count: total } : null;
 }
 
 // ---- Notices ----

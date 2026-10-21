@@ -5,6 +5,7 @@ import FamilyPanel from "../components/family/FamilyPanel";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { UserRole, useSetup } from "../context/SetupContext";
+import { usernameOf } from "../lib/family";
 import { fetchProfile, preferredName, savePreferredName, upsertProfile } from "../lib/profile";
 import { historyTitle, loadHistory } from "../lib/appointmentHistory";
 import { READING_LEVELS } from "../lib/myVoice";
@@ -390,7 +391,10 @@ export default function Profile() {
     );
   }
 
-  const account = user.email || user.phone || "your account";
+  // A child's username login: their grown-up looks after the password and
+  // the profile, so there's no email to change and nothing to delete here.
+  const childUsername = usernameOf(user.email);
+  const account = childUsername || user.email || user.phone || "your account";
   const greetingName = fullName.trim().split(/\s+/)[0] || username.trim();
 
   return (
@@ -604,7 +608,7 @@ export default function Profile() {
               {section === "family" && (
                 <Panel
                   title="Family"
-                  intro="Link a parent's account with a child's, so a grown-up can see the child's calendar and add their own notes. The child always decides what's “Just for me”."
+                  intro="Each person has one profile. A parent adds their child here once, and the child's own login connects to the same profile. The child always decides what's “Just for me”."
                 >
                   <FamilyPanel />
                 </Panel>
@@ -708,7 +712,7 @@ export default function Profile() {
                   <MenuRow
                     icon="heart"
                     label="Family"
-                    detail="Link a parent and child"
+                    detail="Your children, their logins, and grown-ups"
                     onClick={() => open("family")}
                   />
                   <MenuRow
@@ -728,24 +732,36 @@ export default function Profile() {
                   Account
                 </h2>
                 <div className="btd-card divide-y divide-navy/10 overflow-hidden">
-                  <MenuRow
-                    icon="lock"
-                    label="Email & password"
-                    detail={account}
-                    onClick={() => open("security")}
-                  />
+                  {childUsername ? (
+                    <MenuRow
+                      icon="lock"
+                      label={`Username: ${childUsername}`}
+                      detail="Ask your grown-up to change your password"
+                      chevron={false}
+                      onClick={() => {}}
+                    />
+                  ) : (
+                    <MenuRow
+                      icon="lock"
+                      label="Email & password"
+                      detail={account}
+                      onClick={() => open("security")}
+                    />
+                  )}
                   <MenuRow
                     icon="sign-out"
                     label="Sign out"
                     chevron={false}
                     onClick={() => signOut()}
                   />
-                  <MenuRow
-                    icon="trash"
-                    label="Delete account"
-                    danger
-                    onClick={() => open("delete")}
-                  />
+                  {!childUsername && (
+                    <MenuRow
+                      icon="trash"
+                      label="Delete account"
+                      danger
+                      onClick={() => open("delete")}
+                    />
+                  )}
                 </div>
               </section>
             </div>

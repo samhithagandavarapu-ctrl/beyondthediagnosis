@@ -36,6 +36,17 @@ export default function ModeBanner() {
     );
   }
 
+  if (mode === "parent" && !managed) {
+    return (
+      <div role="region" aria-label="Account" className="btd-dark border-b-[3px] border-sky">
+        <div className="btd-container py-3 text-15 font-semibold text-mist">
+          <span aria-hidden="true">👪 </span>
+          <span className="font-bold">Parent account</span> — add your child to get started
+        </div>
+      </div>
+    );
+  }
+
   if (mode === "parent") {
     const name = managed?.name ?? "your child";
     return (

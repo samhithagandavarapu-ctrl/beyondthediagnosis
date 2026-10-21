@@ -1,26 +1,25 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthContext";
-import { useMyVoice } from "./MyVoiceContext";
 import { useSetup } from "./SetupContext";
-import { useFamily } from "../lib/useFamily";
+import { useFamilyLoader } from "../lib/useFamily";
 import { displayNameFor, fetchProfile, Profile } from "../lib/profile";
 
-// Whose space this is. A parent (or caregiver) account manages someone: a
-// linked child account, or — before any is linked — the person named on their
-// "All about …" board. A self-advocate account is the person's own space.
+// Whose space this is. A parent (or caregiver) account manages the children
+// whose profiles it's linked to (each child exists once; their own login, if
+// they have one, connects to the same profile). A self-advocate account is
+// the person's own space.
 // Anyone else (providers, people who skipped setup, signed out) gets the
 // site as it always was.
 //
 // A parent can "See what [name] sees": their own screen switches to the
-// self-advocate layout and wording for that person. Nothing private to the
-// child is opened up by it — the parent still only sees what they already
-// could (the child's shared calendar, and their own board about them).
+// self-advocate layout and wording for that person. It shows the same
+// profile the parent already looks after — nothing more (never "Just for me").
 
 export type AccountMode = "parent" | "self" | "none";
 
 export type Managed = {
-  /** A linked child account, or null for the name on the parent's own board. */
-  personId: string | null;
+  /** The child's profile. */
+  personId: string;
   name: string;
 };
 
@@ -44,6 +43,15 @@ type AccountModeState = {
   /** Whose information the tools are showing: "Maya", or the person's own
    *  name in their own space. Null in the plain site. */
   forName: string | null;
+  /** Whose profile the tools read and save: the child a parent is managing,
+   *  or the signed-in person's own. Null when signed out, or for a parent
+   *  who hasn't added a child yet. */
+  subjectId: string | null;
+  /** Whether that's someone other than the signed-in person. */
+  forOther: boolean;
+
+  /** Who I'm linked with: my children and my grown-ups. */
+  family: ReturnType<typeof useFamilyLoader>;
 };
 
 const AccountModeContext = createContext<AccountModeState | undefined>(undefined);
@@ -51,15 +59,14 @@ const AccountModeContext = createContext<AccountModeState | undefined>(undefined
 const MANAGED_KEY = "voiced:managing";
 const PREVIEW_KEY = "voiced:previewing";
 
-export const managedKey = (m: Managed) => m.personId ?? `name:${m.name}`;
+export const managedKey = (m: Managed) => m.personId;
 
 const firstWord = (s: string) => s.trim().split(/\s+/)[0] ?? "";
 
 export function AccountModeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { setup } = useSetup();
-  const { meBoard } = useMyVoice();
-  const family = useFamily();
+  const family = useFamilyLoader();
   const [profile, setProfile] = useState<Profile | null>(null);
   const userId = user?.id;
 
@@ -73,14 +80,13 @@ export function AccountModeProvider({ children }: { children: React.ReactNode })
 
   const mode: AccountMode = !user ? "none" : setup.role === "caregiver" ? "parent" : setup.role === "self" ? "self" : "none";
 
-  // Linked children first; the name on the parent's board when none are.
-  const managedList = useMemo<Managed[]>(() => {
-    if (mode !== "parent") return [];
-    const linked = family.children.map((c) => ({ personId: c.personId, name: firstWord(c.name) || c.name }));
-    const boardName = meBoard?.aboutName.trim();
-    if (linked.length) return linked;
-    return boardName ? [{ personId: null, name: boardName }] : [];
-  }, [mode, family.children, meBoard?.aboutName]);
+  const managedList = useMemo<Managed[]>(
+    () =>
+      mode === "parent"
+        ? family.children.map((c) => ({ personId: c.personId, name: firstWord(c.name) || c.name }))
+        : [],
+    [mode, family.children]
+  );
 
   const [key, setKey] = useState<string | null>(() => {
     try {
@@ -123,7 +129,9 @@ export function AccountModeProvider({ children }: { children: React.ReactNode })
   const childName = managed?.name ?? "your child";
   const myName = previewing ? childName : ownName;
   const view: AccountMode = previewing ? "self" : mode;
-  const forName = mode === "parent" ? childName : mode === "self" ? ownName || "me" : null;
+  // A parent who hasn't added a child yet has nobody to name.
+  const forName = mode === "parent" ? managed?.name ?? null : mode === "self" ? ownName || "me" : null;
+  const subjectId = !user ? null : mode === "parent" ? managed?.personId ?? null : user.id;
 
   const value: AccountModeState = {
     mode,
@@ -136,6 +144,9 @@ export function AccountModeProvider({ children }: { children: React.ReactNode })
     setManagedKey,
     myName,
     forName,
+    subjectId,
+    forOther: Boolean(user && subjectId && subjectId !== user.id),
+    family,
   };
   return <AccountModeContext.Provider value={value}>{children}</AccountModeContext.Provider>;
 }

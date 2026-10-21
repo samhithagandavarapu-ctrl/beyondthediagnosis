@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { USERNAME_DOMAIN, removeChildrenOnlyIHad } from "./family.js";
 
 /** Account deletion, shared by the Vercel function (api/delete-account.js) and
  *  the local dev server.
@@ -47,6 +48,16 @@ export async function deleteAccount(authorizationHeader) {
   if (userError || !user) {
     return { status: 401, error: "Your session has expired. Sign in again, then try once more." };
   }
+
+  // A child's username login is on a profile their grown-up looks after:
+  // deleting it would delete everything they share. The grown-up can.
+  if ((user.email ?? "").endsWith(`@${USERNAME_DOMAIN}`)) {
+    return { status: 403, error: "Ask your grown-up. They can remove your profile from their account." };
+  }
+
+  // Children's profiles that only this parent looked after, and that have no
+  // login of their own, go with the account: nobody could reach them after.
+  await removeChildrenOnlyIHad(admin, user.id);
 
   // The profile row first, in case the table wasn't created with
   // "on delete cascade" — otherwise it would block removing the sign-in.
