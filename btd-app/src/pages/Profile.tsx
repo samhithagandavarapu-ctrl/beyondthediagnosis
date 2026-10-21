@@ -284,9 +284,9 @@ function MenuRow({
 }
 
 const ROLES: { id: UserRole; label: string; icon: IconName }[] = [
-  { id: "self", label: "I'm here for me", icon: "face-great" },
-  { id: "caregiver", label: "I'm a parent or caregiver", icon: "heart" },
-  { id: "provider", label: "I'm a provider", icon: "stethoscope" },
+  { id: "caregiver", label: "Parent or caregiver", icon: "heart" },
+  { id: "self", label: "Self-advocate (it's for me)", icon: "star" },
+  { id: "provider", label: "Healthcare provider", icon: "stethoscope" },
 ];
 
 const SECTIONS = ["details", "about-you", "my-voice", "history", "calendar", "family", "security", "delete"] as const;

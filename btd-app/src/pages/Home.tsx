@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { CTA_LABEL, SURVEY_URL } from "../data/site";
 import Reveal from "../components/Reveal";
 import Scribble from "../components/Scribble";
+import { useAccountMode } from "../context/AccountModeContext";
+import { FamilyDashboard, SelfHome } from "../components/home/AccountHomes";
 
 const audiences = [
   {
@@ -81,6 +83,11 @@ const turnDelay = (i: number) => (headline.length + i) * RISE_STEP + 250;
 const labelDelay = turnDelay(headlineTurn.length);
 
 export default function Home() {
+  // Signed in as a parent or a self-advocate: their own home. Everyone else
+  // gets the page about Voiced.
+  const { view, mode } = useAccountMode();
+  if (view === "self") return <SelfHome />;
+  if (mode === "parent") return <FamilyDashboard />;
   return (
     <div>
       {/* Hero */}

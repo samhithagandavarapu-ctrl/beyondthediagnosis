@@ -5,6 +5,9 @@ import { useNotifications } from "../context/NotificationsContext";
 import Icon, { type IconName } from "./icons/Icon";
 import SiteSearch from "./SiteSearch";
 import { CTA_LABEL } from "../data/site";
+import { possessive, useAccountMode } from "../context/AccountModeContext";
+import { openCalmingScreen } from "./CalmingScreen";
+import { ModeBadge } from "./ModeBanner";
 
 const links = [
   { to: "/understanding-overshadowing", label: "The Problem" },
@@ -23,6 +26,44 @@ const tools: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/assistant", label: "AI Advocate", icon: "chat" },
   { to: "/resources", label: "Resources", icon: "file" },
 ];
+
+type ToolLink = { to: string; label: string; icon: IconName; end?: boolean };
+
+/** The tools for whoever is here: a parent's tools for the person they
+ *  manage, or a self-advocate's own, bigger and with nothing meant only for
+ *  parents. Everyone else gets every tool. */
+function useNavFor(): { tools: ToolLink[]; links: typeof links; self: boolean; showCta: boolean } {
+  const { view, mode, forName } = useAccountMode();
+  if (view === "self") {
+    return {
+      self: true,
+      showCta: false,
+      links: links.filter((l) => l.to === "/stories" || l.to === "/mission"),
+      tools: [
+        { to: "/my-voice", label: "My Voice", icon: "hub-feelings", end: true },
+        { to: "/calendar", label: "My Calendar", icon: "calendar" },
+        { to: "/me", label: "Me", icon: "star" },
+        { to: "/my-voice/practice", label: "Get ready for the doctor", icon: "hub-visit" },
+      ],
+    };
+  }
+  if (mode === "parent") {
+    const whose = forName ? possessive(forName) : "Their";
+    return {
+      self: false,
+      showCta: true,
+      links,
+      tools: [
+        { to: "/appointment-prep", label: "Appointment Prep", icon: "clipboard" },
+        { to: "/calendar", label: `${whose} Calendar`, icon: "calendar" },
+        { to: "/me", label: `${whose} Me board`, icon: "person" },
+        { to: "/resources", label: "Resources", icon: "file" },
+        { to: "/assistant", label: "AI Advocate", icon: "chat" },
+      ],
+    };
+  }
+  return { self: false, showCta: true, links, tools };
+}
 
 const toolLinkClass = ({ isActive }: { isActive: boolean }) =>
   `inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border min-h-[40px] px-4 py-2 text-sm font-semibold transition-colors ${
@@ -91,6 +132,9 @@ function AccountMenu({
       >
         <Icon name="person" size={18} className="sm:hidden" />
         <span className="hidden sm:inline">My account</span>
+        <span className="hidden sm:inline-flex">
+          <ModeBadge />
+        </span>
         <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" className={open ? "rotate-180" : ""}>
           <path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -102,6 +146,9 @@ function AccountMenu({
               {account}
             </p>
           )}
+          <div className="px-3 pb-1.5">
+            <ModeBadge />
+          </div>
           <Link to="/profile" className={menuItemClass}>
             My profile
           </Link>
@@ -139,6 +186,7 @@ function AccountMenu({
 export default function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
   const { unreadCount } = useNotifications();
+  const { tools, links, self, showCta } = useNavFor();
 
   return (
     <header className="sticky top-0 z-40 border-b border-navy/10 bg-mist/[0.92] backdrop-blur-[10px]">
@@ -160,6 +208,7 @@ export default function Navbar() {
             ))}
             <SiteSearch className="ml-2 w-44 xl:w-56" />
           </div>
+          {showCta && (
           <Link
             to="/assistant"
             className="btd-btn ml-0 mr-0.5 whitespace-nowrap border-2 border-coral bg-white px-3 py-[7px] text-13 hover:bg-coral sm:ml-2 sm:mr-1 sm:px-4 sm:py-[9px] sm:text-sm"
@@ -167,6 +216,7 @@ export default function Navbar() {
             <span className="sm:hidden">AI advocate</span>
             <span className="hidden sm:inline">{CTA_LABEL}</span>
           </Link>
+          )}
           {user ? (
             <>
               {/* Icon only, so the bar stays on one line; the label is
@@ -213,11 +263,22 @@ export default function Navbar() {
             Tools
           </NavLink>
           {tools.map((t) => (
-            <NavLink key={t.to} to={t.to} end={t.end} className={toolLinkClass}>
-              <Icon name={t.icon} size={18} />
+            <NavLink
+              key={t.to}
+              to={t.to}
+              end={t.end}
+              className={(a) => `${toolLinkClass(a)} ${self ? "min-h-[48px] text-15" : ""}`}
+            >
+              <Icon name={t.icon} size={self ? 22 : 18} />
               {t.label}
             </NavLink>
           ))}
+          {self && (
+            <button type="button" onClick={openCalmingScreen} className={`${toolLinkClass({ isActive: false })} min-h-[48px] text-15`}>
+              <Icon name="breath" size={22} />
+              Calm
+            </button>
+          )}
         </nav>
       </div>
       {/* mobile nav */}

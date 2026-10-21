@@ -80,11 +80,19 @@ import {
   timelineDetail,
 } from "../lib/appointmentPdf";
 import { inkLastWord } from "../components/Scribble";
+import { ForLabel } from "../components/ModeBanner";
+import { useAccountMode, useWhose } from "../context/AccountModeContext";
 
 export default function AppointmentPrep() {
   const { checkIns, checkInsLoaded, importCheckIns, meBoard, meBoardLoaded } = useMyVoice();
   const { practice } = usePracticeMode();
   const { user, loading: authLoading } = useAuth();
+  // Whose visit this is, so every label says so: "Maya's symptoms" for a
+  // parent, "My symptoms" in someone's own space.
+  const { view, mode, forName } = useAccountMode();
+  const whose = useWhose();
+  const self = view === "self";
+  const parentFor = mode === "parent" && !self ? forName : null;
   const userId = user?.id ?? null;
 
   // Drafts: the one open now, and the rest. They live in the account when
@@ -416,7 +424,7 @@ export default function AppointmentPrep() {
   // open with a board to copy (so, for a new draft, when it's started). A
   // later change to the board reaches it only through "Update from my Me
   // page". A board kept about someone else gives the patient name too.
-  const boardName = meBoard?.aboutName.trim() ?? "";
+  const boardName = (mode !== "none" ? forName : null) ?? meBoard?.aboutName.trim() ?? "";
   useEffect(() => {
     if (!loaded || !meBoardLoaded) return;
     setForm((f) => {
@@ -426,7 +434,7 @@ export default function AppointmentPrep() {
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId, loaded, meBoardLoaded]);
+  }, [draftId, loaded, meBoardLoaded, boardName]);
 
   // Check-ins that only live on older drafts join the My Voice list, so
   // they can be picked like any other.
@@ -565,7 +573,10 @@ export default function AppointmentPrep() {
 
   return (
     <div className="btd-container py-10 max-w-2xl">
-      <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("Appointment Prep Tool")}</h1>
+      <ForLabel className="mb-3" />
+      <h1 className="text-3xl font-display font-semibold mb-2">
+        {inkLastWord(self ? "Get ready for my visit" : parentFor ? `Appointment Prep for ${parentFor}` : "Appointment Prep Tool")}
+      </h1>
       <p className="text-slate mb-4">
         Fill this out before your visit. It generates a clean, downloadable one-page
         summary you can bring straight to your provider — so nothing gets lost in a
@@ -664,7 +675,7 @@ export default function AppointmentPrep() {
         }}
         className="space-y-8"
       >
-        <Field label="Patient name">
+        <Field label={self ? "My name" : parentFor ? "Who this visit is for" : "Patient name"}>
           <input
             className="btd-input"
             value={form.patientName}
@@ -673,7 +684,7 @@ export default function AppointmentPrep() {
           />
         </Field>
 
-        <Field label="Reason for visit">
+        <Field label={self ? "Why I'm going" : parentFor ? `Why ${parentFor} is going` : "Reason for visit"}>
           <textarea
             className="btd-input min-h-[80px]"
             value={form.reasonForVisit}
@@ -688,6 +699,8 @@ export default function AppointmentPrep() {
         </Field>
 
         <AboutMeSection
+          title={parentFor ? `About ${parentFor} (from the Me board)` : "About me (from my Me page)"}
+          parentFor={parentFor}
           copy={form.aboutMe}
           boardReady={meBoardLoaded}
           boardHasNotes={boardHasContent(meBoard)}
@@ -708,7 +721,7 @@ export default function AppointmentPrep() {
         />
 
         <ListSection
-          label="Symptoms"
+          label={whose("symptoms", "Symptoms")}
           addLabel="+ Add another symptom"
           onAdd={() => addItem("symptoms", emptySymptom)}
         >
@@ -837,7 +850,7 @@ export default function AppointmentPrep() {
 
 
         <ListSection
-          label="Current medications"
+          label={whose("medications", "Current medications")}
           addLabel="+ Add another medication"
           onAdd={() => addItem("medications", emptyMedication)}
         >
@@ -917,7 +930,7 @@ export default function AppointmentPrep() {
         </Field>
 
         <ListSection
-          label="Prioritized questions"
+          label={self ? "My questions for the doctor" : "Prioritized questions"}
           addLabel="+ Add another question"
           onAdd={() => addItem("questions", emptyQuestion)}
         >
@@ -1581,12 +1594,17 @@ function MyVoiceSection({
 /** "About me (from my Me page)": this draft's copy of the Me board. Each
  *  note can be left off this draft; the board itself is never changed here. */
 function AboutMeSection({
+  title,
+  parentFor,
   copy,
   boardReady,
   boardHasNotes,
   onToggle,
   onUpdate,
 }: {
+  title: string;
+  /** A parent's name for the person, so the wording is about them. */
+  parentFor: string | null;
   copy: AboutMeCopy | undefined;
   boardReady: boolean;
   boardHasNotes: boolean;
@@ -1597,7 +1615,7 @@ function AboutMeSection({
   return (
     <section aria-labelledby="about-me-heading" className="rounded-tile border-2 border-butter bg-butter/20 p-4">
       <h2 id="about-me-heading" className="text-sm font-semibold text-ink">
-        About me (from my Me page)
+        {title}
       </h2>
       {notes.length > 0 ? (
         <>
@@ -1624,10 +1642,12 @@ function AboutMeSection({
         <p className="mt-1 text-sm text-ink">
           {boardReady && boardHasNotes
             ? "Your Me page has notes this draft doesn't have yet."
-            : "Fill in your Me page so your doctor knows how you usually are."}{" "}
+            : parentFor
+              ? `Fill in the Me board so the doctor knows how ${parentFor} usually is.`
+              : "Fill in your Me page so your doctor knows how you usually are."}{" "}
           {!(boardReady && boardHasNotes) && (
             <Link to="/me" className="font-semibold text-link underline underline-offset-2 hover:text-navy">
-              Go to my Me page →
+              {parentFor ? "Go to the Me board →" : "Go to my Me page →"}
             </Link>
           )}
         </p>
@@ -1635,12 +1655,12 @@ function AboutMeSection({
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
         {notes.length > 0 && (
           <Link to="/me" className="font-semibold text-link hover:underline">
-            Change this on my Me page →
+            {parentFor ? "Change this on the Me board →" : "Change this on my Me page →"}
           </Link>
         )}
         {boardReady && boardHasNotes && (
           <button type="button" onClick={onUpdate} className="min-h-[36px] text-xs font-semibold text-link underline underline-offset-2 hover:text-navy">
-            Update from my Me page
+            {parentFor ? "Update from the Me board" : "Update from my Me page"}
           </button>
         )}
       </div>
