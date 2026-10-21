@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PageHero from "../components/PageHero";
 import StoryPanel from "../components/StoryPanel";
 import { useAuth } from "../context/AuthContext";
 import { fetchProfile } from "../lib/profile";
-import { fetchApprovedStories, StoryRow } from "../lib/stories";
+import { fetchApprovedStories, storyCredit, StoryRow } from "../lib/stories";
 
 const AUDIENCES = ["All", "Self-advocate", "Parent", "Caregiver", "Clinician"] as const;
 
@@ -17,6 +17,8 @@ export default function Stories() {
   const { user, loading: authLoading } = useAuth();
   // Credited the same way the form on the profile used to: full name, else username.
   const [submitterName, setSubmitterName] = useState("");
+  // Offered for the "My first name" credit: the first word of their full name.
+  const [firstName, setFirstName] = useState("");
   const { hash } = useLocation();
   // "See your story" from a notification links to /stories#story-<id>.
   const target = hash.startsWith("#story-") ? hash.slice("#story-".length) : null;
@@ -31,10 +33,12 @@ export default function Stories() {
   useEffect(() => {
     if (!user) {
       setSubmitterName("");
+      setFirstName("");
       return;
     }
     fetchProfile(user.id).then((profile) => {
       setSubmitterName(profile?.full_name?.trim() || profile?.username?.trim() || "");
+      setFirstName(profile?.full_name?.trim().split(/\s+/)[0] ?? "");
     });
   }, [user]);
 
@@ -69,6 +73,7 @@ export default function Stories() {
         title: s.title,
         audience: s.audience,
         excerpt: s.excerpt,
+        credit: storyCredit(s),
       })),
     ],
     [submitted]
@@ -109,6 +114,9 @@ export default function Stories() {
           </div>
         ) : (
           <>
+            <p className="mb-5 text-17 leading-[1.6] text-body">
+              We're just getting started. Your story could be one of the first.
+            </p>
             <div className="mb-7 flex flex-wrap items-center gap-2.5">
               {AUDIENCES.map((a) => (
                 <button
@@ -137,7 +145,7 @@ export default function Stories() {
               />
             </div>
 
-            <div className="grid gap-5 grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))]">
+            <div className="grid items-start gap-5 grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))]">
               {filtered.map((s) => (
                 <article
                   key={s.id}
@@ -153,7 +161,8 @@ export default function Stories() {
                     {s.audience}
                   </span>
                   <h3 className="mt-2.5 mb-2 text-21 font-bold">{s.title}</h3>
-                  <p className="text-15 leading-[1.7] text-body">{s.excerpt}</p>
+                  <StoryText text={s.excerpt} startOpen={s.id === target} />
+                  <p className="mt-3 text-sm font-bold text-navy">— {s.credit}</p>
                 </article>
               ))}
             </div>
@@ -164,7 +173,7 @@ export default function Stories() {
         {/* After the stories, so people read others' before writing their own. */}
         <div className="mt-14 max-w-[720px]">
           {user ? (
-            <StoryPanel defaultName={submitterName} />
+            <StoryPanel defaultName={submitterName} firstName={firstName} />
           ) : (
             !authLoading && (
               <div id="share" className="btd-card p-7 scroll-mt-24">
@@ -181,5 +190,50 @@ export default function Stories() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** The story, cut to its first three lines, with "Read more" to open the
+ *  rest in place. The link only appears when there is more to read. */
+function StoryText({ text, startOpen }: { text: string; startOpen: boolean }) {
+  const [open, setOpen] = useState(startOpen);
+  const [cut, setCut] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (startOpen) setOpen(true);
+  }, [startOpen]);
+
+  // Measured rather than guessed from length, so Large text and Easy read
+  // (bigger letters, taller lines) still get the link when they need it.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || open) return;
+    const measure = () => setCut(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, open]);
+
+  return (
+    <>
+      <p
+        ref={ref}
+        className={`whitespace-pre-line text-15 leading-[1.7] text-body ${open ? "" : "line-clamp-3"}`}
+      >
+        {text}
+      </p>
+      {(cut || open) && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="mt-1.5 min-h-[44px] text-sm font-bold text-link underline underline-offset-[3px] hover:text-navy"
+        >
+          {open ? "Show less" : "Read more"}
+        </button>
+      )}
+    </>
   );
 }
