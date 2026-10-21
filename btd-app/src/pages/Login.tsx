@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authEnabled } from "../lib/supabaseClient";
 import PasswordInput from "../components/PasswordInput";
+import { isUnder13, savePendingSignup } from "../lib/family";
 import { inkLastWord } from "../components/Scribble";
 
 // Phone sign-in needs a paid SMS provider connected in Supabase (README,
@@ -36,6 +37,12 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Sign-up only: the birth year (for the under-13 rule) and, under 13, the
+  // parent's code. They're saved once the account is signed in.
+  const [birthYear, setBirthYear] = useState("");
+  const [parentCode, setParentCode] = useState("");
+  const thisYear = new Date().getFullYear();
+  const young = birthYear !== "" && isUnder13(Number(birthYear));
 
   async function run(action: () => Promise<{ error: string | null }>, onSuccess?: () => void) {
     setBusy(true);
@@ -132,6 +139,10 @@ export default function Login() {
                   run(() => signInWithEmail(email, password), () => navigate("/"));
                 } else {
                   run(async () => {
+                    if (young && !parentCode.trim()) {
+                      return { error: "Under 13, you need a code from your parent to make an account." };
+                    }
+                    savePendingSignup({ birthYear: Number(birthYear), code: young ? parentCode.trim() : undefined });
                     const result = await signUpWithEmail(email, password);
                     if (!result.error) {
                       if (result.signedIn) navigate("/profile");
@@ -161,6 +172,45 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {mode === "signup" && (
+                <>
+                  <label className="grid gap-1 text-sm font-semibold text-ink">
+                    What year were you born?
+                    <select
+                      required
+                      className="btd-input"
+                      value={birthYear}
+                      onChange={(e) => setBirthYear(e.target.value)}
+                    >
+                      <option value="">Choose a year</option>
+                      {Array.from({ length: 101 }, (_, i) => thisYear - 3 - i).map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {young && (
+                    <label className="grid gap-1 text-sm font-semibold text-ink">
+                      Your parent's code
+                      <input
+                        required
+                        className="btd-input uppercase tracking-[0.12em]"
+                        value={parentCode}
+                        onChange={(e) => setParentCode(e.target.value)}
+                        placeholder="ABC-123"
+                        autoComplete="off"
+                        maxLength={8}
+                      />
+                      <span className="text-xs font-normal text-slate">
+                        Under 13, a parent sets up the link and gives permission. Ask them to open
+                        Profile → Family on their account, tap “Add my child”, and tick “My child is
+                        under 13”.
+                      </span>
+                    </label>
+                  )}
+                </>
+              )}
               {mode === "signin" && (
                 <div className="flex justify-end">
                   <button

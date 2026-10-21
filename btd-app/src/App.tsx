@@ -28,6 +28,7 @@ import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import AdminMessages from "./pages/AdminMessages";
 import Calendar from "./pages/Calendar";
+import FamilyGate from "./components/family/FamilyGate";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -54,6 +55,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col">
       <AccessibilityBar />
       <Navbar />
+      <FamilyGate />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />

@@ -288,6 +288,12 @@ export type CalendarEntry = {
   /** Entries saved from one My Voice check-in share this. */
   checkInId: string | null;
   updatedAt: string;
+  /** "Just for me": linked grown-ups don't see it. Only the owner sets it. */
+  private: boolean;
+  /** Whose calendar it's in, once it's in an account (null on this device). */
+  userId: string | null;
+  /** Who wrote it: the owner, or a linked grown-up. Null means the owner. */
+  loggedBy: string | null;
 };
 
 export type CustomSymptom = { id: string; label: string; icon: IconName; createdAt: string };
@@ -311,6 +317,9 @@ export function newEntry(patch: Partial<CalendarEntry> = {}): CalendarEntry {
     addToVisit: false,
     checkInId: null,
     updatedAt: now,
+    private: false,
+    userId: null,
+    loggedBy: null,
     ...patch,
   };
 }
@@ -385,10 +394,13 @@ type EntryRow = {
   add_to_visit: boolean;
   check_in_id: string | null;
   updated_at: string;
+  private: boolean | null;
+  user_id: string;
+  logged_by: string | null;
 };
 
 const ENTRY_COLUMNS =
-  "id, entry_date, logged_at, category, custom_label, severity, severity_scale, typical, reported_by, body_locations, details, medication_note, note, add_to_visit, check_in_id, updated_at";
+  "id, entry_date, logged_at, category, custom_label, severity, severity_scale, typical, reported_by, body_locations, details, medication_note, note, add_to_visit, check_in_id, updated_at, private, user_id, logged_by";
 
 const fromRow = (r: EntryRow): CalendarEntry => ({
   id: r.id,
@@ -407,10 +419,18 @@ const fromRow = (r: EntryRow): CalendarEntry => ({
   addToVisit: r.add_to_visit,
   checkInId: r.check_in_id,
   updatedAt: r.updated_at,
+  private: !!r.private,
+  userId: r.user_id,
+  loggedBy: r.logged_by,
 });
 
-// updated_at is left to the table's trigger.
+// updated_at is left to the table's trigger. Whose calendar and who wrote it
+// go only when known: the table fills them in for a new entry (the person
+// saving it), and never lets them change afterwards.
 const toRow = (e: CalendarEntry) => ({
+  ...(e.userId ? { user_id: e.userId } : {}),
+  ...(e.loggedBy ? { logged_by: e.loggedBy } : {}),
+  private: !!e.private,
   id: e.id,
   entry_date: e.entryDate,
   logged_at: e.loggedAt,
@@ -477,6 +497,42 @@ export async function saveEntries(userId: string | null, entries: CalendarEntry[
   const ids = new Set(entries.map((e) => e.id));
   writeLocal(LOCAL_ENTRIES, [...entries, ...readLocal<CalendarEntry>(LOCAL_ENTRIES).filter((e) => !ids.has(e.id))]);
   return "device";
+}
+
+// ---- A linked child's calendar (for their grown-ups) ----
+// Account only, and never mixed into the grown-up's own calendar on this
+// device. The database leaves out anything the child marked "Just for me".
+
+export async function listEntriesOf(childId: string): Promise<CalendarEntry[]> {
+  if (!authEnabled) return [];
+  const { data, error } = await supabase
+    .from("calendar_entries")
+    .select(ENTRY_COLUMNS)
+    .eq("user_id", childId)
+    .order("entry_date", { ascending: false });
+  if (error) {
+    console.error("Couldn't load that calendar:", error.message);
+    return [];
+  }
+  return sortEntries((data as EntryRow[]).map(fromRow));
+}
+
+export async function listCustomSymptomsOf(childId: string): Promise<CustomSymptom[]> {
+  if (!authEnabled) return [];
+  const { data, error } = await supabase
+    .from("custom_symptoms")
+    .select("id, label, icon, created_at")
+    .eq("user_id", childId);
+  if (error) return [];
+  return (data as SymptomRow[]).map((r) => ({ id: r.id, label: r.label, icon: r.icon, createdAt: r.created_at }));
+}
+
+/** A grown-up adding to (or changing their own entry in) a child's calendar.
+ *  Only ever saved to the account: if that fails, it isn't kept anywhere. */
+export async function saveEntryFor(childId: string, me: string, entry: CalendarEntry): Promise<{ error: string | null }> {
+  const row = toRow({ ...entry, userId: childId, loggedBy: me, private: false });
+  const { error } = await supabase.from("calendar_entries").upsert(row, { onConflict: "id" });
+  return { error: error ? "Couldn't save that to their calendar. Please try again." : null };
 }
 
 /** Real deletes, from this device and from the account. */
@@ -620,13 +676,19 @@ const FOR_DOCTOR: Record<ReportedBy, string> = {
 
 /** Everything else about an entry, after its own answers. `forDoctor` names
  *  who told it the way a clinician reads it ("The patient", not "Me"). */
-export function aboutLines(e: CalendarEntry, forDoctor = false): string[] {
+export function aboutLines(
+  e: CalendarEntry,
+  forDoctor = false,
+  /** Who told it, worded for someone other than the owner (a linked
+   *  grown-up looking at a child's calendar). */
+  teller?: (e: CalendarEntry) => string
+): string[] {
   const strength = e.category === "pain" ? "" : strengthWords(e);
   return [
     ...(strength ? [`How strong: ${strength}`] : []),
     ...(e.details.since ? [SINCE_WORDS[e.details.since]] : []),
     ...(e.typical === "new" ? ["New or different for me"] : e.typical === "typical" ? ["Usual for me"] : []),
-    `Told by: ${forDoctor ? FOR_DOCTOR[e.reportedBy] : labelOf(REPORTED_BY, e.reportedBy)}`,
+    `Told by: ${teller ? teller(e) : forDoctor ? FOR_DOCTOR[e.reportedBy] : labelOf(REPORTED_BY, e.reportedBy)}`,
     ...(e.medicationNote?.trim() ? [`Medicine taken: ${e.medicationNote.trim()}`] : []),
     ...(e.details.hasVoiceNote ? ["Recorded a voice note"] : []),
   ];

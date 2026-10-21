@@ -92,6 +92,8 @@ export default function LogFlow({
   customSymptoms,
   dayBeforeIsPeriod = false,
   lastProducts = [],
+  asCaregiverFor,
+  canHide = false,
   onAddCustomSymptom,
   onSave,
   onLogAnother,
@@ -108,6 +110,10 @@ export default function LogFlow({
   dayBeforeIsPeriod?: boolean;
   /** Products from the latest period day logged. */
   lastProducts?: ProductId[];
+  /** A linked grown-up logging in this child's calendar (their name). */
+  asCaregiverFor?: string;
+  /** The owner has linked grown-ups, so "Just for me" means something. */
+  canHide?: boolean;
   onAddCustomSymptom: (s: CustomSymptom) => void;
   onSave: (entry: CalendarEntry) => Promise<SaveResult>;
   onLogAnother: () => void;
@@ -115,9 +121,14 @@ export default function LogFlow({
 }) {
   const { say } = useMyVoice();
   const isEdit = !!initial;
-  const [mode, setMode] = useState<Mode>(readingLevel === "full" ? "caregiver" : "self");
+  const [mode, setMode] = useState<Mode>(asCaregiverFor || readingLevel === "full" ? "caregiver" : "self");
   const [entry, setEntry] = useState<CalendarEntry>(
-    () => initial ?? newEntry({ entryDate: date, reportedBy: lastReporter(readingLevel === "full" ? "caregiver" : "self") })
+    () =>
+      initial ??
+      newEntry({
+        entryDate: date,
+        reportedBy: asCaregiverFor ? "caregiver" : lastReporter(readingLevel === "full" ? "caregiver" : "self"),
+      })
   );
   const [picked, setPicked] = useState(isEdit);
   const [step, setStep] = useState(0);
@@ -194,8 +205,10 @@ export default function LogFlow({
       note: entry.note?.trim() || null,
       medicationNote: entry.medicationNote?.trim() || null,
     };
+    // "Something scary happened" is never hidden from linked grown-ups.
+    if (toSave.category === "event" || !canHide) toSave.private = false;
     try {
-      localStorage.setItem(LAST_REPORTER_KEY, toSave.reportedBy);
+      if (!asCaregiverFor) localStorage.setItem(LAST_REPORTER_KEY, toSave.reportedBy);
       // "What I usually use" comes pre-picked next time.
       if (toSave.category === "period" && toSave.details.products?.length) {
         localStorage.setItem(USUAL_PRODUCTS_KEY, JSON.stringify(toSave.details.products));
@@ -535,7 +548,7 @@ export default function LogFlow({
               placeholder="For example: hiccups, a rash."
               single
             />
-            {!entry.details.customSymptomId && !practice && (
+            {!entry.details.customSymptomId && !practice && !asCaregiverFor && (
               <div className="rounded-tile bg-mist p-4">
                 <label className="flex items-center gap-2 text-15 font-semibold text-navy">
                   <input
@@ -672,7 +685,14 @@ export default function LogFlow({
       case "who":
         return (
           <OneOf
-            options={REPORTED_BY}
+            options={
+              asCaregiverFor
+                ? [
+                    { id: "caregiver" as const, label: "I noticed it", icon: "doctor" as IconName },
+                    { id: "both" as const, label: `${asCaregiverFor} and I`, icon: "heart" as IconName },
+                  ]
+                : REPORTED_BY
+            }
             value={entry.reportedBy}
             onChange={(reportedBy) => patch({ reportedBy: reportedBy ?? "self" })}
             showText
@@ -806,6 +826,9 @@ export default function LogFlow({
                 }}
               />
               {summary}
+              {canHide && entry.category !== "event" && (
+                <JustForMe on={entry.private} onChange={(v) => patch({ private: v })} />
+              )}
               {entry.category === "period" && (
                 <>
                   <TellADoctor />
@@ -860,6 +883,9 @@ export default function LogFlow({
                 {renderScreen(s.id)}
               </section>
             ))}
+          {picked && canHide && entry.category !== "event" && (
+            <JustForMe on={entry.private} onChange={(v) => patch({ private: v })} />
+          )}
           {picked && entry.category === "period" && <TellADoctor />}
           {picked && (
             <div className="flex flex-wrap items-center gap-3">
@@ -1127,5 +1153,34 @@ function TextBox({
         <DictateButton value={value} onChange={onChange} label={label} />
       </div>
     </div>
+  );
+}
+
+/** "Just for me": the owner's own switch; linked grown-ups never see it. */
+function JustForMe({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  const { say } = useMyVoice();
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => {
+        onChange(!on);
+        say(on ? "Shared with my grown-ups" : "Just for me");
+      }}
+      className={`flex min-h-[64px] w-full items-center gap-4 rounded-card border-2 px-5 text-left ${
+        on ? "border-navy bg-butter/40" : "border-navy/15 bg-white hover:border-sky"
+      }`}
+    >
+      <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${on ? "bg-navy text-mist" : "bg-mist text-navy"}`}>
+        <Icon name={on ? "lock" : "eye"} size={20} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-15 font-extrabold text-navy">{on ? "Just for me" : "My grown-ups can see this"}</span>
+        <span className="block text-13 text-body">
+          {on ? "Your linked grown-ups won't see this one." : "Tap to keep this one just for you."}
+        </span>
+      </span>
+    </button>
   );
 }

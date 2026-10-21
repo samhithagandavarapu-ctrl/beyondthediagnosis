@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import CalendarDataTools from "../components/calendar/CalendarDataTools";
+import FamilyPanel from "../components/family/FamilyPanel";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { fetchProfile, preferredName, savePreferredName, upsertProfile } from "../lib/profile";
@@ -281,7 +282,7 @@ function MenuRow({
   );
 }
 
-const SECTIONS = ["details", "my-voice", "history", "calendar", "security", "delete"] as const;
+const SECTIONS = ["details", "my-voice", "history", "calendar", "family", "security", "delete"] as const;
 type Section = (typeof SECTIONS)[number];
 
 export default function Profile() {
@@ -530,6 +531,14 @@ export default function Profile() {
                   </div>
                 </Panel>
               )}
+              {section === "family" && (
+                <Panel
+                  title="Family"
+                  intro="Link a parent's account with a child's, so a grown-up can see the child's calendar and add their own notes. The child always decides what's “Just for me”."
+                >
+                  <FamilyPanel />
+                </Panel>
+              )}
               {section === "calendar" && (
                 <Panel
                   title="My calendar data"
@@ -619,6 +628,12 @@ export default function Profile() {
                         : `${appointments.length} saved on this device`
                     }
                     onClick={() => open("history")}
+                  />
+                  <MenuRow
+                    icon="heart"
+                    label="Family"
+                    detail="Link a parent and child"
+                    onClick={() => open("family")}
                   />
                   <MenuRow
                     icon="calendar"

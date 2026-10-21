@@ -36,12 +36,15 @@ export default function QuickCheck({
   date,
   readingLevel,
   practice,
+  canHide = false,
   onSave,
   onDone,
 }: {
   date: string;
   readingLevel: ReadingLevel;
   practice: boolean;
+  /** The owner has linked grown-ups, so "Just for me" means something. */
+  canHide?: boolean;
   /** Saves all of today's entries together. */
   onSave: (entries: CalendarEntry[]) => Promise<CalendarStore | "practice">;
   onDone: () => void;
@@ -54,6 +57,7 @@ export default function QuickCheck({
   const [sleep, setSleep] = useState<(typeof SLEEP_QUALITY)[number]["id"] | null>(null);
   const [skin, setSkin] = useState<SkinPick[]>([]);
   const [cramps, setCramps] = useState<Cramps | null>(null);
+  const [hidden, setHidden] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<{ where: CalendarStore | "practice"; count: number } | null>(null);
 
@@ -68,7 +72,7 @@ export default function QuickCheck({
     } catch {
       // ignore
     }
-    const base = { entryDate: date, reportedBy };
+    const base = { entryDate: date, reportedBy, private: canHide && hidden };
     const out: CalendarEntry[] = [];
     if (mood || swings) {
       out.push(
@@ -256,6 +260,31 @@ export default function QuickCheck({
           </div>
         )}
       </div>
+
+      {canHide && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={hidden}
+          onClick={() => {
+            setHidden(!hidden);
+            say(hidden ? "Shared with my grown-ups" : "Just for me");
+          }}
+          className={`flex min-h-[64px] items-center gap-4 rounded-card border-2 px-5 text-left ${
+            hidden ? "border-navy bg-butter/40" : "border-navy/15 bg-white hover:border-sky"
+          }`}
+        >
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${hidden ? "bg-navy text-mist" : "bg-mist text-navy"}`}>
+            <Icon name={hidden ? "lock" : "eye"} size={20} />
+          </span>
+          <span>
+            <span className="block text-15 font-extrabold text-navy">{hidden ? "Just for me" : "My grown-ups can see today"}</span>
+            <span className="block text-13 text-body">
+              {hidden ? "Your linked grown-ups won't see today's answers." : "Tap to keep today just for you."}
+            </span>
+          </span>
+        </button>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <button

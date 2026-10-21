@@ -11,6 +11,7 @@ import Patterns from "../components/calendar/Patterns";
 import QuickCheck from "../components/calendar/QuickCheck";
 import CalendarDataTools from "../components/calendar/CalendarDataTools";
 import { sampleEntries } from "../lib/calendarSample";
+import { useFamily } from "../lib/useFamily";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
@@ -26,7 +27,10 @@ import {
   entryTitle,
   isPeriodDay,
   listCustomSymptoms,
+  listCustomSymptomsOf,
   listEntries,
+  listEntriesOf,
+  saveEntryFor,
   longDate,
   saveEntries,
   sortEntries,
@@ -77,6 +81,36 @@ export default function Calendar() {
     }
   });
 
+  // A linked grown-up can switch to a child's calendar. The database only
+  // ever hands over what the child hasn't marked "Just for me".
+  const family = useFamily();
+  const [whose, setWhose] = useState<string | null>(null);
+  const [childEntries, setChildEntries] = useState<CalendarEntry[]>([]);
+  const [childCustoms, setChildCustoms] = useState<CustomSymptom[]>([]);
+  const [childLoaded, setChildLoaded] = useState(false);
+  const child = !practice && whose ? family.children.find((c) => c.personId === whose) ?? null : null;
+  useEffect(() => {
+    if (!child) return;
+    let cancelled = false;
+    setChildLoaded(false);
+    Promise.all([listEntriesOf(child.personId), listCustomSymptomsOf(child.personId)]).then(([list, symptoms]) => {
+      if (cancelled) return;
+      setChildEntries(list);
+      setChildCustoms(symptoms);
+      setChildLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [child?.personId]);
+  // Whose name to show on an entry a grown-up wrote in my calendar.
+  const writerName = (e: CalendarEntry) => {
+    if (!e.loggedBy || e.loggedBy === (e.userId ?? userId)) return null;
+    if (e.loggedBy === userId) return "you";
+    return family.grownUps.find((g) => g.personId === e.loggedBy)?.name ?? "a grown-up";
+  };
+
   const [loads, setLoads] = useState(0);
   const reload = () => setLoads((n) => n + 1);
   useEffect(() => {
@@ -101,7 +135,9 @@ export default function Calendar() {
     setPracticeEntries(practice ? sampleEntries() : []);
   }, [practice]);
 
-  const shown = practice ? practiceEntries : entries;
+  const shown = practice ? practiceEntries : child ? childEntries : entries;
+  const shownCustoms = child ? childCustoms : customs;
+  const canHide = !child && !practice && family.grownUps.length > 0;
   const hasPeriods = shown.some((e) => e.category === "period");
   const prediction = predictNext(shown);
   const periodOn = (day: string) => shown.some((e) => e.entryDate === day && isPeriodDay(e));
@@ -127,6 +163,16 @@ export default function Calendar() {
   const tray = shown.filter((e) => e.addToVisit);
 
   async function save(entry: CalendarEntry): Promise<CalendarStore | "practice"> {
+    if (child && userId) {
+      const theirs = { ...entry, userId: child.personId, loggedBy: userId, private: false };
+      setChildEntries((prev) => upsert(prev, theirs));
+      const res = await saveEntryFor(child.personId, userId, theirs);
+      if (res.error) {
+        window.alert(res.error);
+        setChildEntries((prev) => prev.filter((e) => e.id !== theirs.id));
+      }
+      return "account";
+    }
     if (practice) {
       setPracticeEntries((prev) => upsert(prev, entry));
       return "practice";
@@ -141,6 +187,11 @@ export default function Calendar() {
     if (!window.confirm("Are you sure? This deletes it for good.")) return;
     if (practice) {
       setPracticeEntries((prev) => prev.filter((e) => e.id !== entry.id));
+      return;
+    }
+    if (child) {
+      setChildEntries((prev) => prev.filter((e) => e.id !== entry.id));
+      deleteEntries(userId, [entry.id]);
       return;
     }
     setEntries((prev) => prev.filter((e) => e.id !== entry.id));
@@ -181,7 +232,7 @@ export default function Calendar() {
       />
 
       <section className="btd-container grid gap-6 pt-8 pb-28 sm:pb-20">
-        {!privacySeen && (
+        {!privacySeen && !child && family.grownUps.length === 0 && (
           <div className="flex flex-wrap items-center gap-4 rounded-card border-2 border-sky bg-sky-tint p-5">
             <Icon name="lock" size={28} className="text-navy" />
             <p className="min-w-0 flex-1 basis-[240px] text-15 font-semibold text-navy">
@@ -194,9 +245,59 @@ export default function Calendar() {
           </div>
         )}
 
+        {!practice && family.children.length > 0 && (
+          <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-13 font-bold uppercase tracking-[0.08em] text-muted">Whose calendar?</span>
+            {[{ id: null as string | null, label: "Mine" }, ...family.children.map((c) => ({ id: c.personId as string | null, label: c.name }))].map(
+              (o) => (
+                <button
+                  key={o.id ?? "mine"}
+                  type="button"
+                  aria-pressed={whose === o.id}
+                  onClick={() => {
+                    setWhose(o.id);
+                    say(o.id ? `${o.label}'s calendar` : "My calendar");
+                    show({ kind: "month" });
+                  }}
+                  className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-bold ${
+                    whose === o.id ? "border-navy bg-sky text-navy" : "border-navy/15 bg-white text-navy hover:border-sky"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              )
+            )}
+          </div>
+        )}
+
+        {child && (
+          <div className="flex flex-wrap items-center gap-3 rounded-card border-2 border-navy bg-sky-tint px-5 py-4">
+            <Icon name="heart" size={24} className="text-navy" />
+            <p className="min-w-0 flex-1 text-15 text-navy">
+              <strong>You're looking at {child.name}'s calendar.</strong> Things {child.name} marks “Just
+              for me” aren't shown here. You can add your own notes; only {child.name} can change theirs.
+            </p>
+          </div>
+        )}
+
+        {!child && !practice && family.grownUps.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 rounded-card border border-sky bg-sky-tint px-5 py-3">
+            <Icon name="eye" size={22} className="text-navy" />
+            <p className="min-w-0 flex-1 text-15 text-navy">
+              {family.grownUps.map((g) => g.name).join(" and ")} can see this calendar, except anything you
+              mark “Just for me”.{" "}
+              <Link to="/profile?section=family" className="font-semibold text-link hover:underline">
+                Family settings
+              </Link>
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-13 text-muted">
-            {practice
+            {child
+              ? `${child.name}'s calendar, from their account.`
+              : practice
               ? "Practice mode is on. Nothing you log here is saved."
               : store === "account"
                 ? "Saved to your account."
@@ -222,8 +323,8 @@ export default function Calendar() {
           <div role="tablist" aria-label="Calendar views" className="flex flex-wrap gap-2">
             {(
               [
-                { id: "month", label: "My calendar", icon: "calendar" },
-                { id: "patterns", label: "My patterns", icon: "repeat" },
+                { id: "month", label: child ? `${child.name}'s calendar` : "My calendar", icon: "calendar" },
+                { id: "patterns", label: child ? `${child.name}'s patterns` : "My patterns", icon: "repeat" },
               ] as const
             ).map((t) => (
               <button
@@ -246,13 +347,14 @@ export default function Calendar() {
           </div>
         )}
 
-        {!loaded ? (
+        {!loaded || (child && !childLoaded) ? (
           <p className="text-body">Loading your calendar…</p>
         ) : view.kind === "quick" ? (
           <QuickCheck
             date={todayKey()}
             readingLevel={readingLevel}
             practice={practice}
+            canHide={canHide}
             onSave={saveMany}
             onDone={() => show({ kind: "month" })}
           />
@@ -276,7 +378,9 @@ export default function Calendar() {
             initial={view.entry}
             readingLevel={readingLevel}
             practice={practice}
-            customSymptoms={customs}
+            customSymptoms={shownCustoms}
+            asCaregiverFor={child?.name}
+            canHide={canHide}
             dayBeforeIsPeriod={periodOn(addDays(view.date, -1))}
             lastProducts={shown.find((e) => e.category === "period" && e.details.products?.length)?.details.products ?? []}
             onAddCustomSymptom={addSymptom}
@@ -291,8 +395,22 @@ export default function Calendar() {
           <DayView
             date={view.date}
             entries={shown.filter((e) => e.entryDate === view.date)}
-            customs={customs}
+            customs={shownCustoms}
             periodDay={periodOn(view.date)}
+            canChange={(e) => (child ? e.loggedBy === userId : !e.loggedBy || e.loggedBy === userId)}
+            canDelete={(e) => !child || e.loggedBy === userId}
+            canPlan={!child}
+            writerName={(e) => (child ? (e.loggedBy === userId ? "you" : null) : writerName(e))}
+            teller={
+              child
+                ? (e) => {
+                    const mine = e.loggedBy === userId;
+                    if (e.reportedBy === "self") return child.name;
+                    if (e.reportedBy === "both") return `${child.name} and ${mine ? "you" : "a grown-up"}`;
+                    return mine ? "You" : "A grown-up";
+                  }
+                : undefined
+            }
             onBack={() => show({ kind: "month" })}
             onAdd={() => show({ kind: "log", date: view.date })}
             onEdit={(entry) => show({ kind: "log", date: entry.entryDate, entry })}
@@ -309,17 +427,17 @@ export default function Calendar() {
         ) : (
           <>
             <div className="hidden flex-wrap gap-3 sm:flex">
-              <button type="button" onClick={quickToday} className="btd-btn-coral min-h-[56px] gap-2 px-7 py-3 text-base">
+              {!child && <button type="button" onClick={quickToday} className="btd-btn-coral min-h-[56px] gap-2 px-7 py-3 text-base">
                 <Icon name="hub-feelings" size={22} />
                 How's today?
-              </button>
+              </button>}
               <button type="button" onClick={logToday} className="btd-btn-outline min-h-[56px] gap-2 px-6 py-3 text-base">
                 <Icon name="plus" size={22} />
-                Log something
+                {child ? `Add a note to ${child.name}'s calendar` : "Log something"}
               </button>
             </div>
             {periodOn(todayKey()) && <MealtimeReminder />}
-            {tray.length > 0 && (
+            {!child && tray.length > 0 && (
               <div className="flex flex-wrap items-center gap-3 rounded-card border-2 border-navy bg-butter px-5 py-3">
                 <Icon name="star-filled" size={22} className="text-navy" />
                 <p className="flex-1 text-15 font-bold text-navy">
@@ -332,7 +450,7 @@ export default function Calendar() {
             )}
             <MonthGrid
               entries={shown}
-              customs={customs}
+              customs={shownCustoms}
               predicted={prediction?.days ?? []}
               month={month}
               onMonthChange={setMonth}
@@ -352,11 +470,11 @@ export default function Calendar() {
             <div className="fixed inset-x-4 bottom-4 z-30 flex gap-2 sm:hidden">
               <button
                 type="button"
-                onClick={quickToday}
+                onClick={child ? logToday : quickToday}
                 className="btd-btn-coral min-h-[56px] flex-1 gap-2 px-4 py-3 text-base shadow-[0_8px_24px_rgba(33,50,68,0.25)]"
               >
-                <Icon name="hub-feelings" size={22} />
-                How's today?
+                <Icon name={child ? "plus" : "hub-feelings"} size={22} />
+                {child ? "Add a note" : "How's today?"}
               </button>
               <button
                 type="button"
@@ -376,7 +494,7 @@ export default function Calendar() {
           </p>
           {/* Signed in, the tools live on the Profile page; signed out, the
               calendar is only on this device, so they open right here. */}
-          {user ? (
+          {child ? null : user ? (
             <Link to="/profile?section=calendar" className="text-13 font-semibold text-link hover:underline">
               Manage my data
             </Link>
@@ -401,6 +519,11 @@ function DayView({
   onEdit,
   onDelete,
   onToggleVisit,
+  canChange,
+  canDelete,
+  canPlan,
+  writerName,
+  teller,
 }: {
   date: string;
   entries: CalendarEntry[];
@@ -411,6 +534,17 @@ function DayView({
   onEdit: (e: CalendarEntry) => void;
   onDelete: (e: CalendarEntry) => void;
   onToggleVisit: (e: CalendarEntry) => void;
+  /** Whether Edit and Delete show (a grown-up only changes what they wrote). */
+  // Change what it says: only whoever wrote it.
+  canChange: (e: CalendarEntry) => boolean;
+  // Delete it: the writer, or the calendar's owner (a grown-up's note too).
+  canDelete: (e: CalendarEntry) => boolean;
+  /** Whether "Add to my next appointment" shows (the owner's own tray). */
+  canPlan: boolean;
+  /** "you" or a grown-up's name, when someone other than the owner wrote it. */
+  writerName: (e: CalendarEntry) => string | null;
+  /** "Told by", worded for a grown-up looking at a child's calendar. */
+  teller?: (e: CalendarEntry) => string;
 }) {
   const future = date > todayKey();
   return (
@@ -446,30 +580,39 @@ function DayView({
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-17 font-extrabold text-navy">{entryTitle(e)}</p>
                     {e.checkInId && <span className="btd-tag bg-butter">From My Voice</span>}
+                    {e.private && (
+                      <span className="btd-tag flex items-center gap-1 bg-navy text-mist">
+                        <Icon name="lock" size={12} />
+                        Just for me
+                      </span>
+                    )}
+                    {writerName(e) && <span className="btd-tag bg-sky">Logged by {writerName(e)}</span>}
                     {e.typical === "new" && <span className="btd-tag bg-coral/40">New or different</span>}
                   </div>
                   <p className="text-13 font-semibold text-muted">
                     {new Date(e.loggedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
                   </p>
                   <ul className="mt-2 grid gap-0.5 text-15 text-navy">
-                    {[...detailLines(e, (id) => feeling(id).short, painSpotSentence), ...aboutLines(e)].map((l) => (
+                    {[...detailLines(e, (id) => feeling(id).short, painSpotSentence), ...aboutLines(e, false, teller)].map((l) => (
                       <li key={l}>{l}</li>
                     ))}
                     {e.note && <li className="italic">“{e.note}”</li>}
                   </ul>
                 </div>
               </div>
-              {!e.checkInId && (
+              {canPlan && !e.checkInId && (
                 <label className="mt-4 flex min-h-[44px] items-center gap-3 rounded-tile bg-mist px-4 text-15 font-semibold text-navy">
                   <input type="checkbox" className="h-5 w-5" checked={e.addToVisit} onChange={() => onToggleVisit(e)} />
                   Add to my next appointment
                   {e.addToVisit && <Icon name="star-filled" size={16} className="text-coral-hover" />}
                 </label>
               )}
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={() => onEdit(e)} className="btd-btn-outline min-h-[44px] px-4 py-2 text-sm">
-                  Edit
-                </button>
+              {canDelete(e) && <div className="mt-4 flex flex-wrap gap-2">
+                {canChange(e) && (
+                  <button type="button" onClick={() => onEdit(e)} className="btd-btn-outline min-h-[44px] px-4 py-2 text-sm">
+                    Edit
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onDelete(e)}
@@ -477,7 +620,7 @@ function DayView({
                 >
                   Delete
                 </button>
-              </div>
+              </div>}
             </li>
           ))}
         </ul>

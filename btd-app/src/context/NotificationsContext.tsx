@@ -11,6 +11,7 @@ import {
   messagePreview,
   subscribeToMessages,
 } from "../lib/messages";
+import { FamilyNotice, listNotices } from "../lib/family";
 
 // Notifications are worked out, not stored: each one is a fact about the
 // person's account ("a story you sent in was published", "you have a new
@@ -21,7 +22,7 @@ export const CONTACT_EMAIL = "withvoiced@gmail.com";
 
 export type AppNotification = {
   id: string;
-  kind: "story-approved" | "story-rejected" | "message";
+  kind: "story-approved" | "story-rejected" | "message" | "family-linked" | "family-unlinked";
   title: string;
   body: string;
   /** Where the button goes, and what it says. */
@@ -100,6 +101,23 @@ function storyNotification(s: StoryRow): Raw {
   };
 }
 
+/** "Mom linked to your account" / "Maya unlinked from your account". */
+function familyNotification(n: FamilyNotice): Raw {
+  const linked = n.kind === "linked";
+  return {
+    id: `family:${n.id}`,
+    kind: linked ? "family-linked" : "family-unlinked",
+    title: linked ? `${n.actorName} linked accounts with you` : `${n.actorName} unlinked from your account`,
+    body: linked
+      ? "You're now linked on Voiced. See who's linked, and what each of you can see, in Profile → Family."
+      : "You're no longer linked on Voiced. Anything already logged stays where it is.",
+    href: "/profile?section=family",
+    action: "See my family",
+    at: n.createdAt,
+    autoRead: n.read,
+  };
+}
+
 /** One notification per conversation with something new in it: the newest
  *  message from the other side. A newer message makes a new notification. */
 function messageNotifications(
@@ -163,12 +181,14 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       fetchMyReviewedStories(userId),
       fetchIncoming(isAdmin),
       fetchThreadStates(isAdmin ? undefined : userId),
+      listNotices(),
     ]).then(
-      ([stories, incoming, { states }]) => {
+      ([stories, incoming, { states }, family]) => {
         if (currentUser.current !== userId) return;
         const items = [
           ...stories.map(storyNotification),
           ...messageNotifications(incoming, states, userId, isAdmin),
+          ...family.map(familyNotification),
         ].sort((a, b) => b.at.localeCompare(a.at));
         setRaw(items);
       }
