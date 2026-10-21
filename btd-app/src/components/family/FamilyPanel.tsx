@@ -165,7 +165,7 @@ export default function FamilyPanel() {
               <PersonRow
                 key={c.linkId}
                 person={c}
-                detail={`You can see ${c.name}'s calendar, except things they mark “Just for me”, and add your own notes to it.${
+                detail={`You can see ${c.name}'s calendar, except things they mark “Just for me”, and add your own notes to it. They can delete your notes but not change them.${
                   c.consent ? " You gave permission for them as an under-13." : ""
                 }`}
                 onUnlink={() => remove(c)}

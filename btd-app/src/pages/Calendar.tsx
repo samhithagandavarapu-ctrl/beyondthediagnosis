@@ -397,7 +397,8 @@ export default function Calendar() {
             entries={shown.filter((e) => e.entryDate === view.date)}
             customs={shownCustoms}
             periodDay={periodOn(view.date)}
-            canChange={(e) => !child || e.loggedBy === userId}
+            canChange={(e) => (child ? e.loggedBy === userId : !e.loggedBy || e.loggedBy === userId)}
+            canDelete={(e) => !child || e.loggedBy === userId}
             canPlan={!child}
             writerName={(e) => (child ? (e.loggedBy === userId ? "you" : null) : writerName(e))}
             teller={
@@ -519,6 +520,7 @@ function DayView({
   onDelete,
   onToggleVisit,
   canChange,
+  canDelete,
   canPlan,
   writerName,
   teller,
@@ -533,7 +535,10 @@ function DayView({
   onDelete: (e: CalendarEntry) => void;
   onToggleVisit: (e: CalendarEntry) => void;
   /** Whether Edit and Delete show (a grown-up only changes what they wrote). */
+  // Change what it says: only whoever wrote it.
   canChange: (e: CalendarEntry) => boolean;
+  // Delete it: the writer, or the calendar's owner (a grown-up's note too).
+  canDelete: (e: CalendarEntry) => boolean;
   /** Whether "Add to my next appointment" shows (the owner's own tray). */
   canPlan: boolean;
   /** "you" or a grown-up's name, when someone other than the owner wrote it. */
@@ -602,10 +607,12 @@ function DayView({
                   {e.addToVisit && <Icon name="star-filled" size={16} className="text-coral-hover" />}
                 </label>
               )}
-              {canChange(e) && <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={() => onEdit(e)} className="btd-btn-outline min-h-[44px] px-4 py-2 text-sm">
-                  Edit
-                </button>
+              {canDelete(e) && <div className="mt-4 flex flex-wrap gap-2">
+                {canChange(e) && (
+                  <button type="button" onClick={() => onEdit(e)} className="btd-btn-outline min-h-[44px] px-4 py-2 text-sm">
+                    Edit
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onDelete(e)}
