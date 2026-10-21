@@ -5,7 +5,8 @@
 -- family migrations, then this file:
 --
 --   create schema auth;
---   create table auth.users (id uuid primary key);
+--   create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb);
+--   create table public.profiles (id uuid primary key references auth.users on delete cascade, full_name text, username text);
 --   create function auth.uid() returns uuid language sql stable as
 --     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 --   create role authenticated;
@@ -126,4 +127,19 @@ select pg_temp.as_user('70000000-0000-4000-8000-000000000001'); select '   still
 update calendar_entries set note = 'teen edit' where id = '11111111-0000-4000-8000-000000000001';
 delete from calendar_entries where id = '22222222-0000-4000-8000-000000000001';
 select '   teen rows: ' || string_agg(note, ',') from calendar_entries where user_id = '70000000-0000-4000-8000-000000000001';
+reset role;
+
+\echo == 11. Parent B adds a note to kid K’s calendar; K can’t clear who wrote it
+select pg_temp.as_user('b0000000-0000-4000-8000-000000000001');
+insert into calendar_entries (id, user_id, entry_date, category, reported_by, note)
+  values ('33333333-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', current_date, 'mood', 'caregiver', 'from B');
+select pg_temp.as_user('c0000000-0000-4000-8000-000000000001');
+update calendar_entries set logged_by = null where id = '33333333-0000-4000-8000-000000000001';
+\echo == 11b. B deletes their account: it goes through, the note stays in K’s calendar with no writer, and K is told
+reset role;
+delete from auth.users where id = 'b0000000-0000-4000-8000-000000000001';
+select '   B gone: ' || (count(*) = 0) from auth.users where id = 'b0000000-0000-4000-8000-000000000001';
+select '   note kept, writer cleared: ' || note || ', ' || coalesce(logged_by::text, 'none') from calendar_entries where id = '33333333-0000-4000-8000-000000000001';
+select pg_temp.as_user('c0000000-0000-4000-8000-000000000001'); set role authenticated;
+select '   K notices: ' || string_agg(kind || ' by ' || coalesce(actor_name, '?'), ',' order by created_at) from family_events;
 reset role;
