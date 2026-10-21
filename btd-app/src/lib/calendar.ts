@@ -120,9 +120,11 @@ export const SKIN_PLACES: { id: SkinPlace; label: string }[] = [
   { id: "other", label: "Somewhere else" },
 ];
 
-export type BathroomId = "constipation" | "diarrhea" | "pain-peeing" | "peeing-more";
+export type BathroomId = "tummy-ache" | "feel-sick" | "constipation" | "diarrhea" | "pain-peeing" | "peeing-more";
 
 export const BATHROOM: { id: BathroomId; label: string }[] = [
+  { id: "tummy-ache", label: "Tummy ache" },
+  { id: "feel-sick", label: "I feel sick or threw up" },
   { id: "constipation", label: "Hard to poop (constipation)" },
   { id: "diarrhea", label: "Runny poop (diarrhea)" },
   { id: "pain-peeing", label: "It hurts when I pee" },

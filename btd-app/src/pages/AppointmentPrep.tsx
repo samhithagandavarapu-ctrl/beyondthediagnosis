@@ -71,6 +71,7 @@ import {
   RuledOutItem,
   Symptom,
   buildAppointmentPdf,
+  printPdf,
   medicationLine,
   symptomDetail,
   SYMPTOM_AREAS,
@@ -1625,18 +1626,21 @@ function SummaryView({
 
   // Async because the PDF loads the site's typeface before drawing; the button
   // says so rather than looking dead for the moment that takes.
-  async function downloadPdf() {
+  // Print sends the same PDF to the printer, so both come out alike.
+  async function downloadPdf(print = false) {
     setDownloading(true);
     setDownloadError(null);
     try {
       const doc = await buildAppointmentPdf(form, checkIns, date, aboutMe, calendar);
+      if (print) return printPdf(doc);
       const namePart = form.patientName.trim()
         ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
         : "visit-summary";
       doc.save(`${namePart}-appointment-summary.pdf`);
     } catch (err) {
       console.error(err);
-      setDownloadError("Couldn't build the PDF. You can use Print instead.");
+      if (print) window.print();
+      else setDownloadError("Couldn't build the PDF. You can use Print instead.");
     } finally {
       setDownloading(false);
     }
@@ -1659,15 +1663,16 @@ function SummaryView({
         </button>
         <div className="flex gap-2">
           <button
-            onClick={downloadPdf}
+            onClick={() => downloadPdf()}
             disabled={downloading}
             className="px-4 py-2 rounded bg-ink text-paper text-sm font-semibold disabled:opacity-60"
           >
             {downloading ? "Preparing…" : "Download PDF"}
           </button>
           <button
-            onClick={() => window.print()}
-            className="px-4 py-2 rounded border border-ink/20 text-ink text-sm font-semibold"
+            onClick={() => downloadPdf(true)}
+            disabled={downloading}
+            className="px-4 py-2 rounded border border-ink/20 text-ink text-sm font-semibold disabled:opacity-60"
           >
             Print instead
           </button>

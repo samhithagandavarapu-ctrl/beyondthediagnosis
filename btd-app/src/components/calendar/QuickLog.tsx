@@ -5,6 +5,7 @@ import SpeakButton from "../myvoice/SpeakButton";
 import { JustForMe } from "./LogFlow";
 import { useMyVoice } from "../../context/MyVoiceContext";
 import {
+  BATHROOM,
   BEHAVIORS,
   CalendarEntry,
   CalendarStore,
@@ -32,7 +33,7 @@ import { PainAreaId } from "../../lib/myVoice";
 // medicine, who's telling — waits behind "Add more" on the Saved screen.
 
 type SaveResult = CalendarStore | "practice";
-type Step = "else" | "own" | "strength" | "where" | "feeling" | "sleep" | "energy" | "eating" | "behavior" | "skin" | "event" | "usual";
+type Step = "else" | "own" | "strength" | "where" | "feeling" | "sleep" | "energy" | "eating" | "behavior" | "skin" | "event" | "usual" | "bathroom";
 
 const LAST_REPORTER_KEY = "voiced:calendar-reported-by";
 
@@ -67,7 +68,7 @@ const FEELINGS = EMOTIONS.filter((e) => e.id !== "dont-know");
 const TITLES: Record<Step, (kind: string) => string> = {
   else: () => "What is it?",
   own: () => "What is it? Write a word or two.",
-  strength: (k) => (k === "Pain" ? "How much does it hurt?" : "How much?"),
+  strength: (k) => (k === "Pain" ? "How much does it hurt?" : "How bad is it?"),
   where: () => "Where does it hurt?",
   feeling: () => "How do you feel?",
   sleep: () => "How did you sleep?",
@@ -77,6 +78,7 @@ const TITLES: Record<Step, (kind: string) => string> = {
   skin: () => "What is your skin like? Tap all that fit.",
   event: () => "What happened?",
   usual: () => "Is this normal for you?",
+  bathroom: () => "What is going on? Tap all that fit.",
 };
 
 /** The first question after a kind is picked. */
@@ -84,8 +86,9 @@ function firstStep(category: CategoryId, custom: boolean): Step {
   if (custom) return "strength";
   switch (category) {
     case "pain":
-    case "bathroom":
       return "strength";
+    case "bathroom":
+      return "bathroom";
     case "mood":
       return "feeling";
     case "sleep":
@@ -182,6 +185,8 @@ export default function QuickLog({
   function afterAnswer(next: CalendarEntry, from: Step) {
     setEntry(next);
     if (from === "strength" && next.category === "pain") return goTo("where");
+    // Tummy & bathroom: first what it is, then how bad.
+    if (from === "bathroom") return goTo("strength");
     if (asksIfUsual(next)) return goTo("usual");
     finish(next);
   }
@@ -387,6 +392,12 @@ export default function QuickLog({
         {entry.severityScale === "faces" && entry.severity && step !== "strength" && (
           <span className="btd-tag bg-coral/40 text-navy">{STRENGTH_FACES.find((f) => f.level === entry.severity)?.label}</span>
         )}
+        {step === "strength" &&
+          entry.details.bathroom?.map((b) => (
+            <span key={b} className="btd-tag bg-white text-navy">
+              {BATHROOM.find((o) => o.id === b)?.label}
+            </span>
+          ))}
         {asCaregiverFor && <span className="btd-tag bg-sky text-navy">For {asCaregiverFor}</span>}
       </div>
 
@@ -562,11 +573,12 @@ export default function QuickLog({
         </div>
       )}
 
-      {(step === "behavior" || step === "skin") && (
+      {(step === "behavior" || step === "skin" || step === "bathroom") && (
         <div className="grid gap-4">
           <div role="group" className="grid gap-2.5">
-            {(step === "behavior" ? BEHAVIORS : SKIN_CHANGES).map((o) => {
-              const list = (step === "behavior" ? entry.details.changes : entry.details.skin) ?? [];
+            {(step === "behavior" ? BEHAVIORS : step === "skin" ? SKIN_CHANGES : BATHROOM).map((o) => {
+              const key = step === "behavior" ? "changes" : step === "skin" ? "skin" : "bathroom";
+              const list = entry.details[key] ?? [];
               const on = (list as string[]).includes(o.id);
               const nextList = on ? list.filter((x) => x !== o.id) : [...list, o.id];
               return (
@@ -575,7 +587,7 @@ export default function QuickLog({
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
-                    setEntry({ ...entry, details: { ...entry.details, ...(step === "behavior" ? { changes: nextList } : { skin: nextList }) } as CalendarEntry["details"] });
+                    setEntry({ ...entry, details: { ...entry.details, [key]: nextList } as CalendarEntry["details"] });
                     say(o.label);
                   }}
                   className={`flex min-h-[60px] items-center gap-3 rounded-card border-2 px-4 text-left text-15 font-bold text-navy ${
