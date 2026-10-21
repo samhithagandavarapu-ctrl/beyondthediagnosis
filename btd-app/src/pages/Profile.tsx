@@ -4,6 +4,7 @@ import CalendarDataTools from "../components/calendar/CalendarDataTools";
 import FamilyPanel from "../components/family/FamilyPanel";
 import { useAuth } from "../context/AuthContext";
 import { useMyVoice } from "../context/MyVoiceContext";
+import { UserRole, useSetup } from "../context/SetupContext";
 import { fetchProfile, preferredName, savePreferredName, upsertProfile } from "../lib/profile";
 import { historyTitle, loadHistory } from "../lib/appointmentHistory";
 import { READING_LEVELS } from "../lib/myVoice";
@@ -282,7 +283,13 @@ function MenuRow({
   );
 }
 
-const SECTIONS = ["details", "my-voice", "history", "calendar", "family", "security", "delete"] as const;
+const ROLES: { id: UserRole; label: string; icon: IconName }[] = [
+  { id: "self", label: "I'm here for me", icon: "face-great" },
+  { id: "caregiver", label: "I'm a parent or caregiver", icon: "heart" },
+  { id: "provider", label: "I'm a provider", icon: "stethoscope" },
+];
+
+const SECTIONS = ["details", "about-you", "my-voice", "history", "calendar", "family", "security", "delete"] as const;
 type Section = (typeof SECTIONS)[number];
 
 export default function Profile() {
@@ -311,6 +318,7 @@ export default function Profile() {
   // Keyed on the account id, not the user object: Supabase hands over a new
   // object on every token refresh, and refetching then would overwrite
   // whatever someone is in the middle of typing with the last saved copy.
+  const { setup, saveSetup } = useSetup();
   const userId = user?.id;
   useEffect(() => {
     if (!userId) {
@@ -483,6 +491,68 @@ export default function Profile() {
                   </form>
                 </Panel>
               )}
+              {section === "about-you" && (
+                <Panel
+                  title="How I use Voiced"
+                  intro="This changes what we show you first. It saves as you pick."
+                >
+                  <div className="grid gap-2">
+                    {ROLES.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        aria-pressed={setup.role === r.id}
+                        onClick={() => saveSetup({ role: r.id, ...(r.id === "self" ? {} : { ageGroup: null }) })}
+                        className={`flex min-h-[56px] items-center gap-3 rounded-tile border-2 px-4 py-3 text-left transition-colors ${
+                          setup.role === r.id ? "border-navy bg-sky-tint" : "border-navy/15 hover:border-sky"
+                        }`}
+                      >
+                        <Icon name={r.icon} size={22} />
+                        <span className="text-15 font-bold text-navy">{r.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {setup.role === "self" && (
+                    <div className="mt-3">
+                      <p className="mb-2 text-sm font-bold text-navy">My age group</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(["13-17", "18+"] as const).map((a) => (
+                          <button
+                            key={a}
+                            type="button"
+                            aria-pressed={setup.ageGroup === a}
+                            onClick={() => saveSetup({ ageGroup: a })}
+                            className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-bold ${
+                              setup.ageGroup === a ? "border-navy bg-navy text-mist" : "border-navy/15 text-navy"
+                            }`}
+                          >
+                            {a === "18+" ? "18 or older" : "13 to 17"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="mt-3 text-13 text-muted">
+                    {setup.role === "caregiver" ? (
+                      <>
+                        Set who you're helping on{" "}
+                        <Link to="/me" className="font-semibold text-link hover:underline">
+                          the Me page
+                        </Link>
+                        .
+                      </>
+                    ) : (
+                      <>
+                        Your board is on{" "}
+                        <Link to="/me" className="font-semibold text-link hover:underline">
+                          your Me page
+                        </Link>
+                        .
+                      </>
+                    )}
+                  </p>
+                </Panel>
+              )}
               {section === "my-voice" && (
                 <Panel
                   title="My Voice settings"
@@ -610,6 +680,12 @@ export default function Profile() {
                     label="Your details"
                     detail={[fullName, username && `@${username}`].filter(Boolean).join(" · ") || "Name, username, phone"}
                     onClick={() => open("details")}
+                  />
+                  <MenuRow
+                    icon="star"
+                    label="How I use Voiced"
+                    detail={ROLES.find((r) => r.id === setup.role)?.label ?? "Not chosen yet"}
+                    onClick={() => open("about-you")}
                   />
                   <MenuRow
                     icon="speaker"

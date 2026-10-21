@@ -26,6 +26,7 @@ const RING: Record<StickerId, string> = {
   "used-my-voice": "#8FCBF2",
   "practiced-my-visit": "#FFA694",
   "logged-my-day": "#FFDE9E",
+  "made-my-board": "#FFA694",
 };
 
 const NAVY = "#213244";
@@ -101,6 +102,17 @@ const GLYPHS: Record<StickerId, (color: string) => JSX.Element> = {
       <rect x="113" y="64" width="7" height="20" rx="3.5" fill={c} />
       <rect x="74" y="94" width="52" height="34" rx="5" fill="#fff" />
       <path d="M88 111 l8 8 l16 -16" fill="none" stroke={c} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  "made-my-board": (c) => (
+    <>
+      {/* A sticky note, tilted, with a star on it. */}
+      <rect x="68" y="68" width="64" height="64" rx="6" fill={c} transform="rotate(-6 100 100)" />
+      <rect x="88" y="62" width="24" height="10" rx="2" fill="#fff" opacity="0.85" transform="rotate(-6 100 100)" />
+      <path
+        d="M100 82 l5.3 10.8 l11.9 1.7 l-8.6 8.4 l2 11.8 l-10.6 -5.6 l-10.6 5.6 l2 -11.8 l-8.6 -8.4 l11.9 -1.7 z"
+        fill="#fff"
+      />
     </>
   ),
 };

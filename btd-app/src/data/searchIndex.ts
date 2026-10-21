@@ -48,6 +48,13 @@ const PAGES: SearchEntry[] = [
     kind: "Page",
   },
   {
+    to: "/me",
+    title: "My Me page (All about me)",
+    description: "Sticky notes about how you usually are, how you show pain, and how to talk with you — first on your visit summary.",
+    keywords: "about me board usual hurt talk helps hard body people profile one-page",
+    kind: "Page",
+  },
+  {
     to: "/my-voice/practice",
     title: "Practice My Visit",
     description: "Rehearse a doctor visit step by step, practice what to say, and keep speak-up cards ready.",

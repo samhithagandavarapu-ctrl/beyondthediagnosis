@@ -61,6 +61,9 @@ export async function deleteAccount(authorizationHeader) {
     .eq("user_id", user.id);
   if (draftsError) console.error("Couldn't delete drafts:", draftsError.message);
 
+  const { error: boardError } = await admin.from("me_boards").delete().eq("user_id", user.id);
+  if (boardError) console.error("Couldn't delete the Me board:", boardError.message);
+
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
   if (deleteError) {
     console.error("Couldn't delete user:", deleteError.message);

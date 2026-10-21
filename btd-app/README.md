@@ -232,6 +232,19 @@ and run it. Until then everything still works — the tab just stays empty.
 Only stories sent in while signed in, after the SQL is run, are linked to an
 account; older ones have no owner to notify.
 
+### The Me board and the welcome setup
+
+The **Me page** (`/me`) is an "All about me" board: eight sticky notes (My usual,
+When I hurt, How I talk, What helps me, Things that are hard, Things my body
+needs, My people, Me). Appointment Prep copies it onto each draft, and the PDF
+opens with it. New accounts (and existing ones, once) go through a short
+**welcome setup** that asks who they are and fills in the board.
+
+Open Supabase → **SQL Editor**, paste in [`supabase/me-board.sql`](supabase/me-board.sql),
+and run it. It adds the `me_boards` table (only the owner can read their board)
+and three profile columns: role, age group, and whether setup is done. Until
+then, the board and the setup answers are kept in the browser they were made in.
+
 ### Story credits
 
 When someone shares a story they choose how it's credited: their first name,
