@@ -12,6 +12,9 @@ import {
   listEntries,
 } from "../../lib/calendar";
 import { feeling, painSpotSentence } from "../../lib/myVoice";
+import { buildCalendarPdf } from "../../lib/appointmentPdf";
+import { calendarPageText } from "../../lib/calendarImport";
+import { cycles } from "../../lib/cycles";
 
 // The family owns this data: download all of it, or delete the period part
 // or everything. Each delete needs the word DELETE typed first.
@@ -26,6 +29,37 @@ export default function CalendarDataTools({ onChanged }: { onChanged?: () => voi
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const [preparing, setPreparing] = useState(false);
+
+  /** The whole calendar as a PDF, in the same style as the visit summary. */
+  async function downloadPdf() {
+    setPreparing(true);
+    setMessage(null);
+    try {
+      const { entries } = await listEntries(userId);
+      if (!entries.length) {
+        setMessage("There's nothing in your calendar yet.");
+        return;
+      }
+      const days = entries.map((e) => e.entryDate).sort();
+      const page = calendarPageText(
+        entries,
+        days[0],
+        days[days.length - 1],
+        (e) => [...detailLines(e, (id) => feeling(id).short, painSpotSentence), ...aboutLines(e, true)],
+        cycles(entries)
+      );
+      const doc = await buildCalendarPdf(page);
+      doc.save(`my-voiced-calendar-${new Date().toISOString().slice(0, 10)}.pdf`);
+      setMessage(`Downloaded ${entries.length} ${entries.length === 1 ? "entry" : "entries"}.`);
+    } catch (err) {
+      console.error(err);
+      setMessage("Couldn't build the PDF. You can download a spreadsheet (CSV) instead.");
+    } finally {
+      setPreparing(false);
+    }
+  }
 
   async function download() {
     const { entries } = await listEntries(userId);
@@ -63,9 +97,12 @@ export default function CalendarDataTools({ onChanged }: { onChanged?: () => voi
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap gap-3">
-        <button type="button" onClick={download} className="btd-btn-sky min-h-[48px] gap-2 px-5 py-3 text-sm">
+        <button type="button" onClick={downloadPdf} disabled={preparing} className="btd-btn-sky min-h-[48px] gap-2 px-5 py-3 text-sm disabled:opacity-60">
           <Icon name="save" size={18} />
-          Download my calendar (CSV)
+          {preparing ? "Preparing…" : "Download my calendar (PDF)"}
+        </button>
+        <button type="button" onClick={download} className="btd-btn-outline min-h-[48px] px-5 py-3 text-sm">
+          Spreadsheet (CSV)
         </button>
         <button
           type="button"

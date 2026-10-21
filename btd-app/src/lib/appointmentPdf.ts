@@ -184,7 +184,7 @@ function ensure(ctx: Ctx, needed: number) {
   if (ctx.y + needed > PAGE.height - FOOTER_SPACE) newPage(ctx);
 }
 
-function drawHeader(ctx: Ctx, form: AppointmentForm, date?: string) {
+function drawHeader(ctx: Ctx, title: string, date?: string, eyebrow = "VOICED  ·  VISIT SUMMARY") {
   const { doc } = ctx;
   doc.setFillColor(...NAVY);
   doc.rect(0, 0, PAGE.width, HEADER_HEIGHT, "F");
@@ -196,12 +196,11 @@ function drawHeader(ctx: Ctx, form: AppointmentForm, date?: string) {
   doc.setFont(ctx.font, "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...BUTTER);
-  doc.text("VOICED  ·  VISIT SUMMARY", MARGIN, 34, { charSpace: 1.2 });
+  doc.text(eyebrow, MARGIN, 34, { charSpace: 1.2 });
 
   doc.setFontSize(22);
   doc.setTextColor(...WHITE);
-  const name = form.patientName.trim() || "Visit summary";
-  doc.text(doc.splitTextToSize(name, CONTENT_WIDTH - 150)[0], MARGIN, 62);
+  doc.text(doc.splitTextToSize(title, CONTENT_WIDTH - 150)[0], MARGIN, 62);
 
   doc.setFont(ctx.font, "normal");
   doc.setFontSize(9.5);
@@ -585,14 +584,16 @@ function numberDot(ctx: Ctx, cx: number, cy: number, n: number) {
 /** "From my symptom calendar": its own page at the end, with a small month
  *  grid per month (coral for period days, dots for other things logged), a
  *  table of what was logged, and the period counts. */
-function calendarPage(ctx: Ctx, page: CalendarPageText) {
+function calendarPage(ctx: Ctx, page: CalendarPageText, ownPage = true) {
   const { doc } = ctx;
-  newPage(ctx);
-  doc.setFont(ctx.font, "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(...NAVY);
-  doc.text(page.title, MARGIN, ctx.y + 6);
-  ctx.y += 24;
+  if (ownPage) {
+    newPage(ctx);
+    doc.setFont(ctx.font, "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...NAVY);
+    doc.text(page.title, MARGIN, ctx.y + 6);
+    ctx.y += 24;
+  }
   doc.setFont(ctx.font, "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(...MUTED);
@@ -638,7 +639,7 @@ function calendarPage(ctx: Ctx, page: CalendarPageText) {
         })
       );
     });
-    ctx.y = top + 22 + tallest * cell;
+    ctx.y = top + 30 + tallest * cell;
   }
   doc.setFont(ctx.font, "normal");
   doc.setFontSize(8);
@@ -781,7 +782,7 @@ export async function buildAppointmentPdf(
   const font = await usePdfFont(doc);
   const ctx: Ctx = { doc, y: 0, font };
 
-  drawHeader(ctx, form, date);
+  drawHeader(ctx, form.patientName.trim() || "Visit summary", date);
 
   if (aboutMe) aboutMePanel(ctx, aboutMe);
 
@@ -853,4 +854,46 @@ export async function buildAppointmentPdf(
 
   drawFooters(doc, font);
   return doc;
+}
+
+/** The Symptom Calendar on its own, in the same brand style as the visit
+ *  summary: the navy title band, then the month grids and what was logged. */
+export async function buildCalendarPdf(
+  page: CalendarPageText,
+  /** Whose calendar; the band falls back to the page's own title. */
+  name?: string
+): Promise<jsPDF> {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const font = await usePdfFont(doc);
+  const ctx: Ctx = { doc, y: 0, font };
+  drawHeader(ctx, name?.trim() || "My symptom calendar", undefined, "VOICED  ·  SYMPTOM CALENDAR");
+  calendarPage(ctx, page, false);
+  drawFooters(doc, font);
+  return doc;
+}
+
+/** Send a built PDF to the printer, so a printed copy is the same document
+ *  as the download rather than the page as the browser lays it out. Falls
+ *  back to opening the PDF in a new tab where a frame can't print it. */
+export function printPdf(doc: jsPDF) {
+  const url = URL.createObjectURL(doc.output("blob"));
+  const frame = document.createElement("iframe");
+  frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+  frame.src = url;
+  const cleanUp = () => {
+    frame.remove();
+    URL.revokeObjectURL(url);
+  };
+  frame.onload = () => {
+    try {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+      // The print dialog blocks in most browsers; give the rest a minute.
+      setTimeout(cleanUp, 60_000);
+    } catch {
+      window.open(url, "_blank");
+      setTimeout(cleanUp, 60_000);
+    }
+  };
+  document.body.appendChild(frame);
 }
