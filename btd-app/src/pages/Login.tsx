@@ -144,6 +144,14 @@ export default function Login() {
                     }
                     savePendingSignup({ birthYear: Number(birthYear), code: young ? parentCode.trim() : undefined });
                     const result = await signUpWithEmail(email, password);
+                    // Pressing again within a minute: the first email is
+                    // probably already on its way.
+                    const wait = result.error?.match(/only request this after (\d+) seconds/);
+                    if (wait) {
+                      return {
+                        error: `We've already sent a link to ${email}. Check your inbox and spam folder. If it isn't there, you can ask again in ${wait[1]} seconds.`,
+                      };
+                    }
                     if (!result.error) {
                       if (result.signedIn) navigate("/profile");
                       else
@@ -227,7 +235,9 @@ export default function Login() {
                 disabled={busy}
                 className="w-full px-4 py-2.5 rounded bg-ink text-paper font-semibold text-sm disabled:opacity-50"
               >
-                {mode === "signin" ? "Sign in" : "Create account"}
+                {mode === "signin"
+                  ? busy ? "Signing in…" : "Sign in"
+                  : busy ? "Creating your account…" : "Create account"}
               </button>
             </form>
 
