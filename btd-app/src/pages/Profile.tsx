@@ -685,12 +685,14 @@ export default function Profile() {
                     detail={[fullName, username && `@${username}`].filter(Boolean).join(" · ") || "Name, username, phone"}
                     onClick={() => open("details")}
                   />
+                  {!childUsername && (
                   <MenuRow
                     icon="star"
                     label="How I use Voiced"
                     detail={ROLES.find((r) => r.id === setup.role)?.label ?? "Not chosen yet"}
                     onClick={() => open("about-you")}
                   />
+                  )}
                   <MenuRow
                     icon="speaker"
                     label="My Voice settings"

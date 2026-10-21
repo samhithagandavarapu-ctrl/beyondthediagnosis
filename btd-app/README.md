@@ -268,7 +268,9 @@ To turn it on:
 
 1. Run [`supabase/migrations/20261025_one_profile_per_person.sql`](supabase/migrations/20261025_one_profile_per_person.sql)
    in the SQL Editor, after `supabase/appointment-drafts.sql` and
-   `supabase/me-board.sql`. Safe to run again.
+   `supabase/me-board.sql`, then
+   [`supabase/migrations/20261026_children_skip_setup.sql`](supabase/migrations/20261026_children_skip_setup.sql).
+   Both are safe to run again.
 2. Make sure `SUPABASE_SERVICE_ROLE_KEY` is set in Vercel (the same key "Delete
    account" uses). Adding a child and making a child's login happen on the
    server ([`api/family.js`](api/family.js)), because they create sign-ins.
