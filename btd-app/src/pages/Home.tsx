@@ -43,7 +43,7 @@ const toolGroups = [
       {
         to: "/calendar",
         title: "My Calendar",
-        desc: "Keep your visits, feelings, and reminders together in one place.",
+        desc: "Track how you feel each day: pain, sleep, your period, and more.",
         cta: "Open my calendar →",
       },
     ],
@@ -163,9 +163,6 @@ export default function Home() {
               All core tools are always free for families.
             </p>
           </div>
-          <Link to="/tools" className="btd-btn-sky min-h-[46px] px-[22px] py-[13px] text-15">
-            See all tools →
-          </Link>
         </div>
         {toolGroups.map((g) => (
           <div key={g.label}>

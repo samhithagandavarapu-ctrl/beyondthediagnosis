@@ -159,7 +159,7 @@ export default function Navbar() {
           </div>
           <Link
             to="/assistant"
-            className="btd-btn-coral ml-0 mr-0.5 whitespace-nowrap px-3.5 py-[9px] text-13 shadow-[0_1px_0_rgba(33,50,68,0.15)] sm:ml-2 sm:mr-1 sm:px-[18px] sm:py-[11px] sm:text-sm"
+            className="btd-btn ml-0 mr-0.5 whitespace-nowrap border-2 border-coral bg-white px-3 py-[7px] text-13 hover:bg-coral sm:ml-2 sm:mr-1 sm:px-4 sm:py-[9px] sm:text-sm"
           >
             <span className="sm:hidden">AI advocate</span>
             <span className="hidden sm:inline">{CTA_LABEL}</span>
