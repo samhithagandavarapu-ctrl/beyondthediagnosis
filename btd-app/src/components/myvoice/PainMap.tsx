@@ -275,7 +275,8 @@ function SpotEditor({
             <SpeakButton text={kindQuestion} />
           </p>
         )}
-        <div role="radiogroup" aria-label={kindQuestion} className="grid grid-cols-3 gap-2.5">
+        {/* Two across on a phone, so the full-sentence labels fit. */}
+        <div role="radiogroup" aria-label={kindQuestion} className="grid grid-cols-2 gap-2.5 min-[480px]:grid-cols-3">
           {PAIN_KINDS.map((k) => {
             const isOn = spot.kind === k.id;
             return (
@@ -295,7 +296,7 @@ function SpotEditor({
               >
                 <Icon name={k.icon} size={38} className="text-navy" />
                 {showText && (
-                  <span className="text-13 font-bold leading-tight text-navy">
+                  <span className="text-center text-13 font-bold leading-tight text-navy [overflow-wrap:anywhere]">
                     {readingLevel === "full" ? k.label : k.short}
                   </span>
                 )}
@@ -334,8 +335,9 @@ function SpotEditor({
               >
                 <Icon name={l.icon} size={36} className="text-navy" />
                 {showText && (
-                  <span className="text-12 font-bold leading-tight text-navy">
-                    {readingLevel === "full" ? `${l.short} (${l.level})` : l.short}
+                  <span className="text-center text-12 font-bold leading-tight text-navy">
+                    {l.short}
+                    {readingLevel === "full" && <span className="block">({l.level})</span>}
                   </span>
                 )}
               </button>
