@@ -6,6 +6,7 @@ import {
   dateKey,
   deleteEntries,
   listEntries,
+  listEntriesOf,
   newEntry,
   saveEntries,
 } from "./calendar";
@@ -179,8 +180,13 @@ async function moveOldCheckIns(userId: string | null): Promise<void> {
 // ---- What My Voice calls ----
 
 export async function listCheckIns(
-  userId: string | null
+  userId: string | null,
+  /** Whose: the signed-in person's own, or someone they look after. */
+  ownerId: string | null = userId
 ): Promise<{ checkIns: CheckIn[]; store: CheckInStore; accountMissing: boolean }> {
+  if (userId && ownerId && ownerId !== userId) {
+    return { checkIns: entriesToCheckIns(await listEntriesOf(ownerId)), store: "account", accountMissing: false };
+  }
   await moveOldCheckIns(userId);
   const { entries, store, accountMissing } = await listEntries(userId);
   return { checkIns: entriesToCheckIns(entries), store, accountMissing };
@@ -191,9 +197,16 @@ export async function listCheckIns(
  *  the body map cleared) has its entry deleted. */
 export async function saveCheckInTo(
   userId: string | null,
-  checkIn: CheckIn
+  checkIn: CheckIn,
+  /** A grown-up saving it on the profile of someone they look after: it goes
+   *  in that person's calendar, marked as the grown-up's. */
+  forPerson?: string | null
 ): Promise<{ checkIn: CheckIn; where: CheckInStore }> {
-  const entries = checkInToEntries(checkIn);
+  const own = checkInToEntries(checkIn);
+  const entries =
+    forPerson && userId && forPerson !== userId
+      ? own.map((e) => ({ ...e, userId: forPerson, loggedBy: userId, reportedBy: "caregiver" as const, private: false }))
+      : own;
   const mood = entries.find((e) => e.category === "mood");
   const pain = entries.find((e) => e.category === "pain");
   const stale = [checkIn.entryIds?.mood, checkIn.entryIds?.pain].filter(

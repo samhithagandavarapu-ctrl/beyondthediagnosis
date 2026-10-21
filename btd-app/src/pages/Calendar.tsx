@@ -1,4 +1,5 @@
 import { ForLabel } from "../components/ModeBanner";
+import NeedsChild from "../components/family/NeedsChild";
 import { possessive, useAccountMode } from "../context/AccountModeContext";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -98,12 +99,11 @@ export default function Calendar() {
   const [childEntries, setChildEntries] = useState<CalendarEntry[]>([]);
   const [childCustoms, setChildCustoms] = useState<CustomSymptom[]>([]);
   const [childLoaded, setChildLoaded] = useState(false);
-  const child = !practice && whose ? family.children.find((c) => c.personId === whose) ?? null : null;
-  // A parent opens on the calendar of whoever the bar at the top says
-  // they're managing.
-  useEffect(() => {
-    if (mode === "parent" && managed?.personId) setWhose(managed.personId);
-  }, [mode, managed?.personId]);
+  // A parent's calendar is always the child they're managing (the bar at the
+  // top switches who); there's no calendar of the parent's own.
+  const whoseId = mode === "parent" ? managed?.personId ?? null : whose;
+  const child = !practice && whoseId ? family.children.find((c) => c.personId === whoseId) ?? null : null;
+  const noChildYet = mode === "parent" && !managed;
   useEffect(() => {
     if (!child) return;
     let cancelled = false;
@@ -262,6 +262,14 @@ export default function Calendar() {
 
   const back = () => show({ kind: "today" });
 
+  if (noChildYet && !practice) {
+    return (
+      <section className="btd-container pt-8 pb-20">
+        <NeedsChild what="The calendar" />
+      </section>
+    );
+  }
+
   return (
     <div>
       <section className="btd-container grid gap-6 pt-8 pb-20">
@@ -279,7 +287,7 @@ export default function Calendar() {
           </div>
         )}
 
-        {!practice && family.children.length > 0 && (
+        {!practice && family.children.length > 0 && mode !== "parent" && (
           <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
             <span className="mr-1 text-13 font-bold uppercase tracking-[0.08em] text-muted">Whose calendar?</span>
             {[{ id: null as string | null, label: "Mine" }, ...family.children.map((c) => ({ id: c.personId as string | null, label: c.name }))].map(

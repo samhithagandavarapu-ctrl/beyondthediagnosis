@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authEnabled } from "../lib/supabaseClient";
 import PasswordInput from "../components/PasswordInput";
-import { isUnder13, savePendingSignup } from "../lib/family";
+import { usernameEmail, usernameOf } from "../lib/family";
 import { inkLastWord } from "../components/Scribble";
 
 // Phone sign-in needs a paid SMS provider connected in Supabase (README,
@@ -37,12 +37,9 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  // Sign-up only: the birth year (for the under-13 rule) and, under 13, the
-  // parent's code. They're saved once the account is signed in.
-  const [birthYear, setBirthYear] = useState("");
-  const [parentCode, setParentCode] = useState("");
-  const thisYear = new Date().getFullYear();
-  const young = birthYear !== "" && isUnder13(Number(birthYear));
+  // Sign-in takes an email, or the username a parent made for a child (no
+  // email needed: it's an address underneath that's never emailed).
+  const signInAddress = email.includes("@") ? email.trim() : usernameEmail(email);
 
   async function run(action: () => Promise<{ error: string | null }>, onSuccess?: () => void) {
     setBusy(true);
@@ -60,7 +57,7 @@ export default function Login() {
     return (
       <div className="btd-container py-14 max-w-md">
         <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("You're signed in")}</h1>
-        <p className="text-slate mb-8">Signed in as {user.email || user.phone || "your account"}.</p>
+        <p className="text-slate mb-8">Signed in as {usernameOf(user.email) || user.email || user.phone || "your account"}.</p>
         <div className="btd-card p-6 space-y-3">
           <Link
             to="/profile?section=security"
@@ -136,13 +133,9 @@ export default function Login() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (mode === "signin") {
-                  run(() => signInWithEmail(email, password), () => navigate("/"));
+                  run(() => signInWithEmail(signInAddress, password), () => navigate("/"));
                 } else {
                   run(async () => {
-                    if (young && !parentCode.trim()) {
-                      return { error: "Under 13, you need a code from your parent to make an account." };
-                    }
-                    savePendingSignup({ birthYear: Number(birthYear), code: young ? parentCode.trim() : undefined });
                     const result = await signUpWithEmail(email, password);
                     // Pressing again within a minute: the first email is
                     // probably already on its way.
@@ -166,9 +159,12 @@ export default function Login() {
               className="space-y-3"
             >
               <input
-                type="email"
-    required
-                placeholder="Email"
+                type={mode === "signin" ? "text" : "email"}
+                required
+                autoComplete="username"
+                autoCapitalize="none"
+                placeholder={mode === "signin" ? "Email or username" : "Email"}
+                aria-label={mode === "signin" ? "Email or username" : "Email"}
                 className="btd-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -181,43 +177,10 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
               />
               {mode === "signup" && (
-                <>
-                  <label className="grid gap-1 text-sm font-semibold text-ink">
-                    What year were you born?
-                    <select
-                      required
-                      className="btd-input"
-                      value={birthYear}
-                      onChange={(e) => setBirthYear(e.target.value)}
-                    >
-                      <option value="">Choose a year</option>
-                      {Array.from({ length: 101 }, (_, i) => thisYear - 3 - i).map((y) => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {young && (
-                    <label className="grid gap-1 text-sm font-semibold text-ink">
-                      Your parent's code
-                      <input
-                        required
-                        className="btd-input uppercase tracking-[0.12em]"
-                        value={parentCode}
-                        onChange={(e) => setParentCode(e.target.value)}
-                        placeholder="ABC-123"
-                        autoComplete="off"
-                        maxLength={8}
-                      />
-                      <span className="text-xs font-normal text-slate">
-                        Under 13, a parent sets up the link and gives permission. Ask them to open
-                        Profile → Family on their account, tap “Add my child”, and tick “My child is
-                        under 13”.
-                      </span>
-                    </label>
-                  )}
-                </>
+                <p className="text-xs text-slate">
+                  Signing up for your child? Make your own account here, then add them. Each
+                  person has one profile, and they can have their own login to it.
+                </p>
               )}
               {mode === "signin" && (
                 <div className="flex justify-end">
@@ -371,6 +334,10 @@ export default function Login() {
           >
             <p className="text-sm text-slate">
               Enter your email and we'll send a link to reset your password.
+            </p>
+            <p className="text-sm text-slate">
+              Sign in with a username? Ask your grown-up: they can set a new password from their
+              Family dashboard.
             </p>
             <input
               type="email"

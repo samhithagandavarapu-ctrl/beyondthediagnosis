@@ -340,8 +340,11 @@ const fromRow = (r: Row): MeBoard => ({
 /** The board for whoever is here, and where it lives. `accountMissing`:
  *  signed in, but the account can't hold it yet (the SQL hasn't been run). */
 export async function loadBoard(
-  userId: string | null
+  userId: string | null,
+  /** Whose board: the signed-in person's own, or a child's they look after. */
+  ownerId: string | null = userId
 ): Promise<{ board: MeBoard | null; store: BoardStore; accountMissing: boolean }> {
+  if (userId && ownerId && ownerId !== userId) return loadBoardOf(ownerId);
   const local = readLocal();
   if (!userId || !authEnabled) return { board: local, store: "device", accountMissing: false };
 
@@ -369,22 +372,46 @@ export async function loadBoard(
   return { board: account, store: "account", accountMissing: false };
 }
 
+/** A child's board, for a grown-up who looks after them. Account only: it's
+ *  never mixed with whatever is kept on this device. */
+async function loadBoardOf(ownerId: string): Promise<{ board: MeBoard | null; store: BoardStore; accountMissing: boolean }> {
+  if (!authEnabled) return { board: null, store: "account", accountMissing: false };
+  const { data, error } = await supabase
+    .from("me_boards")
+    .select("about_name, relation, answers, updated_at")
+    .eq("user_id", ownerId)
+    .maybeSingle();
+  if (error) {
+    console.error("Couldn't load that Me board:", error.message);
+    return { board: null, store: "account", accountMissing: true };
+  }
+  return { board: data ? fromRow(data as Row) : null, store: "account", accountMissing: false };
+}
+
 /** Save the board where it lives. Returns where it went: if the account
- *  can't take it, it's kept on this device instead of lost. */
-export async function saveBoard(userId: string | null, board: MeBoard): Promise<BoardStore> {
-  if (userId && authEnabled) {
-    const { error } = await supabase.from("me_boards").upsert(toRow(userId, board), { onConflict: "user_id" });
+ *  can't take your own board, it's kept on this device instead of lost.
+ *  Returns null when someone else's board couldn't be saved. */
+export async function saveBoard(
+  userId: string | null,
+  board: MeBoard,
+  ownerId: string | null = userId
+): Promise<BoardStore | null> {
+  const owner = ownerId ?? userId;
+  if (owner && authEnabled) {
+    const { error } = await supabase.from("me_boards").upsert(toRow(owner, board), { onConflict: "user_id" });
     if (!error) return "account";
     console.error("Couldn't save the Me board to the account:", error.message);
   }
+  if (owner && owner !== userId) return null;
   writeLocal(board);
   return "device";
 }
 
-export async function deleteBoard(userId: string | null): Promise<void> {
-  writeLocal(null);
-  if (userId && authEnabled) {
-    const { error } = await supabase.from("me_boards").delete().eq("user_id", userId);
+export async function deleteBoard(userId: string | null, ownerId: string | null = userId): Promise<void> {
+  const owner = ownerId ?? userId;
+  if (owner === userId) writeLocal(null);
+  if (owner && authEnabled) {
+    const { error } = await supabase.from("me_boards").delete().eq("user_id", owner);
     if (error) console.error("Couldn't delete the Me board:", error.message);
   }
 }

@@ -21,15 +21,15 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <AccessibilityProvider>
             <PracticeModeProvider>
-              <MyVoiceProvider>
-                <SetupProvider>
-                  <AccountModeProvider>
+              <SetupProvider>
+                <AccountModeProvider>
+                  <MyVoiceProvider>
                     <NotificationsProvider>
                       <App />
                     </NotificationsProvider>
-                  </AccountModeProvider>
-                </SetupProvider>
-              </MyVoiceProvider>
+                  </MyVoiceProvider>
+                </AccountModeProvider>
+              </SetupProvider>
             </PracticeModeProvider>
           </AccessibilityProvider>
         </AuthProvider>

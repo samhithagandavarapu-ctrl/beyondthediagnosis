@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Icon from "../icons/Icon";
 import { useAuth } from "../../context/AuthContext";
+import { useAccountMode } from "../../context/AccountModeContext";
 import { useNotifications } from "../../context/NotificationsContext";
 import {
   FamilyInvite,
@@ -8,78 +10,55 @@ import {
   acceptInvite,
   cancelInvite,
   createInvite,
-  getBirthYear,
-  isUnder13,
-  listFamily,
   listMyInvites,
   showCode,
   unlink,
+  usernameOf,
 } from "../../lib/family";
-import BirthYearForm from "./BirthYearForm";
+import { AddChildForm, ChildAccess } from "./ChildCards";
 
-// Profile → Family: who I'm linked with, making and entering codes, and
-// unlinking. What a linked grown-up can and can't do is set by the database;
-// the words here describe it.
+// Profile → Family. Each person has one profile:
+//  - a parent adds their children's profiles here (once), and gives each one
+//    a way in: a username login (12 and under) or an invite (13 and up);
+//  - a self-advocate who signed up on their own can invite a grown-up with a
+//    code, and the grown-up enters it here.
+// What a linked grown-up can and can't see is set by the database; the words
+// here describe it.
 
 export default function FamilyPanel() {
   const { user } = useAuth();
+  const { mode, family } = useAccountMode();
   const { refresh: refreshNotices } = useNotifications();
-  const [loaded, setLoaded] = useState(false);
-  const [people, setPeople] = useState<FamilyPerson[]>([]);
+  const [params] = useSearchParams();
   const [invites, setInvites] = useState<FamilyInvite[]>([]);
-  const [birthYear, setBirthYearState] = useState<number | null>(null);
-  const [under13Child, setUnder13Child] = useState(false);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(() => params.get("code") ?? "");
+  const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // A child's own username login doesn't manage anyone.
+  const childLogin = Boolean(usernameOf(user?.email));
 
-  const [loadFailed, setLoadFailed] = useState(false);
-
-  async function load() {
-    if (!user) return;
-    try {
-      const [p, i, y] = await Promise.all([listFamily(), listMyInvites(), getBirthYear(user.id)]);
-      setPeople(p);
-      setInvites(i);
-      setBirthYearState(y);
-      setLoadFailed(false);
-    } catch {
-      setLoadFailed(true);
-    }
-    setLoaded(true);
+  async function loadInvites() {
+    setInvites(await listMyInvites());
   }
-
   useEffect(() => {
-    load();
+    if (user) loadInvites();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   if (!user) return null;
-  if (!loaded) return <p className="text-15 text-body">Loading…</p>;
-  if (loadFailed) {
-    return (
-      <div className="grid gap-3">
-        <p role="alert" className="text-15 text-body">Couldn't load your family links. Check your connection and try again.</p>
-        <button type="button" onClick={load} className="btd-btn-outline min-h-[44px] justify-self-start px-5 py-2 text-sm">
-          Try again
-        </button>
-      </div>
-    );
-  }
+  const { children, grownUps } = family;
+  const asParent = mode === "parent" || children.length > 0;
 
-  const children = people.filter((p) => p.role === "child");
-  const grownUps = people.filter((p) => p.role === "caregiver");
-  const youngAndWaiting = birthYear !== null && isUnder13(birthYear) && !grownUps.some((g) => g.consent);
-
-  async function make(role: "caregiver" | "child", forUnder13: boolean) {
+  async function inviteGrownUp() {
     setBusy(true);
     setError(null);
     setNotice(null);
-    const res = await createInvite(role, forUnder13);
+    const res = await createInvite("child");
     setBusy(false);
     if (res.error) setError(res.error);
-    await load();
+    await loadInvites();
   }
 
   async function enter() {
@@ -89,35 +68,19 @@ export default function FamilyPanel() {
     setNotice(null);
     const res = await acceptInvite(code);
     setBusy(false);
-    if (res.error) {
-      setError(res.error);
-      return;
-    }
+    if (res.error) return setError(res.error);
     setCode("");
-    await load();
+    await family.reload();
     refreshNotices();
     setNotice("You're linked.");
   }
 
   async function remove(p: FamilyPerson) {
-    const what =
-      p.role === "child"
-        ? `You won't see ${p.name}'s calendar any more. Anything you logged there stays in it.`
-        : `${p.name} won't see your calendar any more. Anything they logged stays in it.`;
-    if (!window.confirm(`Unlink from ${p.name}? ${what} ${p.name} will be told.`)) return;
+    if (!window.confirm(`Unlink ${p.name}? They won't see your profile any more. Anything they added stays. ${p.name} will be told.`)) return;
     const res = await unlink(p.linkId);
     if (res.error) setError(res.error);
-    else setNotice(`Unlinked from ${p.name}.`);
-    await load();
-  }
-
-  if (birthYear === null) {
-    return (
-      <div className="grid gap-3">
-        <p className="text-15 text-body">Before linking accounts, one question.</p>
-        <BirthYearForm onSaved={load} />
-      </div>
-    );
+    else setNotice(`Unlinked ${p.name}.`);
+    await family.reload();
   }
 
   return (
@@ -133,142 +96,145 @@ export default function FamilyPanel() {
         </p>
       )}
 
-      <section aria-labelledby="fam-grownups" className="grid gap-3">
-        <h3 id="fam-grownups" className="text-17 font-extrabold text-navy">
-          My grown-ups
-        </h3>
-        {grownUps.length === 0 ? (
-          <p className="text-15 text-body">No one is linked to your calendar.</p>
-        ) : (
-          <ul className="grid gap-2">
-            {grownUps.map((g) => (
-              <PersonRow
-                key={g.linkId}
-                person={g}
-                detail="Can see your calendar, except things you mark “Just for me”. Can add notes of their own. Can't change or delete yours."
-                onUnlink={() => remove(g)}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section aria-labelledby="fam-children" className="grid gap-3">
-        <h3 id="fam-children" className="text-17 font-extrabold text-navy">
-          My children
-        </h3>
-        {children.length === 0 ? (
-          <p className="text-15 text-body">You haven't linked a child's account.</p>
-        ) : (
-          <ul className="grid gap-2">
-            {children.map((c) => (
-              <PersonRow
-                key={c.linkId}
-                person={c}
-                detail={`You can see ${c.name}'s calendar, except things they mark “Just for me”, and add your own notes to it. They can delete your notes but not change them.${
-                  c.consent ? " You gave permission for them as an under-13." : ""
-                }`}
-                onUnlink={() => remove(c)}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section aria-labelledby="fam-link" className="grid gap-4 rounded-card bg-mist p-5">
-        <h3 id="fam-link" className="text-17 font-extrabold text-navy">
-          Link someone
-        </h3>
-
-        {youngAndWaiting ? (
-          <p className="text-15 text-navy">
-            Because you're under 13, a parent needs to link first. Ask them to open Profile → Family
-            on their account, tap <strong>Add my child</strong>, tick <strong>My child is under 13</strong>,
-            and give you the code. Enter it below.
+      {asParent && (
+        <section aria-labelledby="fam-children" className="grid gap-3">
+          <h3 id="fam-children" className="text-17 font-extrabold text-navy">
+            My children
+          </h3>
+          <p className="text-15 text-body">
+            Each child has one profile. You and they see the same calendar, Me board and
+            Appointment Prep — except calendar notes they mark “Just for me”.
           </p>
-        ) : (
-          <div className="grid gap-3">
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => make("caregiver", under13Child)}
-                className="btd-btn-sky min-h-[48px] gap-2 px-5 py-3 text-sm"
-              >
-                <Icon name="plus" size={18} />
-                Add my child
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => make("child", false)}
-                className="btd-btn-outline min-h-[48px] gap-2 px-5 py-3 text-sm"
-              >
-                <Icon name="plus" size={18} />
-                Add a grown-up
-              </button>
-            </div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-navy">
-              <input type="checkbox" className="h-4 w-4" checked={under13Child} onChange={(e) => setUnder13Child(e.target.checked)} />
-              My child is under 13 (I'm their parent or guardian and I give permission)
-            </label>
-            <p className="text-13 text-muted">
-              <strong>Add my child</strong> makes a code for your child to enter on their account.{" "}
-              <strong>Add a grown-up</strong> makes a code for a parent or helper, so they can see your
-              calendar. A child can have up to 2 grown-ups.
-            </p>
-          </div>
-        )}
-
-        {invites.length > 0 && (
-          <ul className="grid gap-2">
-            {invites.map((i) => (
-              <li key={i.id} className="flex flex-wrap items-center gap-4 rounded-card border-2 border-navy bg-white p-4">
-                <span className="font-display text-28 font-extrabold tracking-[0.12em] text-navy" aria-label={`Code ${i.code.split("").join(" ")}`}>
-                  {showCode(i.code)}
+          {children.length === 0 && <p className="text-15 text-body">You haven't added a child yet.</p>}
+          <ul className="grid gap-3">
+            {children.map((c) => (
+              <li key={c.linkId} className="grid gap-3 rounded-card border border-navy/12 bg-white p-4">
+                <span className="flex items-center gap-3">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-tint text-navy">
+                    <Icon name="person" size={22} />
+                  </span>
+                  <span className="text-17 font-extrabold text-navy">{c.name}</span>
                 </span>
-                <span className="min-w-0 flex-1 text-13 text-body">
-                  {i.creatorRole === "caregiver"
-                    ? i.forUnder13
-                      ? "For your child under 13 to enter when they sign up or in their Profile → Family."
-                      : "For your child to enter in their Profile → Family."
-                    : "For your grown-up to enter in their Profile → Family."}{" "}
-                  Works once, until{" "}
-                  {new Date(i.expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}.
-                </span>
-                <span className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigator.clipboard?.writeText(showCode(i.code))}
-                    className="btd-btn-outline min-h-[40px] px-4 py-2 text-sm"
-                  >
-                    Copy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await cancelInvite(i.id);
-                      load();
-                    }}
-                    className="min-h-[40px] px-3 text-sm font-semibold text-link hover:underline"
-                  >
-                    Cancel code
-                  </button>
-                </span>
+                <ChildAccess child={c} />
               </li>
             ))}
           </ul>
-        )}
+          {adding ? (
+            <div className="rounded-card border-2 border-sky bg-sky-tint p-4">
+              <AddChildForm
+                submitLabel="Add"
+                onAdded={(_, name) => {
+                  setAdding(false);
+                  setNotice(`${name} is added.`);
+                }}
+              />
+            </div>
+          ) : (
+            <button type="button" onClick={() => setAdding(true)} className="btd-btn-sky min-h-[48px] justify-self-start gap-2 px-5 text-sm">
+              <Icon name="plus" size={18} />
+              {children.length ? "Add another child" : "Add my child"}
+            </button>
+          )}
+        </section>
+      )}
 
+      {!asParent && (
+        <section aria-labelledby="fam-grownups" className="grid gap-3">
+          <h3 id="fam-grownups" className="text-17 font-extrabold text-navy">
+            My grown-ups
+          </h3>
+          {grownUps.length === 0 ? (
+            <p className="text-15 text-body">No grown-up is linked to your profile.</p>
+          ) : (
+            <ul className="grid gap-2">
+              {grownUps.map((g) => (
+                <li key={g.linkId} className="flex flex-wrap items-center gap-4 rounded-card border border-navy/12 bg-white p-4">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-tint text-navy">
+                    <Icon name="heart" size={22} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-15 font-extrabold text-navy">{g.name}</span>
+                    <span className="block text-13 text-body">
+                      Sees and adds to your calendar, Me board and Appointment Prep. Never sees what you
+                      mark “Just for me”.
+                    </span>
+                  </span>
+                  {!childLogin && (
+                    <button type="button" onClick={() => remove(g)} className="min-h-[40px] px-3 text-sm font-semibold text-clay hover:underline">
+                      Unlink
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {childLogin ? (
+            <p className="text-15 text-body">Your grown-up looks after who's linked to your profile.</p>
+          ) : (
+            <div className="grid gap-3 rounded-card bg-mist p-5">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={inviteGrownUp}
+                className="btd-btn-sky min-h-[48px] justify-self-start gap-2 px-5 py-3 text-sm"
+              >
+                <Icon name="plus" size={18} />
+                Invite a caregiver
+              </button>
+              <p className="text-13 text-muted">
+                Makes a code for a parent or helper. They make their own Voiced account as a parent or
+                caregiver, then enter the code. Up to 2 grown-ups.
+              </p>
+              {invites.length > 0 && (
+                <ul className="grid gap-2">
+                  {invites.map((i) => (
+                    <li key={i.id} className="flex flex-wrap items-center gap-4 rounded-card border-2 border-navy bg-white p-4">
+                      <span className="font-display text-28 font-extrabold tracking-[0.12em] text-navy" aria-label={`Code ${i.code.split("").join(" ")}`}>
+                        {showCode(i.code)}
+                      </span>
+                      <span className="min-w-0 flex-1 text-13 text-body">
+                        For your grown-up to enter in their Profile → Family. Works once, until{" "}
+                        {new Date(i.expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}.
+                      </span>
+                      <span className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/profile?section=family&code=${i.code}`)}
+                          className="btd-btn-outline min-h-[40px] px-4 py-2 text-sm"
+                        >
+                          Copy a link
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await cancelInvite(i.id);
+                            loadInvites();
+                          }}
+                          className="min-h-[40px] px-3 text-sm font-semibold text-link hover:underline"
+                        >
+                          Cancel code
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {!childLogin && mode !== "self" && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
             enter();
           }}
-          className="flex flex-wrap items-end gap-3"
+          className="grid gap-2 rounded-card bg-mist p-5"
         >
           <label className="grid gap-1 text-sm font-semibold text-navy">
-            Have a code? Enter it
+            Got a code from someone you help? Enter it
             <input
               className="btd-input w-[12rem] uppercase tracking-[0.12em]"
               value={code}
@@ -278,28 +244,14 @@ export default function FamilyPanel() {
               maxLength={8}
             />
           </label>
-          <button type="submit" disabled={busy || !code.trim()} className="btd-btn-coral min-h-[48px] px-5 py-3 text-sm disabled:opacity-40">
+          <span className="text-13 text-muted">
+            For someone who made their own Voiced account and invited you. You'll see their profile here.
+          </span>
+          <button type="submit" disabled={busy || !code.trim()} className="btd-btn-coral min-h-[48px] justify-self-start px-5 py-3 text-sm disabled:opacity-40">
             Link
           </button>
         </form>
-      </section>
+      )}
     </div>
-  );
-}
-
-function PersonRow({ person, detail, onUnlink }: { person: FamilyPerson; detail: string; onUnlink: () => void }) {
-  return (
-    <li className="flex flex-wrap items-center gap-4 rounded-card border border-navy/12 bg-white p-4">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-tint text-navy">
-        <Icon name={person.role === "child" ? "person" : "heart"} size={22} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-15 font-extrabold text-navy">{person.name}</span>
-        <span className="block text-13 text-body">{detail}</span>
-      </span>
-      <button type="button" onClick={onUnlink} className="min-h-[40px] px-3 text-sm font-semibold text-clay hover:underline">
-        Unlink
-      </button>
-    </li>
   );
 }

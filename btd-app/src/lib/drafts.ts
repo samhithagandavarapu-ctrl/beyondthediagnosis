@@ -133,7 +133,8 @@ const fromRow = (r: Row): Draft => ({
   updatedAt: r.updated_at,
 });
 
-const toRow = (d: Draft) => ({
+const toRow = (d: Draft, ownerId?: string | null) => ({
+  ...(ownerId ? { user_id: ownerId } : {}),
   id: d.id,
   name: d.name,
   form: d.form,
@@ -145,10 +146,15 @@ const toRow = (d: Draft) => ({
  *  `accountMissing` is true when someone is signed in but the account can't
  *  hold drafts yet (the SQL hasn't been run), so they're on this device. */
 export async function listDrafts(
-  userId: string | null
+  userId: string | null,
+  /** Whose drafts: the signed-in person's own, or a child's they look after.
+   *  A draft belongs to the person it's about, so both of them see it. */
+  ownerId: string | null = userId
 ): Promise<{ drafts: Draft[]; store: DraftStore; accountMissing: boolean }> {
-  const local = readLocal();
-  if (!userId || !authEnabled) {
+  const owner = ownerId ?? userId;
+  const own = owner === userId;
+  const local = own ? readLocal() : [];
+  if (!userId || !owner || !authEnabled) {
     return { drafts: sortDrafts(local), store: "device", accountMissing: false };
   }
 
@@ -156,28 +162,36 @@ export async function listDrafts(
   if (local.length) {
     const { error } = await supabase
       .from("appointment_drafts")
-      .upsert(local.map(toRow), { onConflict: "id" });
+      .upsert(local.map((d) => toRow(d)), { onConflict: "id" });
     if (!error) writeLocal([]);
   }
 
   const { data, error } = await supabase
     .from("appointment_drafts")
     .select("id, name, form, my_voice, updated_at")
+    // Only this person's: a grown-up can read their children's too, and
+    // those must never mix in here.
+    .eq("user_id", owner)
     .order("updated_at", { ascending: false });
   if (error) {
     console.error("Couldn't load drafts from the account:", error.message);
-    return { drafts: sortDrafts(readLocal()), store: "device", accountMissing: true };
+    return { drafts: own ? sortDrafts(readLocal()) : [], store: own ? "device" : "account", accountMissing: true };
   }
   return { drafts: (data as Row[]).map(fromRow), store: "account", accountMissing: false };
 }
 
 /** Save one draft where it lives. Returns where it actually went: if the
  *  account can't take it, it's kept on this device instead of lost. */
-export async function saveDraft(userId: string | null, draft: Draft): Promise<DraftStore> {
+export async function saveDraft(
+  userId: string | null,
+  draft: Draft,
+  ownerId: string | null = userId
+): Promise<DraftStore> {
+  const owner = ownerId ?? userId;
   if (userId && authEnabled) {
     const { error } = await supabase
       .from("appointment_drafts")
-      .upsert(toRow(draft), { onConflict: "id" });
+      .upsert(toRow(draft, owner), { onConflict: "id" });
     if (!error) return "account";
     console.error("Couldn't save draft to the account:", error.message);
   }
@@ -204,13 +218,14 @@ export async function addNotesToDraft(
     symptoms: { description: string; onset: string }[];
     questions: string[];
   },
-  where: "current" | "new"
+  where: "current" | "new",
+  ownerId: string | null = userId
 ): Promise<Draft> {
   let target: Draft;
   if (where === "new") {
     target = newDraft();
   } else {
-    const { drafts } = await listDrafts(userId);
+    const { drafts } = await listDrafts(userId, ownerId);
     const activeId = getActiveDraftId();
     target = drafts.find((d) => d.id === activeId) ?? drafts[0] ?? newDraft();
   }
@@ -244,7 +259,7 @@ export async function addNotesToDraft(
     updatedAt: new Date().toISOString(),
   };
   setActiveDraftId(updated.id);
-  await saveDraft(userId, updated);
+  await saveDraft(userId, updated, ownerId);
   return updated;
 }
 
