@@ -11,7 +11,7 @@ import {
   refineForm,
   streamChatReply,
 } from "../api/_lib/claude.js";
-import { deleteAccount } from "../api/_lib/account.js";
+import { accountDeletionStatus, deleteAccount } from "../api/_lib/account.js";
 
 /** Local development only.
  *
@@ -26,8 +26,8 @@ app.use(cors({ origin: true }));
 
 const PORT = process.env.PORT || 3001;
 
-app.get("/api/health", (_req, res) =>
-  res.json({ ok: true, apiKeyConfigured: hasApiKey(), model: MODEL })
+app.get("/api/health", async (_req, res) =>
+  res.json({ ok: true, apiKeyConfigured: hasApiKey(), model: MODEL, accountDeletion: await accountDeletionStatus() })
 );
 
 app.post("/api/chat", async (req, res) => {

@@ -11,8 +11,23 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+/** For /api/health: whether account deletion can work, without revealing
+ *  anything. "key not accepted" means the key is set but Supabase won't take
+ *  it as the service-role key (often the anon key pasted by mistake, or
+ *  another project's key). */
+export async function accountDeletionStatus() {
+  if (!SUPABASE_URL) return "missing Supabase URL";
+  if (!SERVICE_ROLE_KEY) return "missing SUPABASE_SERVICE_ROLE_KEY";
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
+  return error ? "key not accepted (wrong key, or wrong Supabase URL)" : "ready";
+}
+
 export async function deleteAccount(authorizationHeader) {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    console.error(!SUPABASE_URL ? "No SUPABASE_URL or VITE_SUPABASE_URL set." : "No SUPABASE_SERVICE_ROLE_KEY set.");
     return {
       status: 500,
       error:
