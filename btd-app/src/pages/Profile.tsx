@@ -207,7 +207,7 @@ function DeletePanel({ onCancel }: { onCancel: () => void }) {
   return (
     <Panel
       title="Delete account"
-      intro="Permanently removes your sign-in and your saved profile details. This can't be undone. Stories you've already sent in stay where they are, so email us if you want one taken down."
+      intro="Permanently removes your sign-in, your profile, your calendar and check-ins, your saved chats and appointment drafts, and your family links. This can't be undone. Notes you added to a child's calendar stay in it for them. Stories you've already sent in stay where they are, so email us if you want one taken down."
     >
       <form onSubmit={handleDelete} className="grid gap-3">
         {deleteError && <Message tone="error">{deleteError}</Message>}
