@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { useAuth } from "./AuthContext";
 import { usePracticeMode } from "./PracticeModeContext";
 import { authEnabled, supabase } from "../lib/supabaseClient";
+import { USERNAME_DOMAIN } from "../lib/family";
 
 // The welcome setup: who someone is here, their age group (never a
 // birthday), and whether they've been through it. Kept on the profile (see
@@ -28,6 +29,7 @@ type SetupState = {
 };
 
 const EMPTY: Setup = { role: null, ageGroup: null, status: null };
+const CHILD: Setup = { role: "self", ageGroup: null, status: "done" };
 const localKey = (userId: string) => `voiced:setup:${userId}`;
 
 function readLocal(userId: string): Setup {
@@ -61,18 +63,34 @@ export function SetupProvider({ children }: { children: React.ReactNode }) {
     current.current = s;
     setSetupState(s);
   };
-  const [loaded, setLoaded] = useState(false);
+  // Whose answers are loaded. Right after someone signs in, the page can
+  // check before theirs arrive; "loaded" only counts once they're this
+  // person's, so nobody is sent to setup on the last person's answers.
+  const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
   const userId = user?.id ?? null;
+  const email = user?.email ?? "";
+  const childLogin = email.endsWith(`@${USERNAME_DOMAIN}`) || email.endsWith("@people.voiced.invalid");
 
   useEffect(() => {
     if (authLoading) return;
     if (!userId) {
       setSetup(EMPTY);
-      setLoaded(true);
+      setLoadedFor(userId);
+      return;
+    }
+    // A different person: forget the last one's answers straight away, so
+    // nothing of theirs (a "Parent" badge) shows while this one's load.
+    setSetup(EMPTY);
+    // A child's login on a profile their grown-up made (a username, or one
+    // not claimed yet) is always the child's own space, already set up: the
+    // grown-up answered the setup questions when they added them.
+    if (childLogin) {
+      setSetup(CHILD);
+      setLoadedFor(userId);
       return;
     }
     let cancelled = false;
-    setLoaded(false);
+    setLoadedFor(undefined);
     (async () => {
       const local = readLocal(userId);
       let fromProfile: Partial<Setup> = {};
@@ -94,14 +112,16 @@ export function SetupProvider({ children }: { children: React.ReactNode }) {
         ageGroup: fromProfile.ageGroup ?? local.ageGroup,
         status: fromProfile.status ?? local.status,
       });
-      setLoaded(true);
+      setLoadedFor(userId);
     })();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, authLoading]);
 
   async function saveSetup(patch: Partial<Setup>) {
+    if (childLogin) return;
     const next = { ...current.current, ...patch };
     setSetup(next);
     if (practice || !userId) return;
@@ -116,7 +136,7 @@ export function SetupProvider({ children }: { children: React.ReactNode }) {
     if (error) console.warn("Setup kept in this browser only:", error.message);
   }
 
-  return <SetupContext.Provider value={{ setup, loaded, saveSetup }}>{children}</SetupContext.Provider>;
+  return <SetupContext.Provider value={{ setup, loaded: loadedFor === userId, saveSetup }}>{children}</SetupContext.Provider>;
 }
 
 export function useSetup() {

@@ -264,6 +264,10 @@ async function claim(admin, body) {
     return fail(500, "Couldn't set up your login. Please try again.");
   }
   await admin.from("profile_claims").update({ used_at: new Date().toISOString() }).eq("id", row.id);
+  // Their own space, already set up by their grown-up: no setup questions.
+  await admin
+    .from("profiles")
+    .upsert({ id: row.person_id, user_role: "self", setup_status: "done" }, { onConflict: "id" });
   return { status: 200, data: { email } };
 }
 
