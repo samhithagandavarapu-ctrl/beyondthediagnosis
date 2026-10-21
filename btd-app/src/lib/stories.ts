@@ -13,7 +13,27 @@ export type StoryRow = {
    *  has been run. */
   rejection_reason?: string | null;
   rejection_note?: string | null;
+  /** How the writer asked to be credited; only once story-credit.sql has
+   *  been run. Older stories have none and are shown with just the role. */
+  credit_type?: CreditType | null;
+  credit_name?: string | null;
 };
+
+export type CreditType = "first_name" | "role" | "anonymous";
+
+const ROLE_CREDITS: Record<StoryRow["audience"], string> = {
+  "Self-advocate": "A self-advocate",
+  Parent: "A parent",
+  Caregiver: "A caregiver",
+  Clinician: "A clinician",
+};
+
+/** The credit shown under a published story. Never the account name. */
+export function storyCredit(story: Pick<StoryRow, "audience" | "credit_type" | "credit_name">): string {
+  if (story.credit_type === "anonymous") return "Anonymous";
+  if (story.credit_type === "first_name" && story.credit_name?.trim()) return story.credit_name.trim();
+  return ROLE_CREDITS[story.audience] ?? "Anonymous";
+}
 
 /** What the admin picks from when turning a story down. The writer is told
  *  the reason, alongside "it didn't follow our community guidelines". */
@@ -32,19 +52,31 @@ export type StorySubmission = {
   audience: StoryRow["audience"];
   excerpt: string;
   submitter_name: string;
+  credit_type: CreditType;
+  credit_name: string;
 };
 
 export async function submitStory(submission: StorySubmission): Promise<{ error: string | null }> {
   if (!authEnabled) {
     return { error: "Sending stories isn't available right now. Please email your story to withvoiced@gmail.com instead." };
   }
-  const { error } = await supabase.from("stories").insert({
+  const row = {
     title: submission.title,
     audience: submission.audience,
     excerpt: submission.excerpt,
     submitter_name: submission.submitter_name || null,
     status: "pending",
-  });
+  };
+  const credit = {
+    credit_type: submission.credit_type,
+    credit_name: submission.credit_type === "first_name" ? submission.credit_name.trim() || null : null,
+  };
+  let { error } = await supabase.from("stories").insert({ ...row, ...credit });
+  // Before story-credit.sql is run the credit columns don't exist: still send
+  // the story, which then shows with just the role.
+  if (error && /credit_/.test(error.message)) {
+    ({ error } = await supabase.from("stories").insert(row));
+  }
   return { error: error?.message ?? null };
 }
 
@@ -54,11 +86,15 @@ const PUBLIC_COLUMNS = "id, title, audience, excerpt, submitter_name, status, cr
 
 export async function fetchApprovedStories(): Promise<StoryRow[]> {
   if (!authEnabled) return [];
-  const { data, error } = await supabase
-    .from("stories")
-    .select(PUBLIC_COLUMNS)
-    .eq("status", "approved")
-    .order("created_at", { ascending: false });
+  const query = (columns: string) =>
+    supabase
+      .from("stories")
+      .select(columns)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false });
+  // With the credit choice if the database has it; without, if not.
+  let { data, error } = await query(`${PUBLIC_COLUMNS}, credit_type, credit_name`);
+  if (error) ({ data, error } = await query(PUBLIC_COLUMNS));
   if (error) {
     console.error(error);
     return [];

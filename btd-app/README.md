@@ -232,6 +232,14 @@ and run it. Until then everything still works — the tab just stays empty.
 Only stories sent in while signed in, after the SQL is run, are linked to an
 account; older ones have no owner to notify.
 
+### Story credits
+
+When someone shares a story they choose how it's credited: their first name,
+just their role ("A parent"), or anonymous. To save that choice, open Supabase →
+**SQL Editor**, paste in [`supabase/story-credit.sql`](supabase/story-credit.sql),
+and run it. Until then stories still send and publish, and are shown with just
+the role. Older stories are shown with just the role too.
+
 ### Rejection reasons and messages
 
 Run [`supabase/rejections-and-messages.sql`](supabase/rejections-and-messages.sql)

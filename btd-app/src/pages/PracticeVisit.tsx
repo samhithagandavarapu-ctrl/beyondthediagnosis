@@ -97,7 +97,7 @@ export default function PracticeVisit() {
 
   return (
     <section className="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 sm:py-12">
-      <div ref={topRef} className="mx-auto w-full max-w-[440px] scroll-mt-4">
+      <div ref={topRef} className="mx-auto w-full max-w-[560px] scroll-mt-4">
         <Link to="/my-voice" className="mb-4 inline-block text-sm font-bold text-link hover:underline">
           ← My Voice
         </Link>

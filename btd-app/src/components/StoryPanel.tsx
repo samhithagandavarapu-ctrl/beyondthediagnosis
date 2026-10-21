@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { submitStory } from "../lib/stories";
+import { useEffect, useState } from "react";
+import { CreditType, storyCredit, submitStory } from "../lib/stories";
 import { authEnabled } from "../lib/supabaseClient";
 import Panel from "./Panel";
 import DictateButton from "./DictateButton";
@@ -9,11 +9,20 @@ const AUDIENCES = ["Self-advocate", "Parent", "Caregiver", "Clinician"] as const
 /** The signed-in story form at the top of Community Stories.
  *
  *  Being signed in is the whole point: the name is already known, so the form
- *  is three fields instead of four. */
-export default function StoryPanel({ defaultName }: { defaultName: string }) {
+ *  is three fields instead of four. defaultName (the account name) still goes
+ *  to reviewers; what's shown publicly is the credit the writer picks. */
+export default function StoryPanel({
+  defaultName,
+  firstName,
+}: {
+  defaultName: string;
+  firstName: string;
+}) {
   const [title, setTitle] = useState("");
   const [audience, setAudience] = useState<(typeof AUDIENCES)[number]>("Parent");
   const [excerpt, setExcerpt] = useState("");
+  const [credit, setCredit] = useState<CreditType>("role");
+  const [creditName, setCreditName] = useState(firstName);
   const [consent, setConsent] = useState(false);
   // Honeypot: real people never fill this in, bots often do.
   const [website, setWebsite] = useState("");
@@ -21,11 +30,23 @@ export default function StoryPanel({ defaultName }: { defaultName: string }) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  // The profile loads after the form, so fill the name in once it arrives —
+  // unless they've already typed one.
+  useEffect(() => {
+    setCreditName((current) => current || firstName);
+  }, [firstName]);
+
+  const creditLabel = storyCredit({ audience, credit_type: credit, credit_name: creditName });
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (website) return;
     if (!consent) {
       setError("Please confirm you're okay with this being reviewed for publishing.");
+      return;
+    }
+    if (credit === "first_name" && !creditName.trim()) {
+      setError("Please type the first name you'd like to be credited with.");
       return;
     }
     setSubmitting(true);
@@ -35,6 +56,8 @@ export default function StoryPanel({ defaultName }: { defaultName: string }) {
       audience,
       excerpt,
       submitter_name: defaultName,
+      credit_type: credit,
+      credit_name: creditName,
     });
     setSubmitting(false);
     if (error) {
@@ -122,6 +145,56 @@ export default function StoryPanel({ defaultName }: { defaultName: string }) {
             </p>
           </div>
 
+          <fieldset>
+            <legend className="mb-1.5 block text-sm font-bold text-navy">
+              How should we credit you?
+            </legend>
+            <div className="grid gap-2">
+              {(
+                [
+                  ["first_name", "My first name"],
+                  ["role", "Just my role", `for example "${storyCredit({ audience, credit_type: "role" })}"`],
+                  ["anonymous", "Anonymous"],
+                ] as [CreditType, string, string?][]
+              ).map(([value, label, hint]) => (
+                <label
+                  key={value}
+                  className={`flex min-h-[44px] cursor-pointer items-center gap-3 rounded-tile border px-3.5 py-2.5 text-15 transition-colors ${
+                    credit === value ? "border-navy bg-sky-tint font-bold" : "border-navy/15 bg-white hover:border-navy/40"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="s-credit"
+                    value={value}
+                    checked={credit === value}
+                    onChange={() => setCredit(value)}
+                    className="h-4 w-4 shrink-0"
+                  />
+                  <span>
+                    {label}
+                    {hint && <span className="font-normal text-muted"> ({hint})</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+            {credit === "first_name" && (
+              <div className="mt-3">
+                <label htmlFor="s-credit-name" className="mb-1 block text-sm font-bold text-navy">
+                  Your first name
+                </label>
+                <input
+                  id="s-credit-name"
+                  required
+                  autoComplete="given-name"
+                  className="btd-input"
+                  value={creditName}
+                  onChange={(e) => setCreditName(e.target.value)}
+                />
+              </div>
+            )}
+          </fieldset>
+
           <label className="flex items-start gap-3 text-13 leading-[1.5] text-body">
             <input
               type="checkbox"
@@ -130,8 +203,8 @@ export default function StoryPanel({ defaultName }: { defaultName: string }) {
               className="mt-0.5 h-4 w-4 shrink-0"
             />
             <span>
-              I'm okay with this being reviewed and published on Voiced
-              {defaultName ? `, credited to "${defaultName}"` : ", with no name attached"}.
+              I'm okay with this being reviewed and published on Voiced, credited as "
+              {creditLabel}".
             </span>
           </label>
 
