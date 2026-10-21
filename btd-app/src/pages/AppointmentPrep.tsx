@@ -35,7 +35,16 @@ import { CheckIn, checkInLines, emptyCheckIn, feelingsOverTime, painSummaryLine 
 import { CheckInSummary, FeelingsOverTime } from "../components/myvoice/CheckInHistory";
 import CheckInFlow from "../components/myvoice/CheckInFlow";
 import CalendarImport from "../components/calendar/CalendarImport";
-import { CalendarEntry, CustomSymptom, listCustomSymptoms, listEntries, saveEntries } from "../lib/calendar";
+import {
+  CalendarEntry,
+  CustomSymptom,
+  listCustomSymptoms,
+  listCustomSymptomsOf,
+  listEntries,
+  listEntriesOf,
+  saveEntries,
+} from "../lib/calendar";
+import { useFamily } from "../lib/useFamily";
 import { CalendarPageText, calendarPageText, toSymptoms, unmerge } from "../lib/calendarImport";
 import { aboutLines, detailLines } from "../lib/calendar";
 import { cycles } from "../lib/cycles";
@@ -131,19 +140,35 @@ export default function AppointmentPrep() {
       cancelled = true;
     };
   }, [userId, authLoading]);
+  // A linked grown-up can bring in from a child's calendar too (only what the
+  // child hasn't marked "Just for me" ever reaches here).
+  const family = useFamily();
+  const [importFrom, setImportFrom] = useState<string | null>(null);
+  const [childCals, setChildCals] = useState<Record<string, { entries: CalendarEntry[]; customs: CustomSymptom[] }>>({});
+  useEffect(() => {
+    if (!importFrom || childCals[importFrom]) return;
+    Promise.all([listEntriesOf(importFrom), listCustomSymptomsOf(importFrom)]).then(([entries, customs]) =>
+      setChildCals((prev) => ({ ...prev, [importFrom]: { entries, customs } }))
+    );
+  }, [importFrom, childCals]);
+  // Everything that could be on this draft: mine, and any child's loaded.
+  const calPool = [...calEntries, ...Object.values(childCals).flatMap((c) => c.entries)];
+  const ownerOf = (e: CalendarEntry) => e.userId ?? userId;
   const importedIds = new Set(form.symptoms.flatMap((s) => s.calendar?.entryIds ?? []));
   /** The page "From my symptom calendar" for a form, if it's included. */
   function calendarPageFor(f: AppointmentForm): CalendarPageText | null {
     const page = f.calendarPage;
     if (!page?.include) return null;
-    const picked = calEntries.filter((e) => page.entryIds.includes(e.id));
+    const picked = calPool.filter((e) => page.entryIds.includes(e.id));
     if (!picked.length) return null;
+    // Cycle lengths come from the whole of that person's calendar.
+    const owner = ownerOf(picked[0]);
     return calendarPageText(
       picked,
       page.from,
       page.to,
       (e) => [...detailLines(e, (id) => feeling(id).short, painSpotSentence), ...aboutLines(e, true)],
-      cycles(calEntries)
+      cycles(calPool.filter((e) => ownerOf(e) === owner))
     );
   }
 
@@ -175,7 +200,10 @@ export default function AppointmentPrep() {
       };
     });
     // Brought in: off the visit tray.
-    const fromTray = fresh.filter((e) => e.addToVisit).map((e) => ({ ...e, addToVisit: false }));
+    // Only my own tray: a child's tray is theirs to keep.
+    const fromTray = fresh
+      .filter((e) => e.addToVisit && ownerOf(e) === userId)
+      .map((e) => ({ ...e, addToVisit: false }));
     if (fromTray.length && !practice) {
       setCalEntries((prev) => prev.map((e) => fromTray.find((t) => t.id === e.id) ?? e));
       saveEntries(userId, fromTray);
@@ -189,7 +217,7 @@ export default function AppointmentPrep() {
   }
 
   function splitSymptom(s: Symptom) {
-    const own = calEntries.filter((e) => s.calendar?.entryIds.includes(e.id));
+    const own = calPool.filter((e) => s.calendar?.entryIds.includes(e.id));
     if (own.length < 2) return;
     const range = form.calendarPage ?? { from: own[0].entryDate, to: own[own.length - 1].entryDate };
     const parts = unmerge(own, range.from, range.to, newId);
@@ -545,12 +573,33 @@ export default function AppointmentPrep() {
       />
 
       <div className="mb-8 grid gap-3">
-        {importing && !calLoaded ? (
-          <p className="text-sm text-slate">Loading your calendar…</p>
+        {importing && family.children.length > 0 && (
+          <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Whose calendar?</span>
+            {[{ id: null as string | null, name: "Mine" }, ...family.children.map((c) => ({ id: c.personId as string | null, name: c.name }))].map(
+              (o) => (
+                <button
+                  key={o.id ?? "mine"}
+                  type="button"
+                  aria-pressed={importFrom === o.id}
+                  onClick={() => setImportFrom(o.id)}
+                  className={`min-h-[40px] rounded-full border px-4 py-2 text-sm ${
+                    importFrom === o.id ? "border-navy bg-navy font-bold text-mist" : "border-navy/15 bg-white font-medium text-navy"
+                  }`}
+                >
+                  {o.name}
+                </button>
+              )
+            )}
+          </div>
+        )}
+        {importing && (!calLoaded || (importFrom && !childCals[importFrom])) ? (
+          <p className="text-sm text-slate">Loading the calendar…</p>
         ) : importing ? (
           <CalendarImport
-            entries={calEntries}
-            customs={calCustoms}
+            key={importFrom ?? "mine"}
+            entries={importFrom ? childCals[importFrom].entries : calEntries}
+            customs={importFrom ? childCals[importFrom].customs : calCustoms}
             lastVisit={history[0]?.savedAt ?? null}
             alreadyIn={importedIds}
             onImport={importFromCalendar}

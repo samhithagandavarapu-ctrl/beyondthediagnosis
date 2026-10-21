@@ -21,6 +21,7 @@ import {
   sinceOption,
 } from "../../lib/myVoice";
 import { EMOTIONS } from "../../lib/calendar";
+import { useFamily } from "../../lib/useFamily";
 
 /** Where "Put it on my doctor sheet" goes: Appointment Prep, with this
  *  check-in ticked. */
@@ -77,6 +78,7 @@ export default function CheckInFlow({
 }) {
   const { say, saveCheckIn, earnSticker, checkIns } = useMyVoice();
   const { practice } = usePracticeMode();
+  const { grownUps } = useFamily();
   // Opening an old check-in goes straight to the look-over, to change one part.
   const [isEdit] = useState(() => checkIns.some((c) => c.id === initial.id));
   const [checkIn, setCheckIn] = useState<CheckIn>(initial);
@@ -181,6 +183,32 @@ export default function CheckInFlow({
               </li>
             ))}
           </ul>
+          {grownUps.length > 0 && !practice && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!!checkIn.private}
+              onClick={() => {
+                patch({ private: !checkIn.private });
+                say(checkIn.private ? "Shared with my grown-ups" : "Just for me");
+              }}
+              className={`flex min-h-[64px] items-center gap-4 rounded-card border-2 px-5 text-left ${
+                checkIn.private ? "border-navy bg-butter/40" : "border-navy/15 bg-white hover:border-sky"
+              }`}
+            >
+              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${checkIn.private ? "bg-navy text-mist" : "bg-mist text-navy"}`}>
+                <Icon name={checkIn.private ? "lock" : "eye"} size={20} />
+              </span>
+              <span>
+                <span className="block text-15 font-extrabold text-navy">
+                  {checkIn.private ? "Just for me" : `${grownUps.map((g) => g.name).join(" and ")} can see this`}
+                </span>
+                <span className="block text-13 text-body">
+                  {checkIn.private ? "Your linked grown-ups won't see this check-in." : "Tap to keep this check-in just for you."}
+                </span>
+              </span>
+            </button>
+          )}
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"

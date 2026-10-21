@@ -154,6 +154,8 @@ export type CheckIn = {
   pain?: PainSpot[];
   /** "Any feelings?": the emotion faces, after the body face. */
   feelings?: EmotionId[];
+  /** "Just for me": linked grown-ups don't see it. */
+  private?: boolean;
   /** Its calendar entries (see lib/checkIns.ts), once saved. */
   entryIds?: { mood?: string; pain?: string };
   since: SinceId | null;

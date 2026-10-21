@@ -29,6 +29,7 @@ export function checkInToEntries(c: CheckIn): CalendarEntry[] {
     updatedAt: c.updatedAt ?? c.createdAt,
     reportedBy: "self" as const,
     checkInId: c.id,
+    private: !!c.private,
   };
   const hasMood =
     !!c.overall ||
@@ -103,6 +104,7 @@ export function entriesToCheckIns(entries: CalendarEntry[]): CheckIn[] {
         hasVoiceNote: !!d.hasVoiceNote,
         ownWords: d.ownWords,
         entryIds: { mood: mood?.id, pain: pain?.id },
+        private: group.some((e) => e.private),
       })
     );
   }

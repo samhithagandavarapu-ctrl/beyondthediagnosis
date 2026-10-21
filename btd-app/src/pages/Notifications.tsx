@@ -102,7 +102,15 @@ export default function Notifications() {
                   }`}
                 >
                   <Icon
-                    name={n.kind === "message" ? "chat" : n.kind === "story-rejected" ? "talk" : "celebrate"}
+                    name={
+                      n.kind === "message"
+                        ? "chat"
+                        : n.kind === "story-rejected"
+                          ? "talk"
+                          : n.kind.startsWith("family")
+                            ? "heart"
+                            : "celebrate"
+                    }
                     size={22}
                   />
                 </span>
@@ -113,7 +121,7 @@ export default function Notifications() {
                   </p>
                   <p className="mt-0.5 text-15 leading-[1.6] text-body">{n.body}</p>
                   <p className="mt-1 text-12 text-muted">
-                    {n.kind === "message" ? "Sent" : "Story sent in"} {longDate(n.at)}
+                    {n.kind === "message" ? "Sent" : n.kind.startsWith("family") ? "" : "Story sent in"} {longDate(n.at)}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-4">
                     <Link
