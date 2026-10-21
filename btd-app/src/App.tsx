@@ -28,6 +28,9 @@ import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import AdminMessages from "./pages/AdminMessages";
 import Calendar from "./pages/Calendar";
+import Me from "./pages/Me";
+import Welcome from "./pages/Welcome";
+import { useSetup } from "./context/SetupContext";
 import FamilyGate from "./components/family/FamilyGate";
 
 export default function App() {
@@ -51,6 +54,18 @@ export default function App() {
     if (pathname !== "/reset-password") navigate("/reset-password", { replace: true });
   }, [passwordRecoveryMode, pathname, navigate]);
 
+  // Signed in, and never been through the welcome setup (a new account, or
+  // one made before it existed): go there first, then on to where they were
+  // headed. Once only — finishing or skipping it is remembered.
+  const { user } = useAuth();
+  const { setup, loaded: setupLoaded } = useSetup();
+  const { search } = useLocation();
+  useEffect(() => {
+    if (!user || !setupLoaded || setup.status || passwordRecoveryMode) return;
+    if (["/welcome", "/auth/callback", "/reset-password", "/login"].includes(pathname)) return;
+    navigate(`/welcome?next=${encodeURIComponent(pathname + search)}`, { replace: true });
+  }, [user, setupLoaded, setup.status, passwordRecoveryMode, pathname, search, navigate]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <AccessibilityBar />
@@ -66,6 +81,8 @@ export default function App() {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/my-voice" element={<MyVoice />} />
           <Route path="/my-voice/practice" element={<PracticeVisit />} />
+          <Route path="/me" element={<Me />} />
+          <Route path="/welcome" element={<Welcome />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/provider-education" element={<ProviderEducation />} />
           <Route path="/stories" element={<Stories />} />

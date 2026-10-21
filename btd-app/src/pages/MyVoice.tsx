@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import PageHero from "../components/PageHero";
 import HelperMessage, { forLevel } from "../components/HelperMessage";
 import PracticeModeToggle from "../components/PracticeModeToggle";
 import SayCards from "../components/myvoice/SayCards";
-import AboutMe from "../components/myvoice/AboutMe";
 import Scenarios from "../components/myvoice/Scenarios";
 import VoiceMemo from "../components/myvoice/VoiceMemo";
 import SpeakButton from "../components/myvoice/SpeakButton";
@@ -105,18 +104,7 @@ export default function MyVoice() {
                 <SayCards readingLevel={readingLevel} />
               </ToolSection>
             )}
-            {section === "about" && (
-              <ToolSection
-                title="All About Me"
-                helper={{
-                  icon: "Tap the pictures.",
-                  short: "Tap the pictures that are like me.",
-                  full: "Tap every picture that sounds like you. A helper can add words. This page goes at the top of your visit summary, so your doctor gets to know you.",
-                }}
-              >
-                <AboutMe readingLevel={readingLevel} />
-              </ToolSection>
-            )}
+            {section === "about" && <Navigate to="/me" replace />}
             {section === "voice" && (
               <ToolSection
                 title="Record my voice"
@@ -276,8 +264,8 @@ const GROUPS: { title: Copy; practiceCard?: boolean; tiles: Tile[] }[] = [
     title: { icon: "About me", short: "About me", full: "About me" },
     tiles: [
       {
-        kind: "section",
-        id: "about",
+        kind: "link",
+        to: "/me",
         icon: "person",
         copy: { icon: "About me", short: "All about me", full: "All about me: help my doctor get to know me" },
       },

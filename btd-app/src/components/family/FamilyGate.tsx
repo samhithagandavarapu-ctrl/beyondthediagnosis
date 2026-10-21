@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useSetup } from "../../context/SetupContext";
 import { useNotifications } from "../../context/NotificationsContext";
 import { finishPendingSignup, getBirthYear } from "../../lib/family";
 import BirthYearForm from "./BirthYearForm";
@@ -43,7 +45,14 @@ export default function FamilyGate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  if (!user || (!ask && !note)) return null;
+  // Not during the welcome setup, which asks its own questions. And not for
+  // someone who has already told us they're 13 or older, or who is here as a
+  // grown-up or a provider: the birth year only matters for the under-13 rule.
+  const { pathname } = useLocation();
+  const { setup } = useSetup();
+  const answered = Boolean(setup.ageGroup) || setup.role === "caregiver" || setup.role === "provider";
+  if (pathname === "/welcome") return null;
+  if (!user || ((!ask || answered) && !note)) return null;
 
   return (
     <div className="btd-container pt-4">
@@ -53,7 +62,7 @@ export default function FamilyGate() {
             {note}
           </p>
         )}
-        {ask && (
+        {ask && !answered && (
           <>
             <p className="mb-3 text-17 font-extrabold text-navy">One quick question</p>
             <BirthYearForm onSaved={() => setAsk(false)} />
@@ -73,7 +82,7 @@ export default function FamilyGate() {
             </button>
           </>
         )}
-        {note && !ask && (
+        {note && (!ask || answered) && (
           <button type="button" onClick={() => setNote(null)} className="text-13 font-semibold text-link hover:underline">
             OK
           </button>

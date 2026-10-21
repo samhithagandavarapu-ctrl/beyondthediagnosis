@@ -418,3 +418,45 @@ html.a11y-large-text.a11y-easy-read { font-size: calc(112.5% + 1px); }
   background: transparent !important;
   border: 3px solid #213244 !important;
 }
+
+/* The Me board: sticky notes, each a little tilted, with a strip of tape. */
+.btd-sticky {
+  position: relative;
+  border-radius: 4px 4px 18px 4px;
+  box-shadow: 3px 5px 0 rgba(33, 50, 68, 0.14);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.25s ease;
+}
+.btd-sticky::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 64px;
+  height: 18px;
+  margin-left: -32px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(33, 50, 68, 0.08);
+  transform: rotate(-3deg);
+}
+button.btd-sticky:hover,
+button.btd-sticky:focus-visible {
+  transform: rotate(0deg) translateY(-3px);
+  box-shadow: 5px 8px 0 rgba(33, 50, 68, 0.18);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btd-sticky,
+  button.btd-sticky:hover,
+  button.btd-sticky:focus-visible {
+    transform: none;
+    transition: none;
+  }
+}
+.a11y-high-contrast .btd-sticky {
+  background: #FFFFFF !important;
+  border: 2px solid #000000 !important;
+  transform: none !important;
+}
+.a11y-high-contrast .btd-sticky::before {
+  display: none;
+}

@@ -9,7 +9,7 @@ import {
   painAreaView,
   painSummaryLine,
 } from "./myVoice";
-import { AboutMe, aboutMeLines } from "./aboutMe";
+import { AboutMeCopy, aboutMeRows } from "./meBoard";
 import type { CalendarPageText } from "./calendarImport";
 import { usePdfFont } from "./pdfFonts";
 import {
@@ -120,6 +120,8 @@ export type AppointmentForm = {
   /** "From my symptom calendar": the entries brought in, for the optional
    *  page at the end of the PDF. */
   calendarPage?: { entryIds: string[]; from: string; to: string; include: boolean };
+  /** This draft's copy of the Me board, and which notes are ticked. */
+  aboutMe?: AboutMeCopy;
 };
 
 // Voiced palette, as jsPDF wants it.
@@ -413,50 +415,114 @@ function myVoicePanel(ctx: Ctx, checkIn: CheckIn) {
   ctx.y = top + panelHeight + 22;
 }
 
-/** "All About Me" opens the document: who this person is, how they show
- *  pain and upset, and how to talk with them — before any problem. */
-function aboutMePanel(ctx: Ctx, aboutMe: AboutMe) {
+// ---- "About me — please read first" ----
+// The Me board, before anything else: who this person is, how they show
+// pain, how to talk with them. Short rows a clinician can scan: the note's
+// name on the left, what it says on the right.
+
+const ABOUT_LABEL_WIDTH = 128;
+const ABOUT_PAD = 18;
+const ABOUT_LINE = 12.5;
+
+type AboutRow = { title: string; lines: string[]; height: number };
+
+function measureAboutRows(ctx: Ctx, rows: { title: string; text: string }[]): AboutRow[] {
   const { doc } = ctx;
-  const rows = aboutMeLines(aboutMe);
-  if (!rows.length) return;
-  const padX = 18;
-  const width = CONTENT_WIDTH - padX * 2;
-
   doc.setFont(ctx.font, "normal");
-  doc.setFontSize(10);
-  const wrapped = rows.map((r) => ({ label: r.label, lines: doc.splitTextToSize(r.text, width) as string[] }));
-  const panelHeight = 34 + wrapped.reduce((sum, r) => sum + 13 + r.lines.length * 13.5 + 8, 0) + 4;
-  ensure(ctx, panelHeight + 10);
+  doc.setFontSize(9.5);
+  const width = CONTENT_WIDTH - ABOUT_PAD * 2 - ABOUT_LABEL_WIDTH;
+  return rows.map((r) => {
+    const lines = doc.splitTextToSize(r.text, width) as string[];
+    return { title: r.title, lines, height: lines.length * ABOUT_LINE + 7 };
+  });
+}
 
-  const top = ctx.y - 12;
+const aboutPanelHeight = (rows: AboutRow[]) => 36 + rows.reduce((sum, r) => sum + r.height, 0) + 4;
+
+/** Draw the panel with its top at `top`. */
+function drawAboutPanel(ctx: Ctx, rows: AboutRow[], top: number, title: string) {
+  const { doc } = ctx;
+  const height = aboutPanelHeight(rows);
   doc.setFillColor(255, 245, 224);
-  doc.roundedRect(MARGIN, top, CONTENT_WIDTH, panelHeight, 6, 6, "F");
+  doc.roundedRect(MARGIN, top, CONTENT_WIDTH, height, 6, 6, "F");
   doc.setFillColor(...BUTTER);
-  doc.rect(MARGIN, top, 3.5, panelHeight, "F");
+  doc.rect(MARGIN, top, 3.5, height, "F");
 
   doc.setFont(ctx.font, "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(8.5);
   doc.setTextColor(...BUTTER_INK);
-  doc.text("ALL ABOUT ME  ·  IN THEIR OWN WORDS", MARGIN + padX, top + 20, { charSpace: 0.9 });
+  doc.text(title, MARGIN + ABOUT_PAD, top + 21, { charSpace: 0.9 });
 
-  let ty = top + 38;
-  wrapped.forEach((r) => {
+  let ty = top + 40;
+  rows.forEach((r, i) => {
+    if (i > 0) {
+      doc.setDrawColor(240, 226, 196);
+      doc.setLineWidth(0.6);
+      doc.line(MARGIN + ABOUT_PAD, ty - 9.5, MARGIN + CONTENT_WIDTH - ABOUT_PAD, ty - 9.5);
+    }
     doc.setFont(ctx.font, "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(...NAVY);
-    doc.text(r.label, MARGIN + padX, ty);
-    ty += 13;
+    doc.text(r.title, MARGIN + ABOUT_PAD, ty);
     doc.setFont(ctx.font, "normal");
-    doc.setFontSize(10);
     doc.setTextColor(...BODY);
-    r.lines.forEach((line) => {
-      doc.text(line, MARGIN + padX, ty);
-      ty += 13.5;
-    });
-    ty += 8;
+    r.lines.forEach((line, j) => doc.text(line, MARGIN + ABOUT_PAD + ABOUT_LABEL_WIDTH, ty + j * ABOUT_LINE));
+    ty += r.height;
   });
+  return top + height;
+}
 
-  ctx.y = top + panelHeight + 22;
+// Up to this tall, it goes at the top of the first page. Longer, it gets its
+// own page right after the first, so the first page still opens with the
+// reason for the visit.
+const ABOUT_FITS_ON_PAGE_ONE = 300;
+const ABOUT_TITLE = "ABOUT ME  —  PLEASE READ FIRST";
+
+/** On the first page: the panel itself, or (when it's long) a pointer to it.
+ *  Returns the rows still to be drawn on their own page. */
+function aboutMeFirst(ctx: Ctx, rows: AboutRow[]): AboutRow[] {
+  if (!rows.length) return [];
+  if (aboutPanelHeight(rows) <= ABOUT_FITS_ON_PAGE_ONE) {
+    ctx.y = drawAboutPanel(ctx, rows, ctx.y - 12, ABOUT_TITLE) + 22;
+    return [];
+  }
+  const { doc } = ctx;
+  const top = ctx.y - 12;
+  doc.setFillColor(255, 245, 224);
+  doc.roundedRect(MARGIN, top, CONTENT_WIDTH, 34, 6, 6, "F");
+  doc.setFillColor(...BUTTER);
+  doc.rect(MARGIN, top, 3.5, 34, "F");
+  doc.setFont(ctx.font, "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...BUTTER_INK);
+  doc.text(ABOUT_TITLE, MARGIN + ABOUT_PAD, top + 21, { charSpace: 0.9 });
+  doc.setFont(ctx.font, "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...NAVY);
+  doc.text("On page 2.", PAGE.width - MARGIN - ABOUT_PAD, top + 21, { align: "right" });
+  ctx.y = top + 34 + 22;
+  return rows;
+}
+
+/** The long version: its own page (or pages) straight after the first. */
+function aboutMePages(ctx: Ctx, rows: AboutRow[]) {
+  if (!rows.length) return;
+  const { doc } = ctx;
+  const bottom = PAGE.height - FOOTER_SPACE;
+  let page = 2;
+  let rest = rows;
+  while (rest.length) {
+    doc.insertPage(page);
+    const top = MARGIN;
+    const fit: AboutRow[] = [];
+    for (const r of rest) {
+      if (fit.length && top + aboutPanelHeight([...fit, r]) > bottom) break;
+      fit.push(r);
+    }
+    drawAboutPanel(ctx, fit, top, page === 2 ? ABOUT_TITLE : `${ABOUT_TITLE}  (CONTINUED)`);
+    rest = rest.slice(fit.length);
+    page += 1;
+  }
 }
 
 /** The same outline as the on-screen body map, drawn small. `k` is points per
@@ -771,8 +837,6 @@ export async function buildAppointmentPdf(
   checkIns: CheckIn[],
   /** When the summary was made; defaults to today. */
   date?: string,
-  /** "All About Me", from this device. Printed first. */
-  aboutMe?: AboutMe | null,
   /** The page "From my symptom calendar", when it's included. */
   calendar?: CalendarPageText | null
 ): Promise<jsPDF> {
@@ -784,7 +848,8 @@ export async function buildAppointmentPdf(
 
   drawHeader(ctx, form.patientName.trim() || "Visit summary", date);
 
-  if (aboutMe) aboutMePanel(ctx, aboutMe);
+  // The ticked notes from this draft's copy of the Me board.
+  const aboutLater = aboutMeFirst(ctx, measureAboutRows(ctx, aboutMeRows(form.aboutMe)));
 
   if (form.reasonForVisit.trim()) {
     reasonCard(ctx, form.reasonForVisit);
@@ -851,6 +916,8 @@ export async function buildAppointmentPdf(
   }
 
   if (calendar) calendarPage(ctx, calendar);
+
+  aboutMePages(ctx, aboutLater);
 
   drawFooters(doc, font);
   return doc;

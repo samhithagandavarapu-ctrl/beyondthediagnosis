@@ -105,6 +105,9 @@ function AccountMenu({
           <Link to="/profile" className={menuItemClass}>
             My profile
           </Link>
+          <Link to="/me" className={menuItemClass}>
+            My Me page
+          </Link>
           {/* Admins answer from the inbox instead. */}
           {!isAdmin && (
             <Link to="/messages" className={menuItemClass}>

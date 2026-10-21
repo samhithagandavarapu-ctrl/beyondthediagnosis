@@ -4,7 +4,7 @@ import { fetchProfile, saveReadingLevel } from "../lib/profile";
 import { usePracticeMode } from "./PracticeModeContext";
 import { CheckInStore, deleteCheckInFrom, listCheckIns, saveCheckInTo } from "../lib/checkIns";
 import { speak, speechSupported } from "../lib/speech";
-import { ABOUT_ME_KEY, AboutMe, aboutMeHasContent } from "../lib/aboutMe";
+import { BoardStore, MeBoard, deleteBoard, loadBoard, saveBoard } from "../lib/meBoard";
 import {
   CheckIn,
   EarnedSticker,
@@ -48,10 +48,16 @@ type MyVoiceState = {
    *  list if they aren't there already. */
   importCheckIns: (list: CheckIn[]) => void;
 
-  /** "All About Me", kept on this device only. Never set in practice mode. */
-  savedAboutMe: AboutMe | null;
-  saveAboutMe: (aboutMe: AboutMe) => void;
-  clearAboutMe: () => void;
+  /** The Me board ("All about me"). In the account when signed in (and the
+   *  table exists), on this device otherwise. Never saved in practice mode. */
+  meBoard: MeBoard | null;
+  meBoardLoaded: boolean;
+  meBoardStore: BoardStore;
+  /** Signed in, but the account can't hold the board yet. */
+  meBoardAccountMissing: boolean;
+  /** Resolves to where it went, or null if nothing was saved (practice). */
+  saveMeBoard: (board: MeBoard) => Promise<BoardStore | null>;
+  deleteMeBoard: () => void;
 
   stickers: EarnedSticker[];
   earnSticker: (id: StickerId) => void;
@@ -80,7 +86,10 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
   const [checkInAccountMissing, setCheckInAccountMissing] = useState(false);
   const [reloads, setReloads] = useState(0);
   const reloadCheckIns = () => setReloads((n) => n + 1);
-  const [savedAboutMe, setSavedAboutMe] = useState<AboutMe | null>(null);
+  const [meBoard, setMeBoard] = useState<MeBoard | null>(null);
+  const [meBoardLoaded, setMeBoardLoaded] = useState(false);
+  const [meBoardStore, setMeBoardStore] = useState<BoardStore>("device");
+  const [meBoardAccountMissing, setMeBoardAccountMissing] = useState(false);
   const [stickers, setStickers] = useState<EarnedSticker[]>([]);
   // Mirrors AccessibilityContext: don't write a profile value back the moment
   // we just read it from there.
@@ -94,9 +103,6 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
 
       const aloud = localStorage.getItem(READ_ALOUD_KEY);
       if (aloud !== null) setReadAloud(aloud === "1");
-
-      const aboutMe = localStorage.getItem(ABOUT_ME_KEY);
-      if (aboutMe) setSavedAboutMe(JSON.parse(aboutMe) as AboutMe);
 
       const earned = localStorage.getItem(STICKERS_KEY);
       if (earned) setStickers(JSON.parse(earned) as EarnedSticker[]);
@@ -123,6 +129,24 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, authLoading, reloads]);
 
+  // The Me board: loaded the same way, and again when someone signs in
+  // (which brings a board made on this device into the account).
+  useEffect(() => {
+    if (authLoading) return;
+    let cancelled = false;
+    setMeBoardLoaded(false);
+    loadBoard(user?.id ?? null).then((res) => {
+      if (cancelled) return;
+      setMeBoard(res.board);
+      setMeBoardStore(res.store);
+      setMeBoardAccountMissing(res.accountMissing);
+      setMeBoardLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading]);
+
   // Signed in: the profile copy wins, so the level follows them to any device
   // — the same way large text / high contrast / easy read already do.
   useEffect(() => {
@@ -130,8 +154,14 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     fetchProfile(user.id).then((profile) => {
       if (cancelled || !profile || !isReadingLevel(profile.reading_level)) return;
-      skipNextSave.current = true;
-      setReadingLevelState(profile.reading_level);
+      const level = profile.reading_level;
+      // Only skip a save when this actually changes the level: if it's the
+      // same, no save runs to use up the skip, and the next real choice
+      // (say, in the welcome setup) would quietly not reach the account.
+      setReadingLevelState((current) => {
+        if (current !== level) skipNextSave.current = true;
+        return level;
+      });
     });
     return () => {
       cancelled = true;
@@ -193,24 +223,20 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     fresh.forEach((c) => saveCheckIn(normalizeCheckIn(c)));
   }
 
-  function saveAboutMe(aboutMe: AboutMe) {
-    if (practice) return;
-    if (!aboutMeHasContent(aboutMe)) return clearAboutMe();
-    setSavedAboutMe(aboutMe);
-    try {
-      localStorage.setItem(ABOUT_ME_KEY, JSON.stringify(aboutMe));
-    } catch {
-      // ignore
-    }
+  async function saveMeBoard(board: MeBoard): Promise<BoardStore | null> {
+    // Practice mode keeps nothing; the real board stays exactly as it was.
+    if (practice) return null;
+    const next = { ...board, updatedAt: new Date().toISOString() };
+    setMeBoard(next);
+    const where = await saveBoard(user?.id ?? null, next);
+    setMeBoardStore(where);
+    return where;
   }
 
-  function clearAboutMe() {
-    setSavedAboutMe(null);
-    try {
-      localStorage.removeItem(ABOUT_ME_KEY);
-    } catch {
-      // ignore
-    }
+  function deleteMeBoard() {
+    if (practice) return;
+    setMeBoard(null);
+    deleteBoard(user?.id ?? null);
   }
 
   function earnSticker(id: StickerId) {
@@ -250,9 +276,12 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
     deleteCheckIn,
     reloadCheckIns,
     importCheckIns,
-    savedAboutMe,
-    saveAboutMe,
-    clearAboutMe,
+    meBoard,
+    meBoardLoaded,
+    meBoardStore,
+    meBoardAccountMissing,
+    saveMeBoard,
+    deleteMeBoard,
     stickers,
     earnSticker,
     clearStickers,

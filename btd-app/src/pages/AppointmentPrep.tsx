@@ -49,7 +49,7 @@ import { CalendarPageText, calendarPageText, toSymptoms, unmerge } from "../lib/
 import { aboutLines, detailLines } from "../lib/calendar";
 import { cycles } from "../lib/cycles";
 import { feeling, painSpotSentence } from "../lib/myVoice";
-import { AboutMe, aboutMeHasContent, aboutMeLines } from "../lib/aboutMe";
+import { AboutMeCopy, NoteId, aboutMeRows, boardHasContent, copyBoard, meNote } from "../lib/meBoard";
 import Icon from "../components/icons/Icon";
 import DictateButton from "../components/DictateButton";
 import SymptomTimeline from "../components/timeline/SymptomTimeline";
@@ -82,7 +82,7 @@ import {
 import { inkLastWord } from "../components/Scribble";
 
 export default function AppointmentPrep() {
-  const { checkIns, checkInsLoaded, importCheckIns, savedAboutMe, clearAboutMe } = useMyVoice();
+  const { checkIns, checkInsLoaded, importCheckIns, meBoard, meBoardLoaded } = useMyVoice();
   const { practice } = usePracticeMode();
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
@@ -116,7 +116,6 @@ export default function AppointmentPrep() {
   function togglePicked(id: string) {
     setPicked(pickedIds.includes(id) ? pickedIds.filter((x) => x !== id) : [...pickedIds, id]);
   }
-  const [includeAboutMe, setIncludeAboutMe] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [refining, setRefining] = useState(false);
   const [refineError, setRefineError] = useState<string | null>(null);
@@ -413,6 +412,22 @@ export default function AppointmentPrep() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, authLoading]);
 
+  // A draft keeps its own copy of the Me board, taken the first time it's
+  // open with a board to copy (so, for a new draft, when it's started). A
+  // later change to the board reaches it only through "Update from my Me
+  // page". A board kept about someone else gives the patient name too.
+  const boardName = meBoard?.aboutName.trim() ?? "";
+  useEffect(() => {
+    if (!loaded || !meBoardLoaded) return;
+    setForm((f) => {
+      let next = f;
+      if (!f.aboutMe && boardHasContent(meBoard)) next = { ...next, aboutMe: copyBoard(meBoard) };
+      if (boardName && !f.patientName.trim() && formIsEmpty(f)) next = { ...next, patientName: boardName };
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, loaded, meBoardLoaded]);
+
   // Check-ins that only live on older drafts join the My Voice list, so
   // they can be picked like any other.
   useEffect(() => {
@@ -427,7 +442,10 @@ export default function AppointmentPrep() {
     if (!loaded || practice) return;
     const snap = snapshot(draftName, form, draftMyVoice);
     if (snap === lastSaved.current) return;
-    if (formIsEmpty(form) && !draftMyVoice && !draftName.trim()) return;
+    // A draft holding nothing but what was filled in for it (the name from
+    // the Me board) isn't worth keeping yet.
+    const typed = form.patientName.trim() === boardName ? { ...form, patientName: "" } : form;
+    if (formIsEmpty(typed) && !draftMyVoice && !draftName.trim()) return;
     setSaveState("saving");
     const timer = window.setTimeout(() => {
       const d: Draft = {
@@ -539,7 +557,6 @@ export default function AppointmentPrep() {
       <SummaryView
         form={form}
         checkIns={pickedCheckIns}
-        aboutMe={includeAboutMe && aboutMeHasContent(savedAboutMe) ? savedAboutMe : null}
         calendar={calendarPageFor(form)}
         onBack={() => setShowSummary(false)}
       />
@@ -670,6 +687,26 @@ export default function AppointmentPrep() {
           />
         </Field>
 
+        <AboutMeSection
+          copy={form.aboutMe}
+          boardReady={meBoardLoaded}
+          boardHasNotes={boardHasContent(meBoard)}
+          onToggle={(id) =>
+            setForm((f) =>
+              f.aboutMe
+                ? {
+                    ...f,
+                    aboutMe: {
+                      ...f.aboutMe,
+                      off: f.aboutMe.off.includes(id) ? f.aboutMe.off.filter((x) => x !== id) : [...f.aboutMe.off, id],
+                    },
+                  }
+                : f
+            )
+          }
+          onUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
+        />
+
         <ListSection
           label="Symptoms"
           addLabel="+ Add another symptom"
@@ -798,14 +835,6 @@ export default function AppointmentPrep() {
           onAdded={(id) => setPicked([...pickedIds.filter((x) => x !== id), id])}
         />
 
-        {savedAboutMe && aboutMeHasContent(savedAboutMe) && (
-          <AboutMeSection
-            aboutMe={savedAboutMe}
-            include={includeAboutMe}
-            onIncludeChange={setIncludeAboutMe}
-            onClear={clearAboutMe}
-          />
-        )}
 
         <ListSection
           label="Current medications"
@@ -1549,47 +1578,73 @@ function MyVoiceSection({
   );
 }
 
+/** "About me (from my Me page)": this draft's copy of the Me board. Each
+ *  note can be left off this draft; the board itself is never changed here. */
 function AboutMeSection({
-  aboutMe,
-  include,
-  onIncludeChange,
-  onClear,
+  copy,
+  boardReady,
+  boardHasNotes,
+  onToggle,
+  onUpdate,
 }: {
-  aboutMe: AboutMe;
-  include: boolean;
-  onIncludeChange: (include: boolean) => void;
-  onClear: () => void;
+  copy: AboutMeCopy | undefined;
+  boardReady: boolean;
+  boardHasNotes: boolean;
+  onToggle: (id: NoteId) => void;
+  onUpdate: () => void;
 }) {
+  const notes = copy?.notes.filter((n) => n.lines.length) ?? [];
   return (
-    <div className="rounded-tile border-2 border-butter bg-butter/20 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-ink">All About Me (from My Voice)</p>
-          <p className="text-xs text-slate-light">
-            Goes at the top of the summary · kept on this device only
+    <section aria-labelledby="about-me-heading" className="rounded-tile border-2 border-butter bg-butter/20 p-4">
+      <h2 id="about-me-heading" className="text-sm font-semibold text-ink">
+        About me (from my Me page)
+      </h2>
+      {notes.length > 0 ? (
+        <>
+          <p className="mt-0.5 text-xs text-slate-light">
+            Goes first on the summary. Untick anything to leave it off this one visit — it stays on your Me page.
           </p>
-        </div>
-        <button type="button" onClick={onClear} className="text-xs text-clay hover:underline">
-          Remove All About Me
-        </button>
+          <ul className="mt-3 grid gap-2">
+            {notes.map((n) => {
+              const on = !copy?.off.includes(n.id);
+              return (
+                <li key={n.id}>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-tile bg-white/70 px-3 py-2.5">
+                    <input type="checkbox" checked={on} onChange={() => onToggle(n.id)} className="mt-0.5 h-5 w-5 shrink-0" />
+                    <span className={`text-sm leading-relaxed ${on ? "text-ink" : "text-slate-light line-through"}`}>
+                      <span className="font-semibold">{meNote(n.id).title}:</span> {n.lines.join("; ")}
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <p className="mt-1 text-sm text-ink">
+          {boardReady && boardHasNotes
+            ? "Your Me page has notes this draft doesn't have yet."
+            : "Fill in your Me page so your doctor knows how you usually are."}{" "}
+          {!(boardReady && boardHasNotes) && (
+            <Link to="/me" className="font-semibold text-link underline underline-offset-2 hover:text-navy">
+              Go to my Me page →
+            </Link>
+          )}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+        {notes.length > 0 && (
+          <Link to="/me" className="font-semibold text-link hover:underline">
+            Change this on my Me page →
+          </Link>
+        )}
+        {boardReady && boardHasNotes && (
+          <button type="button" onClick={onUpdate} className="min-h-[36px] text-xs font-semibold text-link underline underline-offset-2 hover:text-navy">
+            Update from my Me page
+          </button>
+        )}
       </div>
-      <ul className="mt-3 space-y-1">
-        {aboutMeLines(aboutMe).map((line) => (
-          <li key={line.label} className="border-l-2 border-butter pl-3 text-sm text-ink">
-            <span className="font-semibold">{line.label}:</span> {line.text}
-          </li>
-        ))}
-      </ul>
-      <label className="mt-3 flex items-center gap-2 text-sm font-medium text-ink">
-        <input
-          type="checkbox"
-          checked={include}
-          onChange={(e) => onIncludeChange(e.target.checked)}
-          className="h-4 w-4"
-        />
-        Put this on the summary
-      </label>
-    </div>
+    </section>
   );
 }
 
@@ -1600,7 +1655,6 @@ function AboutMeSection({
 function SummaryView({
   form,
   checkIns,
-  aboutMe = null,
   calendar = null,
   onBack,
   date,
@@ -1609,8 +1663,6 @@ function SummaryView({
   form: AppointmentForm;
   /** The My Voice check-ins picked for this summary, newest first. */
   checkIns: CheckIn[];
-  /** "All About Me" from this device; printed first. */
-  aboutMe?: AboutMe | null;
   /** "From my symptom calendar", printed as its own page at the end. */
   calendar?: CalendarPageText | null;
   onBack: () => void;
@@ -1631,7 +1683,7 @@ function SummaryView({
     setDownloading(true);
     setDownloadError(null);
     try {
-      const doc = await buildAppointmentPdf(form, checkIns, date, aboutMe, calendar);
+      const doc = await buildAppointmentPdf(form, checkIns, date, calendar);
       if (print) return printPdf(doc);
       const namePart = form.patientName.trim()
         ? form.patientName.trim().toLowerCase().replace(/\s+/g, "-")
@@ -1646,6 +1698,7 @@ function SummaryView({
     }
   }
 
+  const aboutRows = aboutMeRows(form.aboutMe);
   const symptoms = form.symptoms.filter((s) => s.description.trim());
   const meds = form.medications.filter((m) => m.name.trim());
   const ruledOut = form.ruledOut.filter((r) => r.description.trim());
@@ -1704,16 +1757,16 @@ function SummaryView({
         </header>
 
         <div className="px-8 py-7">
-          {aboutMe && (
+          {aboutRows.length > 0 && (
             <div className="btd-avoid-break mb-7 rounded-tile border-l-4 border-butter bg-butter/20 px-5 py-4">
               <p className="text-11 font-bold uppercase tracking-[0.1em] text-butter-ink">
-                All About Me · in their own words
+                About me — please read first
               </p>
-              <dl className="mt-2 space-y-2">
-                {aboutMeLines(aboutMe).map((line) => (
-                  <div key={line.label}>
-                    <dt className="text-sm font-semibold text-navy">{line.label}</dt>
-                    <dd className="text-sm leading-relaxed text-body">{line.text}</dd>
+              <dl className="mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-[9rem_1fr]">
+                {aboutRows.map((row) => (
+                  <div key={row.title} className="contents">
+                    <dt className="text-sm font-semibold text-navy">{row.title}</dt>
+                    <dd className="text-sm leading-relaxed text-body">{row.text}</dd>
                   </div>
                 ))}
               </dl>
