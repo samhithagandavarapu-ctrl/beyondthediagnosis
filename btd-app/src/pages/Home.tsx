@@ -3,28 +3,75 @@ import { CTA_LABEL, SURVEY_URL } from "../data/site";
 import Reveal from "../components/Reveal";
 import Scribble from "../components/Scribble";
 
-const tools = [
+const audiences = [
   {
-    to: "/assistant",
-    title: "AI Advocacy Assistant",
-    desc: "Ask about your rights, accommodations, or how to describe a symptom clearly. It never diagnoses — it helps you advocate.",
-    cta: "Open the assistant →",
+    to: "/my-voice",
+    title: "I'm here for me",
+    desc: "Say how you feel, practice your visit, and tell your doctor in your own words.",
+    cta: "Open My Voice",
   },
   {
     to: "/appointment-prep",
-    title: "Appointment Prep Tool",
-    desc: "Turn symptoms, medications, and questions into a clean one-page summary you can hand straight to a provider.",
-    cta: "Build a summary →",
+    title: "I'm a parent or caregiver",
+    desc: "Get ready for appointments, track symptoms, and speak up when something gets brushed off.",
+    cta: "Prep for an appointment",
   },
   {
-    to: "/resources",
-    title: "Resource Navigator",
-    desc: "Trusted resources filtered by life stage — prenatal, child, teen, adult, caregiver, or provider.",
-    cta: "Browse resources →",
+    to: "/provider-education",
+    title: "I'm a provider",
+    desc: "Learn how diagnostic overshadowing shows up in practice, and help us shape provider training.",
+    cta: "For providers",
   },
 ];
 
-const cardGrid = "grid gap-5 mt-[34px]";
+const toolGroups = [
+  {
+    label: "For self-advocates",
+    tools: [
+      {
+        to: "/my-voice",
+        title: "My Voice",
+        desc: "Tap how you feel and build what you want to tell your doctor.",
+        cta: "Open My Voice →",
+      },
+      {
+        to: "/my-voice/practice",
+        title: "Practice My Visit",
+        desc: "See what happens at a doctor's visit, step by step, before you go.",
+        cta: "Practice a visit →",
+      },
+      {
+        to: "/calendar",
+        title: "My Calendar",
+        desc: "Keep your visits, feelings, and reminders together in one place.",
+        cta: "Open my calendar →",
+      },
+    ],
+  },
+  {
+    label: "For families and caregivers",
+    tools: [
+      {
+        to: "/appointment-prep",
+        title: "Appointment Prep",
+        desc: "Turn symptoms, medications, and questions into a one-page summary for the provider.",
+        cta: "Build a summary →",
+      },
+      {
+        to: "/assistant",
+        title: "AI Advocate",
+        desc: "Ask about your rights or how to describe a symptom. It never diagnoses — it helps you advocate.",
+        cta: "Open the assistant →",
+      },
+      {
+        to: "/resources",
+        title: "Resources",
+        desc: "Trusted resources filtered by life stage, from prenatal to adult and caregiver.",
+        cta: "Browse resources →",
+      },
+    ],
+  },
+];
 
 // The headline sets down a word at a time; "label." gets underlined last.
 const RISE_STEP = 70; // ms between words
@@ -63,27 +110,6 @@ export default function Home() {
                 </span>
               </span>
             </h1>
-            {/* Event banner: right under the headline, so people who met us in
-                person go straight to the survey. */}
-            <div className="btd-event-banner mt-8 flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-navy bg-butter px-6 py-5">
-              <div className="max-w-[40em]">
-                <p className="font-display text-21 font-extrabold leading-tight text-navy">
-                  Met us at an event? Help shape Voiced.
-                </p>
-                <p className="mt-1 text-15 leading-[1.6] text-butter-ink">
-                  Tell us what would help you, your family, or your patients. It's a short
-                  survey and takes just a few minutes.
-                </p>
-              </div>
-              <a
-                href={SURVEY_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
-              >
-                Take the survey →
-              </a>
-            </div>
             <p className="mt-8 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
               Voiced helps people with Down syndrome, their families, and their
               clinicians catch what diagnostic overshadowing hides: when a real,
@@ -92,16 +118,29 @@ export default function Home() {
                 "just Down syndrome."
               </Scribble>
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/assistant" className="btd-btn-coral min-h-[52px] px-7 py-4 text-17">
-                {CTA_LABEL}
-              </Link>
-              <Link
-                to="/appointment-prep"
-                className="btd-btn-outline min-h-[52px] px-[26px] py-3.5 text-17"
-              >
-                Prep for an appointment
-              </Link>
+            <h2 className="mt-10 font-display text-23 font-extrabold text-navy">
+              Who is Voiced for today?
+            </h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              {audiences.map((a, i) => (
+                <Link
+                  key={a.to}
+                  to={a.to}
+                  className={`btd-card btd-lift ${
+                    i === 0
+                      ? "btd-lift-butter border-2 border-navy bg-coral"
+                      : `btd-lift-${["sky", "coral", "butter"][i % 3]}`
+                  } grid min-h-[44px] content-start gap-2.5 p-6`}
+                >
+                  <h3 className="text-23 font-bold">{a.title}</h3>
+                  <p className={`text-15 leading-[1.65] ${i === 0 ? "text-coral-ink" : "text-body"}`}>
+                    {a.desc}
+                  </p>
+                  <span className={`text-sm font-bold ${i === 0 ? "text-navy underline underline-offset-[3px]" : "text-link"}`}>
+                    {a.cta} <span className="btd-arrow">→</span>
+                  </span>
+                </Link>
+              ))}
             </div>
             <Link
               to="/understanding-overshadowing"
@@ -128,20 +167,61 @@ export default function Home() {
             See all tools →
           </Link>
         </div>
-        <div className={`${cardGrid} md:grid-cols-3`}>
-          {tools.map((t, i) => (
-            <Link
-              key={t.to}
-              to={t.to}
-              className={`btd-card btd-lift btd-lift-${["sky", "coral", "butter"][i % 3]} p-[26px] grid gap-2.5 content-start`}
-            >
-              <h3 className="text-23 font-bold">{t.title}</h3>
-              <p className="text-15 leading-[1.65] text-body">{t.desc}</p>
-              <span className="text-sm font-bold text-link">
-                {t.cta.replace(/ →$/, "")} <span className="btd-arrow">→</span>
-              </span>
-            </Link>
-          ))}
+        {toolGroups.map((g) => (
+          <div key={g.label}>
+            <h3 className="mt-[34px] btd-eyebrow">{g.label}</h3>
+            <div className="grid gap-5 mt-4 md:grid-cols-3">
+              {g.tools.map((t, i) => (
+                <Link
+                  key={t.to}
+                  to={t.to}
+                  className={`btd-card btd-lift btd-lift-${["sky", "coral", "butter"][i % 3]} p-[26px] grid gap-2.5 content-start`}
+                >
+                  <h4 className="text-23 font-bold">{t.title}</h4>
+                  <p className="text-15 leading-[1.65] text-body">{t.desc}</p>
+                  <span className="text-sm font-bold text-link">
+                    {t.cta.replace(/ →$/, "")} <span className="btd-arrow">→</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* Community line */}
+      <section className="btd-container pt-[52px] text-center">
+        <p className="text-17 leading-[1.6] text-body">
+          Shaped by families we met at the 2026 NCDSA Buddy Walk.{" "}
+          <Link
+            to="/mission"
+            className="font-bold text-link underline underline-offset-[3px] hover:text-navy"
+          >
+            Read our story →
+          </Link>
+        </p>
+      </section>
+
+      {/* Event survey banner */}
+      <section className="btd-container pt-8">
+        <div className="btd-event-banner flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-navy bg-butter px-6 py-5">
+          <div className="max-w-[40em]">
+            <p className="font-display text-21 font-extrabold leading-tight text-navy">
+              Met us at an event? Help shape Voiced.
+            </p>
+            <p className="mt-1 text-15 leading-[1.6] text-butter-ink">
+              Tell us what would help you, your family, or your patients. It's a short
+              survey and takes just a few minutes.
+            </p>
+          </div>
+          <a
+            href={SURVEY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
+          >
+            Take the survey →
+          </a>
         </div>
       </section>
 
