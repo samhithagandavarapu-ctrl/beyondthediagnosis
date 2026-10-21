@@ -6,6 +6,8 @@ import { usePracticeMode } from "../context/PracticeModeContext";
 import { BoardGrid, NoteEditor, boardSpoken } from "../components/meboard/MeBoardParts";
 import SpeakButton from "../components/myvoice/SpeakButton";
 import Icon from "../components/icons/Icon";
+import { ForLabel } from "../components/ModeBanner";
+import { useAccountMode } from "../context/AccountModeContext";
 
 // The Me page: the "All about me" board. Eight sticky notes; tap one to fill
 // it in. It goes at the top of the Appointment Prep summary, so a new doctor
@@ -17,6 +19,7 @@ export default function Me() {
   const { meBoard, meBoardLoaded, meBoardStore, meBoardAccountMissing, saveMeBoard, deleteMeBoard, readingLevel, say } =
     useMyVoice();
   const { practice } = usePracticeMode();
+  const { mode, view, forName, managedList } = useAccountMode();
   // Changes made in practice mode live only here, and are dropped when it ends.
   const [practiceBoard, setPracticeBoard] = useState<MeBoard | null>(null);
   useEffect(() => {
@@ -28,10 +31,20 @@ export default function Me() {
   const [working, setWorking] = useState<MeBoard | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [editingWho, setEditingWho] = useState(false);
-  const name = board.aboutName.trim() || null;
-  const title = boardTitle(board);
+  // A parent's board is about the person they manage, even before it has a
+  // name on it. In a parent's preview of the child's view, it reads as "me".
+  const parentName = mode === "parent" ? board.aboutName.trim() || forName : null;
+  const name = view === "self" ? null : board.aboutName.trim() || parentName;
+  const title = boardTitle({ aboutName: name ?? "" });
+  // One board per account: with several children, it's about one of them.
+  const otherChild =
+    mode === "parent" && !practice && board.aboutName.trim() && forName && board.aboutName.trim() !== forName && managedList.length > 1
+      ? board.aboutName.trim()
+      : null;
 
   async function keep(next: MeBoard) {
+    // A parent's first save names the board after the person they manage.
+    if (mode === "parent" && !next.aboutName.trim() && parentName) next = { ...next, aboutName: parentName };
     if (practice) {
       setPracticeBoard(next);
       setNotice("That was practice, so nothing was saved.");
@@ -112,7 +125,8 @@ export default function Me() {
 
   return (
     <div className="btd-container max-w-5xl py-10 pb-20">
-      <p className="btd-eyebrow">My Me page</p>
+      <ForLabel className="mb-3" />
+      <p className="btd-eyebrow">{mode === "parent" && view !== "self" ? "Me board" : "My Me page"}</p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="btd-page-h1 font-display text-navy">{title}</h1>
         {boardHasContent(board) && <SpeakButton text={boardSpoken(board, title)} />}
@@ -122,6 +136,12 @@ export default function Me() {
           ? `The things a doctor can't learn from a chart: how ${name} usually is, how they show pain, and how to talk with them. Tap a note to fill it in.`
           : "The things a doctor can't learn from a chart: how I usually am, how I show pain, and how to talk with me. Tap a note to fill it in."}
       </p>
+
+      {otherChild && (
+        <p className="mt-4 max-w-[46em] rounded-tile border border-butter bg-butter/30 px-4 py-3 text-15 text-navy">
+          This board is about {otherChild}. Each parent account has one Me board for now.
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-13">
         <span className="inline-flex items-center gap-1.5 font-semibold text-muted">

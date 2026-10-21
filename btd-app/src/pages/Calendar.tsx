@@ -1,3 +1,5 @@
+import { ForLabel } from "../components/ModeBanner";
+import { possessive, useAccountMode } from "../context/AccountModeContext";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../components/icons/Icon";
@@ -63,6 +65,7 @@ function upsert(list: CalendarEntry[], entry: CalendarEntry) {
 
 export default function Calendar() {
   const { user, loading: authLoading } = useAuth();
+  const { mode, managed, forName } = useAccountMode();
   const userId = user?.id ?? null;
   const { practice } = usePracticeMode();
   const { readingLevel, reloadCheckIns, say } = useMyVoice();
@@ -96,6 +99,11 @@ export default function Calendar() {
   const [childCustoms, setChildCustoms] = useState<CustomSymptom[]>([]);
   const [childLoaded, setChildLoaded] = useState(false);
   const child = !practice && whose ? family.children.find((c) => c.personId === whose) ?? null : null;
+  // A parent opens on the calendar of whoever the bar at the top says
+  // they're managing.
+  useEffect(() => {
+    if (mode === "parent" && managed?.personId) setWhose(managed.personId);
+  }, [mode, managed?.personId]);
   useEffect(() => {
     if (!child) return;
     let cancelled = false;
@@ -257,6 +265,7 @@ export default function Calendar() {
   return (
     <div>
       <section className="btd-container grid gap-6 pt-8 pb-20">
+        <ForLabel className="justify-self-start" />
         {!privacySeen && !child && family.grownUps.length === 0 && (
           <div className="flex flex-wrap items-center gap-4 rounded-card border-2 border-sky bg-sky-tint p-5">
             <Icon name="lock" size={28} className="text-navy" />
@@ -421,7 +430,9 @@ export default function Calendar() {
           <div className="mx-auto grid w-full max-w-2xl gap-5">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="btd-eyebrow">{child ? `${child.name}'s calendar` : "My calendar"}</p>
+                <p className="btd-eyebrow">
+                  {child ? `${possessive(child.name)} calendar` : mode === "parent" && forName ? `${possessive(forName)} calendar` : "My calendar"}
+                </p>
                 <h1 className="font-display text-[2rem] font-extrabold leading-tight text-navy sm:text-[2.4rem]">
                   {isToday
                     ? `Today, ${fromDateKey(day).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`

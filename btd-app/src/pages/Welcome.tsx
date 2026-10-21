@@ -184,15 +184,52 @@ export default function Welcome() {
     ) : null;
 
   if (step.kind === "role") {
-    const q = "Who is Voiced for today?";
+    const q = "Who are you?";
     return (
-      <Frame title={q} spoken={`${q} I'm here for me. I'm a parent or caregiver. I'm a provider.`} dots={dots} topRight={skipAll}>
+      <Frame
+        title={q}
+        spoken={`${q} I'm a parent or caregiver. I'm signing up for myself.`}
+        dots={dots}
+        topRight={skipAll}
+        wide
+      >
         <p className="-mt-2 mb-5 text-15 text-body">Pick one. You can change it later in My account.</p>
-        <div className="grid gap-4">
-          <BigChoice icon="face-great" label="I'm here for me" hint="I have Down syndrome, and this is for me." tone="coral" onClick={() => pickRole("self")} />
-          <BigChoice icon="heart" label="I'm a parent or caregiver" hint="I help someone with Down syndrome." tone="butter" onClick={() => pickRole("caregiver")} />
-          <BigChoice icon="stethoscope" label="I'm a provider" hint="I care for patients in my work." tone="sky" onClick={() => pickRole("provider")} />
+        <div className="grid grid-cols-2 gap-3 sm:gap-5">
+          <button
+            type="button"
+            onClick={() => pickRole("caregiver")}
+            className="btd-dark btd-lift flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-card border-[3px] border-navy p-4 text-center sm:min-h-[260px] sm:p-6"
+          >
+            <span className="grid h-16 w-16 place-items-center rounded-full bg-mist text-navy sm:h-20 sm:w-20">
+              <Icon name="heart" size={40} />
+            </span>
+            <span className="font-display text-21 font-extrabold leading-tight text-mist sm:text-28">
+              I'm a parent or caregiver
+            </span>
+            <span className="text-13 font-semibold text-mist/85 sm:text-15">I help someone with Down syndrome.</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => pickRole("self")}
+            className="btd-lift flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-card border-[3px] border-butter bg-sky p-4 text-center sm:min-h-[260px] sm:p-6"
+          >
+            <span className="grid h-16 w-16 place-items-center rounded-full bg-butter text-navy sm:h-20 sm:w-20">
+              <Icon name="star" size={40} />
+            </span>
+            <span className="font-display text-21 font-extrabold leading-tight text-navy sm:text-28">
+              I'm signing up for myself
+            </span>
+            <span className="text-13 font-semibold text-navy sm:text-15">This is my own space.</span>
+          </button>
         </div>
+        <button
+          type="button"
+          onClick={() => pickRole("provider")}
+          className="mt-5 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-link underline underline-offset-2 hover:text-navy"
+        >
+          <Icon name="stethoscope" size={18} />
+          I'm a healthcare provider
+        </button>
       </Frame>
     );
   }
@@ -526,32 +563,5 @@ function Dots({ at, of }: { at: number; of: number }) {
         />
       ))}
     </div>
-  );
-}
-
-function BigChoice({
-  icon,
-  label,
-  hint,
-  tone,
-  onClick,
-}: {
-  icon: IconName;
-  label: string;
-  hint: string;
-  tone: "coral" | "butter" | "sky";
-  onClick: () => void;
-}) {
-  const bg = { coral: "bg-coral", butter: "bg-butter", sky: "bg-sky" }[tone];
-  return (
-    <button type="button" onClick={onClick} className={`btd-sticky ${bg} flex min-h-[96px] items-center gap-4 px-5 py-4 text-left`}>
-      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-white/80 text-navy">
-        <Icon name={icon} size={30} />
-      </span>
-      <span>
-        <span className="block font-display text-21 font-extrabold leading-tight text-navy">{label}</span>
-        <span className="block text-13 font-semibold text-navy/80">{hint}</span>
-      </span>
-    </button>
   );
 }

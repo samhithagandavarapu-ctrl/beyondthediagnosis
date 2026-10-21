@@ -9,6 +9,7 @@ import { PracticeModeProvider } from "./context/PracticeModeContext";
 import { MyVoiceProvider } from "./context/MyVoiceContext";
 import { NotificationsProvider } from "./context/NotificationsContext";
 import { SetupProvider } from "./context/SetupContext";
+import { AccountModeProvider } from "./context/AccountModeContext";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -22,9 +23,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <PracticeModeProvider>
               <MyVoiceProvider>
                 <SetupProvider>
-                  <NotificationsProvider>
-                    <App />
-                  </NotificationsProvider>
+                  <AccountModeProvider>
+                    <NotificationsProvider>
+                      <App />
+                    </NotificationsProvider>
+                  </AccountModeProvider>
                 </SetupProvider>
               </MyVoiceProvider>
             </PracticeModeProvider>

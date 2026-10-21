@@ -32,6 +32,7 @@ import Me from "./pages/Me";
 import Welcome from "./pages/Welcome";
 import { useSetup } from "./context/SetupContext";
 import FamilyGate from "./components/family/FamilyGate";
+import ModeBanner from "./components/ModeBanner";
 
 export default function App() {
   const { pathname } = useLocation();
@@ -70,6 +71,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col">
       <AccessibilityBar />
       <Navbar />
+      <ModeBanner />
       <FamilyGate />
       <main className="flex-1">
         <Routes>
