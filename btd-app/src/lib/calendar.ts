@@ -18,6 +18,7 @@ export type CategoryId =
   | "mood"
   | "behavior"
   | "sleep"
+  | "skin"
   | "eating"
   | "bathroom"
   | "energy"
@@ -41,6 +42,7 @@ export const CATEGORIES: Category[] = [
   { id: "mood", icon: "hub-feelings", label: "How I feel", short: "Feelings", filter: "mood" },
   { id: "behavior", icon: "shuffle", label: "Something is different", short: "Different", filter: "mood" },
   { id: "sleep", icon: "moon", label: "How I slept", short: "Sleep", filter: "sleep" },
+  { id: "skin", icon: "skin", label: "My skin", short: "Skin", filter: "other" },
   { id: "eating", icon: "utensils", label: "Eating", short: "Eating", filter: "other" },
   { id: "bathroom", icon: "toilet", label: "Bathroom", short: "Bathroom", filter: "other" },
   { id: "energy", icon: "battery", label: "My energy", short: "Energy", filter: "other" },
@@ -65,7 +67,7 @@ export const FILTERS: { id: FilterId; label: string }[] = [
 
 // ---- Follow-up answers, per category ----
 
-export type EmotionId = "happy" | "sad" | "angry" | "worried" | "tired" | "calm" | "dont-know";
+export type EmotionId = "happy" | "sad" | "angry" | "worried" | "tired" | "calm" | "mood-swings" | "dont-know";
 
 export const EMOTIONS: { id: EmotionId; icon: IconName; label: string }[] = [
   { id: "happy", icon: "face-great", label: "Happy" },
@@ -74,6 +76,7 @@ export const EMOTIONS: { id: EmotionId; icon: IconName; label: string }[] = [
   { id: "worried", icon: "face-worried", label: "Worried" },
   { id: "tired", icon: "face-tired", label: "Tired" },
   { id: "calm", icon: "face-calm", label: "Calm" },
+  { id: "mood-swings", icon: "repeat", label: "Mood swings" },
   { id: "dont-know", icon: "question", label: "I don't know" },
 ];
 
@@ -94,6 +97,27 @@ export const BEHAVIORS: { id: BehaviorId; label: string }[] = [
   { id: "hitting", label: "Hitting or self-hitting" },
   { id: "refusing-out", label: "Refusing to go out" },
   { id: "clingy", label: "More clingy" },
+];
+
+export type SkinId = "clear" | "breakouts" | "dry" | "itchy" | "rash";
+
+export const SKIN_CHANGES: { id: SkinId; label: string }[] = [
+  { id: "clear", label: "Clear" },
+  { id: "breakouts", label: "Breakouts (pimples)" },
+  { id: "dry", label: "Dry" },
+  { id: "itchy", label: "Itchy" },
+  { id: "rash", label: "A rash" },
+];
+
+export type SkinPlace = "face" | "chest" | "back" | "arms" | "legs" | "other";
+
+export const SKIN_PLACES: { id: SkinPlace; label: string }[] = [
+  { id: "face", label: "Face" },
+  { id: "chest", label: "Chest" },
+  { id: "back", label: "Back" },
+  { id: "arms", label: "Arms" },
+  { id: "legs", label: "Legs" },
+  { id: "other", label: "Somewhere else" },
 ];
 
 export type BathroomId = "constipation" | "diarrhea" | "pain-peeing" | "peeing-more";
@@ -204,6 +228,9 @@ export type EntryDetails = {
   throwingUp?: boolean;
   // Bathroom
   bathroom?: BathroomId[];
+  // My skin
+  skin?: SkinId[];
+  skinPlaces?: SkinPlace[];
   // My energy
   energy?: (typeof ENERGY_LEVELS)[number]["id"];
   // Something scary happened
@@ -547,6 +574,11 @@ export function detailLines(e: CalendarEntry, feelingWord: (id: FeelingId) => st
         ...(d.eatingAmount ? [labelOf(EATING_AMOUNT, d.eatingAmount)] : []),
         ...yes(d.tummyUpset, "Tummy upset"),
         ...yes(d.throwingUp, "Throwing up"),
+      ];
+    case "skin":
+      return [
+        ...(d.skin?.length ? [d.skin.map((x) => labelOf(SKIN_CHANGES, x)).join(", ")] : []),
+        ...(d.skinPlaces?.length ? [`Where: ${d.skinPlaces.map((x) => labelOf(SKIN_PLACES, x)).join(", ")}`] : []),
       ];
     case "bathroom":
       return d.bathroom?.length ? [d.bathroom.map((b) => labelOf(BATHROOM, b)).join(", ")] : [];
