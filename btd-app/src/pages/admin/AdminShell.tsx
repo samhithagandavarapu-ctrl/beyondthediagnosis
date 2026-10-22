@@ -10,6 +10,7 @@ import AdminHome from "./AdminHome";
 import AdminAccounts from "./AdminAccounts";
 import AdminCleanup from "./AdminCleanup";
 import AdminSite from "./AdminSite";
+import AdminBroadcasts from "./AdminBroadcasts";
 
 // What an admin sees instead of the site: one plain menu, no setup questions,
 // no parent or self-advocate banners. "View site" switches to the public site
@@ -21,10 +22,11 @@ const tabs: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/admin/stories", label: "Stories", icon: "book" },
   { to: "/admin/accounts", label: "Accounts", icon: "person" },
   { to: "/admin/cleanup", label: "Yearly cleanup", icon: "trash" },
-  { to: "/admin/site", label: "Site banners", icon: "bell" },
+  { to: "/admin/broadcasts", label: "Broadcasts", icon: "send" },
+  { to: "/admin/site", label: "Site & banners", icon: "bell" },
 ];
 
-export default function AdminShell({ onViewSite }: { onViewSite: () => void }) {
+export default function AdminShell({ onViewSite, onEditSite }: { onViewSite: () => void; onEditSite: () => void }) {
   const { signOut } = useAuth();
   const { unreadCount } = useNotifications();
   const { pathname } = useLocation();
@@ -53,6 +55,15 @@ export default function AdminShell({ onViewSite }: { onViewSite: () => void }) {
               Admin
             </span>
           </NavLink>
+          <button
+            type="button"
+            onClick={onEditSite}
+            className="btd-btn min-h-[40px] gap-2 bg-butter px-4 text-sm text-navy hover:bg-butter/90"
+          >
+            <Icon name="refine" size={18} />
+            <span className="hidden sm:inline">Edit site</span>
+            <span className="sm:hidden">Edit</span>
+          </button>
           <button
             type="button"
             onClick={onViewSite}
@@ -110,7 +121,8 @@ export default function AdminShell({ onViewSite }: { onViewSite: () => void }) {
           <Route path="/admin/stories" element={<AdminStories />} />
           <Route path="/admin/accounts" element={<AdminAccounts />} />
           <Route path="/admin/cleanup" element={<AdminCleanup />} />
-          <Route path="/admin/site" element={<AdminSite />} />
+          <Route path="/admin/broadcasts" element={<AdminBroadcasts />} />
+          <Route path="/admin/site" element={<AdminSite onEditSite={onEditSite} />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
       </main>

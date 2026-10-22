@@ -12,6 +12,7 @@ import {
   subscribeToMessages,
 } from "../lib/messages";
 import { FamilyNotice, listNotices } from "../lib/family";
+import { Broadcast, listBroadcasts } from "../lib/broadcasts";
 
 // Notifications are worked out, not stored: each one is a fact about the
 // person's account ("a story you sent in was published", "you have a new
@@ -22,7 +23,7 @@ export const CONTACT_EMAIL = "withvoiced@gmail.com";
 
 export type AppNotification = {
   id: string;
-  kind: "story-approved" | "story-rejected" | "message" | "family-linked" | "family-unlinked";
+  kind: "story-approved" | "story-rejected" | "message" | "family-linked" | "family-unlinked" | "broadcast";
   title: string;
   body: string;
   /** Where the button goes, and what it says. */
@@ -98,6 +99,19 @@ function storyNotification(s: StoryRow): Raw {
     href: "/messages",
     action: "Message us",
     at: s.created_at,
+  };
+}
+
+/** A message from the Voiced team to everyone. */
+function broadcastNotification(b: Broadcast): Raw {
+  return {
+    id: `broadcast:${b.id}`,
+    kind: "broadcast",
+    title: b.title,
+    body: b.body,
+    href: b.linkUrl ?? "",
+    action: b.linkUrl ? b.linkLabel || "Learn more" : "",
+    at: b.createdAt,
   };
 }
 
@@ -189,13 +203,16 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       fetchIncoming(isAdmin),
       fetchThreadStates(isAdmin ? undefined : userId),
       listNotices(),
+      listBroadcasts(),
     ]).then(
-      ([stories, incoming, { states }, family]) => {
+      ([stories, incoming, { states }, family, broadcasts]) => {
         if (currentUser.current !== userId) return;
         const items = [
           ...stories.map(storyNotification),
           ...messageNotifications(incoming, states, userId, isAdmin),
           ...family.map(familyNotification),
+          // The admin sends them; nobody needs reminding of their own.
+          ...(isAdmin ? [] : broadcasts.filter((b) => b.active).map(broadcastNotification)),
         ].sort((a, b) => b.at.localeCompare(a.at));
         setRaw(items);
       }
