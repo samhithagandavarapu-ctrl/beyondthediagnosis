@@ -13,8 +13,8 @@ practice or change this document. Never leave the two out of step.
 
 | Role | Person | Contact |
 | --- | --- | --- |
-| Security coordinator (runs this program, handles incidents) | _Fill in: founder's name_ | withvoiced@gmail.com |
-| Backup, if the coordinator can't be reached | _Fill in, or "none yet"_ | |
+| Security coordinator (runs this program, handles incidents) | Samhitha Gandavarapu | withvoiced@gmail.com |
+| Backup, if the coordinator can't be reached | None yet | |
 
 The coordinator does the yearly review (section 7), decides who gets access
 (section 3), and leads the incident response (section 6).

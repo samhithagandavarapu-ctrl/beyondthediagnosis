@@ -26,7 +26,7 @@ type AuthState = {
 
 // Keep in step with public.is_voiced_admin() in supabase/rejections-and-messages.sql,
 // which is what actually lets an admin read and answer messages.
-const DEFAULT_ADMIN_EMAILS = ["withvoiced@gmail.com", "voiced@gmail.com"];
+const DEFAULT_ADMIN_EMAILS = ["withvoiced@gmail.com"];
 
 /** Where links in Supabase's emails (sign-up confirmation, email change) send
  *  people back to. Without it Supabase falls back to the project's "Site URL",
