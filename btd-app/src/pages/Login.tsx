@@ -5,6 +5,7 @@ import { authEnabled } from "../lib/supabaseClient";
 import PasswordInput from "../components/PasswordInput";
 import { usernameEmail, usernameOf } from "../lib/family";
 import { inkLastWord } from "../components/Scribble";
+import { rememberTermsAgreed } from "../lib/consent";
 
 // Phone sign-in needs a paid SMS provider connected in Supabase (README,
 // "Turn on phone number sign-in"). Until VITE_PHONE_SIGNIN=true says that's
@@ -37,6 +38,9 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
+  // Making an account needs the box ticked first; signing in asks after, if needed.
+  const needsAgree = mode === "signup" && !agreed;
   // Sign-in takes an email, or the username a parent made for a child (no
   // email needed: it's an address underneath that's never emailed).
   const signInAddress = email.includes("@") ? email.trim() : usernameEmail(email);
@@ -116,8 +120,11 @@ export default function Login() {
           <>
             <button
               type="button"
-              disabled={busy}
-              onClick={() => run(signInWithGoogle)}
+              disabled={busy || needsAgree}
+              onClick={() => {
+                if (mode === "signup") rememberTermsAgreed();
+                run(signInWithGoogle);
+              }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded border border-ink/20 font-semibold text-sm hover:border-ink/40 transition-colors disabled:opacity-50"
             >
               Continue with Google
@@ -182,6 +189,28 @@ export default function Login() {
                   person has one profile, and they can have their own login to it.
                 </p>
               )}
+              {mode === "signup" && (
+                <label className="flex items-start gap-2 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-navy"
+                  />
+                  <span>
+                    I'm 13 or older, and I agree to the{" "}
+                    <Link to="/terms" target="_blank" className="font-semibold text-link underline">
+                      Terms of Use
+                    </Link>{" "}
+                    and{" "}
+                    <Link to="/privacy" target="_blank" className="font-semibold text-link underline">
+                      Privacy Policy
+                    </Link>
+                    .
+                  </span>
+                </label>
+              )}
               {mode === "signin" && (
                 <div className="flex justify-end">
                   <button
@@ -195,7 +224,7 @@ export default function Login() {
               )}
               <button
                 type="submit"
-                disabled={busy}
+                disabled={busy || needsAgree}
                 className="w-full px-4 py-2.5 rounded bg-ink text-paper font-semibold text-sm disabled:opacity-50"
               >
                 {mode === "signin"

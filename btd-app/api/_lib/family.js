@@ -202,6 +202,10 @@ async function moveMine(admin, parent, body) {
 
 const USERNAME = /^[a-z0-9][a-z0-9._-]{2,23}$/;
 
+// The parent's consent notice they agreed to before their child's first login
+// (src/data/legal.ts has the same date; change both together).
+const CHILD_CONSENT_VERSION = "2026-10-22";
+
 /** A username and password a parent makes for a child 12 or under (or one
  *  who might still be), or a new password for one they made before. */
 async function childLogin(admin, parent, body) {
@@ -222,6 +226,17 @@ async function childLogin(admin, parent, body) {
     }
     update.email = `${username}@${USERNAME_DOMAIN}`;
     update.email_confirm = true;
+  }
+  if (kind === "none") {
+    // A child's first login is when Voiced starts collecting from them, so the
+    // parent's consent is kept with it: who agreed, when, and to which notice.
+    if (body.consent !== CHILD_CONSENT_VERSION) {
+      return fail(400, "Please read the note for parents and tick the box to agree first.");
+    }
+    update.user_metadata = {
+      ...(child.user.user_metadata ?? {}),
+      parent_consent: { by: parent.id, at: new Date().toISOString(), version: CHILD_CONSENT_VERSION },
+    };
   }
   const { error } = await admin.auth.admin.updateUserById(child.user.id, update);
   if (error) {

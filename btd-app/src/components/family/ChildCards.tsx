@@ -11,6 +11,8 @@ import {
 } from "../../lib/family";
 import PasswordInput from "../PasswordInput";
 import Icon from "../icons/Icon";
+import { Link } from "react-router-dom";
+import { CHILD_CONSENT_VERSION } from "../../data/legal";
 
 // The pieces a parent uses to look after their children's profiles: adding a
 // child (the only place a child's details are entered), and giving each child
@@ -241,6 +243,7 @@ function UsernameLogin({
   const { practice } = usePracticeMode();
   const [username, setUsername] = useState(() => name.toLowerCase().replace(/[^a-z0-9]/g, "") + String(thisYear).slice(-2));
   const [password, setPassword] = useState("");
+  const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -251,7 +254,7 @@ function UsernameLogin({
     const { data, error } = await familyApi<{ username: string }>("child-login", {
       childId: child.personId,
       password,
-      ...(resetOnly ? {} : { username }),
+      ...(resetOnly ? {} : { username, consent: CHILD_CONSENT_VERSION }),
     });
     setBusy(false);
     if (error || !data) return setError(error);
@@ -299,8 +302,52 @@ function UsernameLogin({
         />
         <span className="text-12 font-normal text-muted">At least 8 characters. Something {name} can remember.</span>
       </label>
+      {!resetOnly && (
+        <div className="grid gap-2 rounded-tile border border-navy/15 bg-white p-4 text-13 leading-[1.6] text-body">
+          <p className="text-sm font-bold text-navy">For you, as {possessive(name)} parent or guardian</p>
+          <p>
+            With their own login, {name} can add to their calendar, check-ins and Me board
+            themselves. That's what Voiced collects from them: how they feel, what hurts, and
+            notes they write. It's used only to show back to {name} and to you, and to help get
+            ready for appointments.
+          </p>
+          <p>
+            Only {name} and their linked grown-ups can see it. It isn't shown to Voiced's admins,
+            sold, or used for ads. {name} can't use the AI Advocate, so nothing they type goes to an
+            AI company. It's stored with our database and hosting providers (Supabase and Vercel)
+            only to run Voiced.
+          </p>
+          <p>
+            You can see what's on their profile (except entries {name} marks "Just for me"), change
+            their password, or remove their profile completely, which deletes everything and stops
+            any more collection. To see or delete anything else, including "Just for me" entries,
+            email us:{" "}
+            <a href="mailto:withvoiced@gmail.com" className="font-bold text-link underline">
+              withvoiced@gmail.com
+            </a>
+            . The full details are in our{" "}
+            <Link to="/privacy" target="_blank" className="font-bold text-link underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+          <label className="mt-1 flex items-start gap-2 text-sm font-bold text-navy">
+            <input
+              type="checkbox"
+              required
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-navy"
+            />
+            <span>
+              I'm {possessive(name)} parent or legal guardian, and I agree to Voiced collecting this
+              information from {name} as described.
+            </span>
+          </label>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={busy} className="btd-btn-coral min-h-[48px] px-6 text-sm disabled:opacity-40">
+        <button type="submit" disabled={busy || (!resetOnly && !consent)} className="btd-btn-coral min-h-[48px] px-6 text-sm disabled:opacity-40">
           {busy ? "Saving…" : resetOnly ? "Save new password" : "Make the login"}
         </button>
       </div>

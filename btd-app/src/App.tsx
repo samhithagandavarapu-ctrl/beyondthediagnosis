@@ -33,6 +33,12 @@ import Welcome from "./pages/Welcome";
 import Join from "./pages/Join";
 import { useSetup } from "./context/SetupContext";
 import ModeBanner from "./components/ModeBanner";
+import Terms from "./pages/Terms";
+import { GrownUpsOnly, HealthConsentGate, TermsGate } from "./components/ConsentGates";
+import { hasAcceptedTerms } from "./lib/consent";
+
+// Pages someone who hasn't agreed to the terms can still open.
+const TERMS_FREE = ["/terms", "/privacy", "/auth/callback", "/reset-password"];
 
 export default function App() {
   const { pathname } = useLocation();
@@ -73,16 +79,21 @@ export default function App() {
       <Navbar />
       <ModeBanner />
       <main className="flex-1">
+        {/* Until the current terms are agreed to, the gate stands in for every
+            page except the ones it links to and the sign-in steps. */}
+        {user && !hasAcceptedTerms(user) && !TERMS_FREE.includes(pathname) ? (
+          <TermsGate />
+        ) : (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/future" element={<Future />} />
-          <Route path="/assistant" element={<Assistant />} />
-          <Route path="/appointment-prep" element={<AppointmentPrep />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/my-voice" element={<MyVoice />} />
+          <Route path="/assistant" element={<GrownUpsOnly what="The AI Advocate"><HealthConsentGate><Assistant /></HealthConsentGate></GrownUpsOnly>} />
+          <Route path="/appointment-prep" element={<HealthConsentGate><AppointmentPrep /></HealthConsentGate>} />
+          <Route path="/calendar" element={<HealthConsentGate><Calendar /></HealthConsentGate>} />
+          <Route path="/my-voice" element={<HealthConsentGate><MyVoice /></HealthConsentGate>} />
           <Route path="/my-voice/practice" element={<PracticeVisit />} />
-          <Route path="/me" element={<Me />} />
+          <Route path="/me" element={<HealthConsentGate><Me /></HealthConsentGate>} />
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/join" element={<Join />} />
           <Route path="/join/:code" element={<Join />} />
@@ -97,14 +108,16 @@ export default function App() {
           <Route path="/understanding-overshadowing" element={<Understanding />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
-          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages" element={<GrownUpsOnly what="Messaging the Voiced team"><Messages /></GrownUpsOnly>} />
           <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/mission" element={<Mission />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           {/* Anything unrecognised — including a provider redirect that lands
               somewhere unexpected — gets a real page, never an empty one. */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        )}
       </main>
       <Footer />
       {/* App-wide, not part of /my-voice: reachable mid-chat, mid-form, anywhere. */}
