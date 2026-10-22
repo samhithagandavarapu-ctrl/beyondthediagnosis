@@ -4,7 +4,7 @@ export default function Privacy() {
   return (
     <div className="btd-container py-10 max-w-2xl">
       <h1 className="text-3xl font-display font-semibold mb-2">{inkLastWord("Privacy Policy")}</h1>
-      <p className="text-slate-light text-sm mb-8">Last updated October 14, 2026</p>
+      <p className="text-slate-light text-sm mb-8">Last updated October 22, 2026</p>
 
       <div className="btd-card p-6 mb-8 bg-clay/10 border-clay/40 text-sm text-ink">
         <strong>Plain-language note:</strong> Voiced is an early-stage platform built by a
@@ -19,7 +19,27 @@ export default function Privacy() {
           <li>
             <strong>Account info:</strong> your email address or phone number (used to
             sign in), and anything you choose to add to your profile — full name,
-            username.
+            username, what you'd like to be called, and whether you're here for yourself
+            or as a parent. We also ask for a birth <em>year</em> (never a full birthday),
+            only so we can follow the rules for children under 13 described below.
+          </li>
+          <li>
+            <strong>Symptom Calendar and My Voice check-ins:</strong> what you log on
+            the calendar — how you feel, what hurts and where, periods, skin, mood,
+            tummy and bathroom notes, medications, and your own notes — and the
+            check-ins you make in My Voice. This is health information, so we treat it
+            that way. If you're signed in it's saved to your account; if not, it stays
+            in your own browser on this device, and signing in moves it into your
+            account. Period and cycle predictions are worked out on your device and
+            never stored. Nobody else on Voiced can see your calendar — not other
+            users, and not Voiced's admins — except grown-ups you're linked with as
+            family (see below).
+          </li>
+          <li>
+            <strong>Me board ("All about me"):</strong> the notes you fill in about how
+            you usually are, how you show pain, and how people should talk with you.
+            Saved to your account if you're signed in, or in this browser if not. Only
+            you and your linked grown-ups can see it.
           </li>
           <li>
             <strong>Appointment Prep entries:</strong> symptoms, medications, and notes
@@ -27,8 +47,9 @@ export default function Privacy() {
             your downloadable PDF — they are not sent to or stored by our AI provider
             beyond what's needed for the optional "Refine with AI" feature, and are not
             shared with any third party. If you're signed in, your Appointment Prep
-            drafts (and any My Voice sentence you put on one) are saved to your account
-            so you can pick them up on any device; only you can see them. If you're not
+            drafts (and any My Voice sentence or calendar entries you put on one) are
+            saved to your account so you can pick them up on any device; only you and
+            your linked grown-ups can see them. If you're not
             signed in, drafts stay in your own browser on this device and are never
             uploaded. Your appointment history (summaries you've generated) stays in
             your browser either way. You can delete any draft or summary from the
@@ -39,13 +60,15 @@ export default function Privacy() {
             Advocacy Assistant are sent to Anthropic (the company behind Claude, the AI
             model we use) to generate a response. Your chats are saved so you can come
             back to them: if you're signed in, they're saved to your account so you can
-            see them on any device, and only you can see them. If you're not signed in,
+            see them on any device, and only you can see them — not your linked
+            grown-ups, and not Voiced's admins. If you're not signed in,
             they stay in your own browser on this device. You can delete any chat from
             the assistant page, and deleting your account deletes your chats.
           </li>
           <li>
             <strong>Community Stories:</strong> anything you submit through "Share your
-            story," including your name if you choose to include it. Submissions are
+            story," and how you'd like it credited (for example your name, your first
+            name, or no name at all). Submissions are
             reviewed before publishing — nothing goes live automatically. If you're
             signed in when you send one, it's linked to your account so we can let you
             know in Notifications when it's been reviewed — published, or not published
@@ -71,6 +94,60 @@ export default function Privacy() {
             Voiced never receives or keeps the recording — only the words that end up in
             the box, and only if you then send or save them.
           </li>
+          <li>
+            <strong>"Record my voice" and Practice My Visit:</strong> a voice recording
+            you make to play for your doctor is kept only in this browser on this
+            device. It is never uploaded, never added to a draft, and never saved to
+            your account. Your Practice My Visit progress and speak-up cards also stay
+            in this browser.
+          </li>
+          <li>
+            <strong>Notifications:</strong> notices we show you on Voiced, such as a
+            reply from the team, a story review, or a family member linking or
+            unlinking.
+          </li>
+        </ul>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-display font-semibold mb-2">Family accounts and children</h2>
+        <ul className="space-y-2 text-sm text-ink list-disc list-inside">
+          <li>
+            A parent (or other grown-up) can add their child to Voiced. The child's
+            calendar, Me board and Appointment Prep drafts belong to the child's
+            profile.
+          </li>
+          <li>
+            <strong>Who can see a person's information:</strong> that person, and the
+            grown-ups linked to them — at most two. Nobody else, and not Voiced's
+            admins. Linked people only see each other's display name, not each other's
+            profile.
+          </li>
+          <li>
+            <strong>"Just for me":</strong> anyone can mark a calendar entry "Just for
+            me," and their linked grown-ups won't see it. (Entries about something scary
+            happening can't be hidden this way, so a trusted grown-up can help.)
+          </li>
+          <li>
+            Linked grown-ups can add their own notes to the calendar, marked as theirs.
+            The person whose calendar it is can delete those notes, but can't rewrite
+            them.
+          </li>
+          <li>
+            <strong>Children under 13:</strong> a child under 13 can only save
+            information to Voiced with a parent's consent. That consent is given when
+            the parent adds the child, or gives them a code meant for a child under 13.
+            A child 12 or under signs in with a username and password their parent
+            makes. We don't collect an email address for them, and we never email them.
+          </li>
+          <li>
+            Teens 13 and older can get their own email sign-in from an invite code
+            their parent gives them. It connects to the same profile.
+          </li>
+          <li>
+            Either side can unlink at any time, and the other person is told. If a linked
+            person deletes their account, the people they were linked with are told too.
+          </li>
         </ul>
       </section>
 
@@ -79,6 +156,11 @@ export default function Privacy() {
         <ul className="space-y-2 text-sm text-ink list-disc list-inside">
           <li>We don't sell your data to anyone.</li>
           <li>We don't show ads or let advertisers access your information.</li>
+          <li>
+            Voiced's admins can't read your calendar, check-ins, Me board, Appointment
+            Prep drafts, or AI Assistant chats. They only see what you send them: stories
+            you submit and messages you send the team.
+          </li>
           <li>
             We don't share your Appointment Prep entries or AI Assistant conversations
             with any third party beyond what's needed to generate a response (Anthropic,
@@ -95,8 +177,9 @@ export default function Privacy() {
         </p>
         <ul className="space-y-2 text-sm text-ink list-disc list-inside">
           <li>
-            <strong>Supabase</strong> — stores your account and profile information
-            securely.
+            <strong>Supabase</strong> — stores your account, profile, and the things you
+            save to your account (like your calendar, Me board, and drafts) securely.
+            The database itself enforces who is allowed to see each piece.
           </li>
           <li>
             <strong>Anthropic</strong> — powers the AI Advocacy Assistant and the
@@ -116,8 +199,13 @@ export default function Privacy() {
           <a href="/profile" className="text-gold-dark font-semibold hover:underline">
             Profile page
           </a>
-          . You can also delete your account yourself from the Account section of that
-          page, which removes your sign-in and saved profile details. For anything else —
+          . You can delete any calendar entry, check-in, draft, or chat yourself, and
+          you can unlink from a family member at any time. You can also delete your
+          account yourself from the Account section of your Profile page, which removes
+          your sign-in and everything saved to your account. If you're a parent, it also
+          removes any child's profile you added that has no sign-in of its own and no
+          other grown-up linked. A child who signs in with a username can't
+          delete their own account. Their grown-up can do that for them. For anything else —
           like taking down a story you sent in — reach out using the contact info below
           and we'll take care of it.
         </p>
