@@ -4,6 +4,8 @@ import {
   hasApiKey,
   MISSING_KEY_MESSAGE,
   streamChatReply,
+  rateLimited,
+  RATE_LIMIT_MESSAGE,
 } from "./_lib/claude.js";
 
 export default async function handler(req, res) {
@@ -14,6 +16,10 @@ export default async function handler(req, res) {
 
   if (!hasApiKey()) {
     return res.status(500).json({ error: MISSING_KEY_MESSAGE });
+  }
+
+  if (rateLimited(req)) {
+    return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
   }
 
   const messages = cleanMessages(req.body?.messages);

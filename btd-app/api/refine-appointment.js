@@ -1,4 +1,4 @@
-import { describeError, hasApiKey, MISSING_KEY_MESSAGE, refineForm } from "./_lib/claude.js";
+import { describeError, hasApiKey, MISSING_KEY_MESSAGE, refineForm, rateLimited, RATE_LIMIT_MESSAGE, MAX_FORM_CHARS } from "./_lib/claude.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -10,9 +10,16 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: MISSING_KEY_MESSAGE });
   }
 
+  if (rateLimited(req)) {
+    return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
+  }
+
   const { form } = req.body ?? {};
   if (!form || typeof form !== "object") {
     return res.status(400).json({ error: "form object is required" });
+  }
+  if (JSON.stringify(form).length > MAX_FORM_CHARS) {
+    return res.status(413).json({ error: "This draft is too long to polish in one go. Try shortening the notes." });
   }
 
   try {

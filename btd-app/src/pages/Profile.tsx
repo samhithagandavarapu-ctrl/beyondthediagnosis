@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import CalendarDataTools from "../components/calendar/CalendarDataTools";
 import FamilyPanel from "../components/family/FamilyPanel";
 import { useAuth } from "../context/AuthContext";
+import { possessive, useAccountMode } from "../context/AccountModeContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { UserRole, useSetup } from "../context/SetupContext";
 import { usernameOf } from "../lib/family";
@@ -294,6 +295,10 @@ const SECTIONS = ["details", "about-you", "my-voice", "history", "calendar", "fa
 type Section = (typeof SECTIONS)[number];
 
 export default function Profile() {
+  // A parent's calendar is the child they're managing.
+  const { mode, managed } = useAccountMode();
+  const calendarOf = mode === "parent" && managed ? managed.name : null;
+  const calendarTitle = calendarOf ? `${possessive(calendarOf)} calendar data` : "My calendar data";
   const { user, loading, signOut } = useAuth();
   const {
     readingLevel,
@@ -615,8 +620,12 @@ export default function Profile() {
               )}
               {section === "calendar" && (
                 <Panel
-                  title="My calendar data"
-                  intro="Your Symptom Calendar, including My Voice check-ins. Only you can see it. Download a copy any time, or delete it for good."
+                  title={calendarTitle}
+                  intro={
+                    calendarOf
+                      ? `${possessive(calendarOf)} Symptom Calendar, including their My Voice check-ins. Download a copy any time.`
+                      : "Your Symptom Calendar, including My Voice check-ins. Only you and any grown-ups you link with can see it (not entries you mark Just for me). Download a copy any time, or delete it for good."
+                  }
                 >
                   <CalendarDataTools />
                 </Panel>
@@ -714,13 +723,13 @@ export default function Profile() {
                   <MenuRow
                     icon="heart"
                     label="Family"
-                    detail="Your children, their logins, and grown-ups"
+                    detail={mode === "parent" ? "Your children, their logins, and grown-ups" : "Grown-ups you're linked with"}
                     onClick={() => open("family")}
                   />
                   <MenuRow
                     icon="calendar"
-                    label="My calendar data"
-                    detail="Download or delete"
+                    label={calendarTitle}
+                    detail={calendarOf ? "Download a copy" : "Download or delete"}
                     onClick={() => open("calendar")}
                   />
                 </div>

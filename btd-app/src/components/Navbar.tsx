@@ -150,9 +150,8 @@ function AccountMenu({
       >
         <Icon name="person" size={18} className="sm:hidden" />
         <span className="hidden sm:inline">My account</span>
-        <span className="hidden sm:inline-flex">
-          <ModeBadge />
-        </span>
+        {/* The badge is in the menu, and the banner under the bar says the
+            same; in the bar it pushed the page wider than a laptop screen. */}
         <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" className={open ? "rotate-180" : ""}>
           <path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -218,7 +217,7 @@ export default function Navbar() {
         <nav aria-label="Main" className="ml-auto flex items-center justify-end gap-1">
           {/* Inline only where they fit on one line; below that they sit in
               the row of pills under the bar. */}
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="hidden xl:flex items-center gap-1">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} className={(a) => `whitespace-nowrap ${linkClass(a)}`}>
                 {l.label}
@@ -229,7 +228,7 @@ export default function Navbar() {
           {showCta && (
           <Link
             to="/assistant"
-            className="btd-btn ml-0 mr-0.5 whitespace-nowrap border-2 border-coral bg-white px-3 py-[7px] text-13 hover:bg-coral sm:ml-2 sm:mr-1 sm:px-4 sm:py-[9px] sm:text-sm"
+            className="btd-btn ml-0 mr-0.5 hidden min-[360px]:inline-flex whitespace-nowrap border-2 border-coral bg-white px-3 py-[7px] text-13 hover:bg-coral sm:ml-2 sm:mr-1 sm:px-4 sm:py-[9px] sm:text-sm"
           >
             <span className="sm:hidden">AI advocate</span>
             <span className="hidden sm:inline">{CTA_LABEL}</span>
@@ -300,10 +299,10 @@ export default function Navbar() {
         </nav>
       </div>
       {/* mobile nav */}
-      <div className="lg:hidden btd-container pt-2.5 pb-2.5">
+      <div className="xl:hidden btd-container pt-2.5 pb-2.5">
         <SiteSearch />
       </div>
-      <nav aria-label="Sections" className="lg:hidden btd-container flex flex-wrap gap-2 pb-3">
+      <nav aria-label="Sections" className="xl:hidden btd-container flex flex-wrap gap-2 pb-3">
         {links.map((l) => (
           <NavLink
             key={l.to}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "../icons/Icon";
 import { useAuth } from "../../context/AuthContext";
 import { useMyVoice } from "../../context/MyVoiceContext";
+import { possessive, useAccountMode } from "../../context/AccountModeContext";
 import {
   aboutLines,
   calendarCsv,
@@ -10,6 +11,7 @@ import {
   deleteCustomSymptoms,
   detailLines,
   listEntries,
+  listEntriesOf,
 } from "../../lib/calendar";
 import { feeling, painSpotSentence } from "../../lib/myVoice";
 import { buildCalendarPdf } from "../../lib/appointmentPdf";
@@ -25,6 +27,11 @@ export default function CalendarDataTools({ onChanged }: { onChanged?: () => voi
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const { reloadCheckIns } = useMyVoice();
+  // A parent's calendar is the child's: they can download it, but only the
+  // child (or removing the child's profile) deletes it.
+  const { mode, managed } = useAccountMode();
+  const child = mode === "parent" ? managed : null;
+  const load = () => (child ? listEntriesOf(child.personId).then((entries) => ({ entries })) : listEntries(userId));
   const [pending, setPending] = useState<Pending>(null);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,9 +44,9 @@ export default function CalendarDataTools({ onChanged }: { onChanged?: () => voi
     setPreparing(true);
     setMessage(null);
     try {
-      const { entries } = await listEntries(userId);
+      const { entries } = await load();
       if (!entries.length) {
-        setMessage("There's nothing in your calendar yet.");
+        setMessage(child ? `There's nothing in ${possessive(child.name)} calendar yet.` : "There's nothing in your calendar yet.");
         return;
       }
       const days = entries.map((e) => e.entryDate).sort();
@@ -62,7 +69,7 @@ export default function CalendarDataTools({ onChanged }: { onChanged?: () => voi
   }
 
   async function download() {
-    const { entries } = await listEntries(userId);
+    const { entries } = await load();
     const csv = calendarCsv(entries, (e) => detailLines(e, (id) => feeling(id).short, painSpotSentence).concat(aboutLines(e).filter((l) => l.startsWith("Started"))));
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -99,11 +106,13 @@ export default function CalendarDataTools({ onChanged }: { onChanged?: () => voi
       <div className="flex flex-wrap gap-3">
         <button type="button" onClick={downloadPdf} disabled={preparing} className="btd-btn-sky min-h-[48px] gap-2 px-5 py-3 text-sm disabled:opacity-60">
           <Icon name="save" size={18} />
-          {preparing ? "Preparing…" : "Download my calendar (PDF)"}
+          {preparing ? "Preparing…" : `Download ${child ? possessive(child.name) : "my"} calendar (PDF)`}
         </button>
         <button type="button" onClick={download} className="btd-btn-outline min-h-[48px] px-5 py-3 text-sm">
           Spreadsheet (CSV)
         </button>
+        {!child && (
+        <>
         <button
           type="button"
           onClick={() => {
@@ -126,7 +135,15 @@ export default function CalendarDataTools({ onChanged }: { onChanged?: () => voi
         >
           Delete my whole calendar
         </button>
+        </>
+        )}
       </div>
+      {child && (
+        <p className="text-sm text-body">
+          Only {child.name} can delete entries from their own login. To delete everything, remove{" "}
+          {possessive(child.name)} profile in Family.
+        </p>
+      )}
 
       {pending && (
         <div role="alertdialog" aria-labelledby="cal-delete-title" className="rounded-card border-2 border-coral bg-coral/15 p-5">

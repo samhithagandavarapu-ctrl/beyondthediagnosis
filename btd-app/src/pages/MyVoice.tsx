@@ -13,6 +13,7 @@ import CheckInFlow, { doctorSheetLink } from "../components/myvoice/CheckInFlow"
 import VisitWalkthrough from "../components/myvoice/VisitWalkthrough";
 import Icon, { IconName } from "../components/icons/Icon";
 import { useAuth } from "../context/AuthContext";
+import { possessive, useAccountMode } from "../context/AccountModeContext";
 import { useMyVoice } from "../context/MyVoiceContext";
 import { usePracticeMode } from "../context/PracticeModeContext";
 import {
@@ -47,6 +48,9 @@ export default function MyVoice() {
   // The check-in being made, or an old one being changed.
   const [editing, setEditing] = useState<CheckIn | null>(null);
   const { readingLevel } = useMyVoice();
+  const { view, managed, startPreview } = useAccountMode();
+  // A grown-up landing here: it's the child's space, in the child's words.
+  const grownUpFor = view === "parent" ? managed?.name ?? null : null;
 
   function go(next: Section) {
     setSection(next);
@@ -67,6 +71,19 @@ export default function MyVoice() {
       />
 
       <section className="btd-container pt-10 pb-20 grid gap-8">
+        {grownUpFor && (
+          <div className="flex flex-wrap items-center gap-4 rounded-card border-2 border-sky bg-sky-tint p-5">
+            <Icon name="hand" size={28} className="text-navy" />
+            <p className="min-w-0 flex-1 basis-[240px] text-15 font-semibold text-navy">
+              This is {possessive(grownUpFor)} space, in {possessive(grownUpFor)} own words. Hand the device to{" "}
+              {grownUpFor}, or switch to their view. Check-ins made here go on {possessive(grownUpFor)} profile.
+            </p>
+            <button type="button" onClick={startPreview} className="btd-btn-sky min-h-[44px] gap-2 px-5 text-sm">
+              <Icon name="eye" size={18} />
+              See what {grownUpFor} sees
+            </button>
+          </div>
+        )}
         <SettingsStrip />
 
         {section === "home" ? (
