@@ -108,9 +108,11 @@ shouldn't, a leaked key, or a lost device signed in to an admin account.
 - [ ] Rotate the Supabase service-role key and the Anthropic key.
 - [ ] Confirm every table with personal information has row-level security
       (Supabase dashboard → Database → Tables).
-- [ ] **Retention:** delete accounts and children's profiles nobody has signed
-      in to for 2 years (email first where there's an address), and delete
-      stories that weren't published. This is promised in the Privacy Policy.
+- [ ] **Retention:** in the admin dashboard, open **Yearly cleanup**. It lists
+      accounts and children's profiles nobody has signed in to for 2 years,
+      and stories that weren't published. Email the people listed (there's a
+      copy button), wait about 2 weeks, check again, then delete. This is
+      promised in the Privacy Policy.
 - [ ] Check the providers in section 5.
 - [ ] Re-read the Privacy Policy and Terms against what the app does.
 - [ ] Update "Last reviewed" at the top.
