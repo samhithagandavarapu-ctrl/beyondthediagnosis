@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { CTA_LABEL, SURVEY_URL } from "../data/site";
+import { CTA_LABEL } from "../data/site";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 import Reveal from "../components/Reveal";
 import Scribble from "../components/Scribble";
 import { useAccountMode } from "../context/AccountModeContext";
@@ -86,6 +87,7 @@ export default function Home() {
   // Signed in as a parent or a self-advocate: their own home. Everyone else
   // gets the page about Voiced.
   const { view, mode } = useAccountMode();
+  const { survey } = useSiteSettings().settings;
   if (view === "self") return <SelfHome />;
   if (mode === "parent") return <FamilyDashboard />;
   return (
@@ -206,28 +208,25 @@ export default function Home() {
         </p>
       </section>
 
-      {/* Event survey banner */}
+      {/* Event survey banner (admins change it at /admin/site) */}
+      {survey.on && (
       <section className="btd-container pt-8">
         <div className="btd-event-banner flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-navy bg-butter px-6 py-5">
           <div className="max-w-[40em]">
-            <p className="font-display text-21 font-extrabold leading-tight text-navy">
-              Met us at an event? Help shape Voiced.
-            </p>
-            <p className="mt-1 text-15 leading-[1.6] text-butter-ink">
-              Tell us what would help you, your family, or your patients. It's a short
-              survey and takes just a few minutes.
-            </p>
+            <p className="font-display text-21 font-extrabold leading-tight text-navy">{survey.title}</p>
+            <p className="mt-1 text-15 leading-[1.6] text-butter-ink">{survey.text}</p>
           </div>
           <a
-            href={SURVEY_URL}
+            href={survey.url}
             target="_blank"
             rel="noopener noreferrer"
             className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
           >
-            Take the survey →
+            {survey.button} →
           </a>
         </div>
       </section>
+      )}
 
       {/* The problem */}
       <section className="btd-dark mt-[76px]">

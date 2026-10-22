@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
@@ -36,6 +36,13 @@ import ModeBanner from "./components/ModeBanner";
 import Terms from "./pages/Terms";
 import { GrownUpsOnly, HealthConsentGate, TermsGate } from "./components/ConsentGates";
 import { hasAcceptedTerms } from "./lib/consent";
+import AdminShell from "./pages/admin/AdminShell";
+import AnnouncementBar from "./components/AnnouncementBar";
+import Icon from "./components/icons/Icon";
+
+// Sign-in steps that work the same for everyone, admins included.
+const AUTH_STEPS = ["/auth/callback", "/reset-password"];
+const VIEW_SITE_KEY = "voiced:admin-viewing-site";
 
 // Pages someone who hasn't agreed to the terms can still open.
 const TERMS_FREE = ["/terms", "/privacy", "/auth/callback", "/reset-password"];
@@ -64,24 +71,65 @@ export default function App() {
   // Signed in, and never been through the welcome setup (a new account, or
   // one made before it existed): go there first, then on to where they were
   // headed. Once only — finishing or skipping it is remembered.
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { setup, loaded: setupLoaded } = useSetup();
   const { search } = useLocation();
+
+  // Admins get their own dashboard instead of the site, until they choose
+  // "View site" (remembered for this tab only). Going to any /admin page
+  // switches back.
+  const [viewingSite, setViewingSite] = useState(() => {
+    try {
+      return sessionStorage.getItem(VIEW_SITE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  function viewSite(on: boolean) {
+    setViewingSite(on);
+    try {
+      if (on) sessionStorage.setItem(VIEW_SITE_KEY, "1");
+      else sessionStorage.removeItem(VIEW_SITE_KEY);
+    } catch {
+      // Without storage it just lasts until the page reloads.
+    }
+    navigate(on ? "/" : "/admin");
+  }
   useEffect(() => {
-    if (!user || !setupLoaded || setup.status || passwordRecoveryMode) return;
+    if (isAdmin && viewingSite && pathname.startsWith("/admin")) viewSite(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, viewingSite, pathname]);
+  const adminMode = isAdmin && !viewingSite && !AUTH_STEPS.includes(pathname);
+
+  useEffect(() => {
+    if (!user || isAdmin || !setupLoaded || setup.status || passwordRecoveryMode) return;
     if (["/welcome", "/auth/callback", "/reset-password", "/login"].includes(pathname) || pathname.startsWith("/join")) return;
     navigate(`/welcome?next=${encodeURIComponent(pathname + search)}`, { replace: true });
-  }, [user, setupLoaded, setup.status, passwordRecoveryMode, pathname, search, navigate]);
+  }, [user, isAdmin, setupLoaded, setup.status, passwordRecoveryMode, pathname, search, navigate]);
+
+  if (adminMode) return <AdminShell onViewSite={() => viewSite(true)} />;
 
   return (
     <div className="min-h-screen flex flex-col">
+      {isAdmin && (
+        <div className="bg-butter">
+          <div className="btd-container flex flex-wrap items-center justify-between gap-2 py-2 text-sm font-semibold text-navy">
+            You're looking at the site as everyone else sees it.
+            <button type="button" onClick={() => viewSite(false)} className="inline-flex items-center gap-1.5 font-bold underline">
+              <Icon name="chevron-right" size={16} className="rotate-180" />
+              Back to admin
+            </button>
+          </div>
+        </div>
+      )}
+      <AnnouncementBar />
       <AccessibilityBar />
       <Navbar />
       <ModeBanner />
       <main className="flex-1">
         {/* Until the current terms are agreed to, the gate stands in for every
             page except the ones it links to and the sign-in steps. */}
-        {user && !hasAcceptedTerms(user) && !TERMS_FREE.includes(pathname) ? (
+        {user && !isAdmin && !hasAcceptedTerms(user) && !TERMS_FREE.includes(pathname) ? (
           <TermsGate />
         ) : (
         <Routes>

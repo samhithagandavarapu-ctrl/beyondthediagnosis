@@ -55,13 +55,26 @@ export async function deleteAccount(authorizationHeader) {
     return { status: 403, error: "Ask your grown-up. They can remove your profile from their account." };
   }
 
+  const deleteError = await removeAccount(admin, user.id);
+  if (deleteError) {
+    console.error("Couldn't delete user:", deleteError.message);
+    return { status: 500, error: "We couldn't delete your account. Please try again." };
+  }
+
+  return { status: 200, error: null };
+}
+
+/** Everything of one account's, then the sign-in itself. Used when someone
+ *  deletes their own account, and by an admin (api/_lib/admin.js). Resolves
+ *  to the error if the sign-in couldn't be removed. */
+export async function removeAccount(admin, userId) {
   // Children's profiles that only this parent looked after, and that have no
   // login of their own, go with the account: nobody could reach them after.
-  await removeChildrenOnlyIHad(admin, user.id);
+  await removeChildrenOnlyIHad(admin, userId);
 
   // The profile row first, in case the table wasn't created with
   // "on delete cascade" — otherwise it would block removing the sign-in.
-  const { error: profileError } = await admin.from("profiles").delete().eq("id", user.id);
+  const { error: profileError } = await admin.from("profiles").delete().eq("id", userId);
   if (profileError) console.error("Couldn't delete profile row:", profileError.message);
 
   // Drafts cascade with the account, but clear them explicitly too in case
@@ -69,17 +82,12 @@ export async function deleteAccount(authorizationHeader) {
   const { error: draftsError } = await admin
     .from("appointment_drafts")
     .delete()
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
   if (draftsError) console.error("Couldn't delete drafts:", draftsError.message);
 
-  const { error: boardError } = await admin.from("me_boards").delete().eq("user_id", user.id);
+  const { error: boardError } = await admin.from("me_boards").delete().eq("user_id", userId);
   if (boardError) console.error("Couldn't delete the Me board:", boardError.message);
 
-  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
-  if (deleteError) {
-    console.error("Couldn't delete user:", deleteError.message);
-    return { status: 500, error: "We couldn't delete your account. Please try again." };
-  }
-
-  return { status: 200, error: null };
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  return error;
 }

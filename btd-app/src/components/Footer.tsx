@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { SURVEY_URL } from "../data/site";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function Footer() {
+  const surveyUrl = useSiteSettings().settings.survey.url;
   return (
     <footer className="btd-dark text-mist/75">
       <div className="btd-container py-10 flex flex-wrap gap-5 items-start justify-between">
@@ -31,7 +32,7 @@ export default function Footer() {
         </div>
         <div className="flex flex-wrap items-center gap-5 text-sm">
           <a
-            href={SURVEY_URL}
+            href={surveyUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sky hover:underline"
