@@ -40,6 +40,39 @@ import AdminShell from "./pages/admin/AdminShell";
 import AnnouncementBar from "./components/AnnouncementBar";
 import Icon from "./components/icons/Icon";
 
+// The browser tab's title for each page, so tabs, bookmarks and screen
+// readers say where you are.
+const TITLES: Record<string, string> = {
+  "/tools": "Tools",
+  "/future": "What's next",
+  "/assistant": "AI Advocate",
+  "/appointment-prep": "Appointment Prep",
+  "/calendar": "My Calendar",
+  "/my-voice": "My Voice",
+  "/my-voice/practice": "Practice My Visit",
+  "/me": "Me board",
+  "/welcome": "Welcome",
+  "/join": "Join",
+  "/resources": "Resources",
+  "/provider-education": "For providers",
+  "/stories": "Community Stories",
+  "/login": "Sign in",
+  "/reset-password": "Reset password",
+  "/understanding-overshadowing": "Diagnostic overshadowing",
+  "/profile": "My profile",
+  "/notifications": "Notifications",
+  "/messages": "Messages",
+  "/mission": "Our mission",
+  "/privacy": "Privacy Policy",
+  "/terms": "Terms of Use",
+  "/admin": "Admin",
+  "/admin/messages": "Admin · Messages",
+  "/admin/stories": "Admin · Stories",
+  "/admin/accounts": "Admin · Accounts",
+  "/admin/cleanup": "Admin · Yearly cleanup",
+  "/admin/site": "Admin · Site banners",
+};
+
 // Sign-in steps that work the same for everyone, admins included.
 const AUTH_STEPS = ["/auth/callback", "/reset-password"];
 const VIEW_SITE_KEY = "voiced:admin-viewing-site";
@@ -53,6 +86,8 @@ export default function App() {
   // React would call any returned value as a cleanup function and crash.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+    const page = TITLES[pathname] ?? (pathname.startsWith("/join/") ? TITLES["/join"] : null);
+    document.title = page ? `${page} · Voiced` : "Voiced";
   }, [pathname]);
 
   // A password reset link signs you in so the password can be changed — it
@@ -103,7 +138,8 @@ export default function App() {
 
   useEffect(() => {
     if (!user || isAdmin || !setupLoaded || setup.status || passwordRecoveryMode) return;
-    if (["/welcome", "/auth/callback", "/reset-password", "/login"].includes(pathname) || pathname.startsWith("/join")) return;
+    // The Terms and Privacy Policy stay readable: the agree step links to them.
+    if (["/welcome", "/login", ...TERMS_FREE].includes(pathname) || pathname.startsWith("/join")) return;
     navigate(`/welcome?next=${encodeURIComponent(pathname + search)}`, { replace: true });
   }, [user, isAdmin, setupLoaded, setup.status, passwordRecoveryMode, pathname, search, navigate]);
 

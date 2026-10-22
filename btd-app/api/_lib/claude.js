@@ -134,7 +134,14 @@ Rules:
 - Return ONLY valid JSON, no preamble, no markdown fences, in exactly this shape:
 { "reasonForVisit": "string", "symptoms": [{ "description": "string", "onset": "string" }], "questions": ["string"] }`;
 
-/** Only ever forward role/content — never extra fields from the client. */
+// The endpoints are open to anyone, so what one request can send is capped:
+// a long real conversation fits easily, a pasted book doesn't.
+const MAX_MESSAGES = 40;
+const MAX_MESSAGE_CHARS = 6000;
+export const MAX_FORM_CHARS = 60000;
+
+/** Only ever forward role/content — never extra fields from the client. The
+ *  newest messages are kept when a chat runs long. */
 export function cleanMessages(messages) {
   if (!Array.isArray(messages)) return [];
   return messages
@@ -145,8 +152,30 @@ export function cleanMessages(messages) {
         typeof m.content === "string" &&
         m.content.trim().length > 0
     )
-    .map((m) => ({ role: m.role, content: m.content }));
+    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS) }))
+    .slice(-MAX_MESSAGES);
 }
+
+// A light brake on one person (by IP) sending a flood of AI requests, which
+// would run up the Anthropic bill. Kept in memory, so it's per server
+// instance and resets when one starts: enough to stop a runaway script, not a
+// determined attacker.
+const WINDOW_MS = 10 * 60 * 1000;
+const MAX_REQUESTS = 60;
+const recent = new Map();
+
+/** True when this caller has sent too many AI requests lately. */
+export function rateLimited(req) {
+  const ip = String(req.headers?.["x-forwarded-for"] ?? req.socket?.remoteAddress ?? "unknown").split(",")[0].trim();
+  const now = Date.now();
+  const times = (recent.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
+  times.push(now);
+  recent.set(ip, times);
+  if (recent.size > 5000) recent.clear();
+  return times.length > MAX_REQUESTS;
+}
+
+export const RATE_LIMIT_MESSAGE = "You've sent a lot of messages in a short time. Please wait a few minutes and try again.";
 
 function textOf(response) {
   return response.content

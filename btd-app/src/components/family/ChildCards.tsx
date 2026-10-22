@@ -217,7 +217,7 @@ export function ChildAccess({ child }: { child: FamilyPerson }) {
 
       <p className="text-13 text-muted">
         {age !== null ? `Born ${child.birthYear}` : "Birth year not set"}
-        {child.relation ? ` · You're their ${child.relation.toLowerCase() === "other" ? "grown-up" : child.relation}` : ""}
+        {child.relation ? ` · You're their ${child.relation.toLowerCase() === "other" ? "grown-up" : child.relation.toLowerCase()}` : ""}
         {" · "}
         <button type="button" onClick={remove} className="font-semibold text-clay hover:underline">
           Remove {name}

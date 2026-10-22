@@ -134,8 +134,8 @@ export default function AdminHome({
           </li>
           <li>
             <strong className="text-navy">"Show me what you have":</strong> health information isn't visible
-            here on purpose. Ask them to sign in and download it from My Calendar, which has a
-            download button.
+            here on purpose. Ask them to sign in and go to My account → My profile → My calendar
+            data, which downloads all of it.
           </li>
         </ul>
       </section>

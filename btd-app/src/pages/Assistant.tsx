@@ -30,7 +30,7 @@ function plainText(text: string) {
 const GREETING: ChatMessage = {
   role: "assistant",
   content:
-    "Hi — I'm the Voiced Advocacy Assistant. I'm an AI, not a person. I can help you understand your rights, prepare for an appointment, or think through how to raise a concern with a provider. I can't diagnose anything or recommend treatment — but I can help you build a clear, confident case to bring to your doctor. What's going on?",
+    "Hi — I'm the Voiced AI Advocate. I'm an AI, not a person. I can help you understand your rights, prepare for an appointment, or think through how to raise a concern with a provider. I can't diagnose anything or recommend treatment — but I can help you build a clear, confident case to bring to your doctor. What's going on?",
 };
 
 export default function Assistant() {
@@ -245,7 +245,7 @@ export default function Assistant() {
     <section className="mx-auto max-w-[1200px] px-6 pt-14 pb-20">
       <span className="btd-eyebrow">Always free</span>
       <h1 className="mt-3 text-[clamp(2rem,4.5vw,3rem)] font-extrabold leading-[1.1]">
-        {inkLastWord("AI Advocacy Assistant")}
+        {inkLastWord("AI Advocate")}
       </h1>
       <p className="mt-3.5 mb-7 max-w-[40em] text-17 leading-[1.7] text-body">
         Education and advocacy support only. This assistant never diagnoses, never
@@ -360,7 +360,7 @@ export default function Assistant() {
 
         <form onSubmit={handleSend} className="border-t border-navy/10 p-3.5 flex gap-2.5 items-center">
           <label htmlFor="chat-input" className="sr-only">
-            Message the AI Advocacy Assistant
+            Message the AI Advocate
           </label>
           <input
             id="chat-input"

@@ -634,7 +634,8 @@ export default function AppointmentPrep() {
         }}
       />
 
-      <div id="calendar-import" className="mb-8 grid scroll-mt-28 gap-3">
+      {/* Opened from the Calendar row above. */}
+      <div id="calendar-import" className="mb-8 grid scroll-mt-28 gap-3 empty:hidden">
         {importing && family.children.length > 0 && mode !== "parent" && (
           <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Whose calendar?</span>
@@ -666,20 +667,9 @@ export default function AppointmentPrep() {
             alreadyIn={importedIds}
             onImport={importFromCalendar}
             onClose={() => setImporting(false)}
+            whose={calendarLabel}
           />
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setImportNote(null);
-              setImporting(true);
-            }}
-            className="btd-btn-sky min-h-[48px] justify-self-start gap-2 px-5 py-3 text-sm"
-          >
-            <Icon name="calendar" size={18} />
-            Bring in from {calendarLabel}
-          </button>
-        )}
+        ) : null}
         {importNote && (
           <p role="status" className="rounded-tile border border-sky bg-sky-tint px-4 py-3 text-sm text-navy">
             {importNote}

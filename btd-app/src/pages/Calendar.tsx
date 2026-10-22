@@ -462,7 +462,7 @@ export default function Calendar() {
             <h2 className="font-display text-23 font-extrabold text-navy">
               {child ? `Add a note for ${child.name}` : isToday ? "What's happening?" : "What happened that day?"}
             </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-3 sm:grid-cols-3">
               {GROUPS.map((g) => (
                 <button
                   key={g.id}
@@ -473,7 +473,7 @@ export default function Calendar() {
                   <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white ${g.ink}`}>
                     <Icon name={g.icon} size={22} />
                   </span>
-                  <span className="text-17 font-extrabold leading-tight text-navy">{child && g.id === "period" ? "Period" : g.label}</span>
+                  <span className="min-w-0 break-words text-17 font-extrabold leading-tight text-navy">{child && g.id === "period" ? "Period" : g.label}</span>
                 </button>
               ))}
             </div>

@@ -59,15 +59,18 @@ export default function AdminShell({ onViewSite }: { onViewSite: () => void }) {
             className="btd-btn min-h-[40px] gap-2 border-2 border-mist/50 px-4 text-sm text-mist hover:bg-mist hover:text-navy"
           >
             <Icon name="eye" size={18} />
-            View site
+            <span className="hidden sm:inline">View site</span>
+            <span className="sm:hidden">Site</span>
           </button>
           <button
             type="button"
             onClick={() => signOut()}
+            aria-label="Sign out"
+            title="Sign out"
             className="btd-btn min-h-[40px] gap-2 px-3 text-sm text-mist/80 hover:text-mist"
           >
             <Icon name="sign-out" size={18} />
-            Sign out
+            <span className="hidden sm:inline">Sign out</span>
           </button>
         </div>
         <nav

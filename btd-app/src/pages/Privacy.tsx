@@ -61,10 +61,9 @@ export default function Privacy() {
             Appointment Prep page, and deleting your account deletes your drafts.
           </li>
           <li>
-            <strong>AI Assistant conversations:</strong> the AI Advocate isn't
+            <strong>AI Advocate conversations:</strong> the AI Advocate isn't
             available on a child's username login, so nothing a child under 13 types is
-            sent to an AI company. Messages you send to the AI
-            Advocacy Assistant are sent to Anthropic (the company behind Claude, the AI
+            sent to an AI company. Messages you send to the AI Advocate are sent to Anthropic (the company behind Claude, the AI
             model we use) to generate a response. Your chats are saved so you can come
             back to them: if you're signed in, they're saved to your account so you can
             see them on any device, and only you can see them — not your linked
@@ -228,11 +227,11 @@ export default function Privacy() {
           <li>We don't show ads or let advertisers access your information.</li>
           <li>
             Voiced's admins can't read your calendar, check-ins, Me board, Appointment
-            Prep drafts, or AI Assistant chats. They only see what you send them: stories
+            Prep drafts, or AI Advocate chats. They only see what you send them: stories
             you submit and messages you send the team.
           </li>
           <li>
-            We don't share your Appointment Prep entries or AI Assistant conversations
+            We don't share your Appointment Prep entries or AI Advocate conversations
             with any third party beyond what's needed to generate a response (Anthropic,
             for the AI features specifically).
           </li>
@@ -252,7 +251,7 @@ export default function Privacy() {
             The database itself enforces who is allowed to see each piece.
           </li>
           <li>
-            <strong>Anthropic</strong> — powers the AI Advocacy Assistant and the
+            <strong>Anthropic</strong> — powers the AI Advocate and the
             "Refine with AI" feature.
           </li>
           <li>

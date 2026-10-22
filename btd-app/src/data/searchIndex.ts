@@ -21,7 +21,7 @@ const PAGES: SearchEntry[] = [
   },
   {
     to: "/assistant",
-    title: "AI Advocacy Assistant",
+    title: "AI Advocate",
     description: "Ask about your rights, accommodations, or how to describe a symptom clearly.",
     keywords: "ai advocate chat ask question rights accommodations",
     kind: "Page",

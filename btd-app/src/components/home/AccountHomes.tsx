@@ -58,7 +58,7 @@ export function FamilyDashboard() {
     {
       to: "/assistant",
       icon: "chat",
-      title: "Advocacy Assistant",
+      title: "AI Advocate",
       desc: "Ask about rights, accommodations, or how to describe a symptom. It never diagnoses.",
       cta: "Ask a question",
     },

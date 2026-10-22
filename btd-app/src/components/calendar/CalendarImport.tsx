@@ -26,6 +26,7 @@ export default function CalendarImport({
   alreadyIn,
   onImport,
   onClose,
+  whose = "my calendar",
 }: {
   entries: CalendarEntry[];
   customs: CustomSymptom[];
@@ -35,6 +36,8 @@ export default function CalendarImport({
   alreadyIn: Set<string>;
   onImport: (picked: CalendarEntry[], from: string, to: string, medicines: string[]) => void;
   onClose: () => void;
+  /** "my calendar", or "Maya's calendar" for a grown-up. */
+  whose?: string;
 }) {
   const picks = rangePicks(lastVisit);
   const [from, setFrom] = useState(picks[0].from);
@@ -126,7 +129,7 @@ export default function CalendarImport({
     <div className="rounded-card border-2 border-sky bg-sky-tint p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-17 font-extrabold text-navy">Bring in from my calendar</p>
+          <p className="text-17 font-extrabold text-navy">Bring in from {whose}</p>
           <p className="mt-1 text-sm text-body">
             Pick a time, then tick exactly what to bring in. Things of the same kind become one
             symptom, and nothing you've typed is changed.

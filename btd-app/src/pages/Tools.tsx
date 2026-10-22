@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import PageHero from "../components/PageHero";
 import { LIFE_STAGES } from "../data/resources";
 import { STARTER_PROMPTS } from "./Assistant";
+import { useAuth } from "../context/AuthContext";
+import { isChildLogin } from "../lib/consent";
 
 const prepSteps = [
   ["1. Log what changed", "Dates, patterns, and what you've already tried."],
@@ -16,6 +18,8 @@ const myVoiceSteps = [
 ];
 
 export default function Tools() {
+  // Children's logins don't get the AI Advocate.
+  const child = isChildLogin(useAuth().user);
   return (
     <div>
       <PageHero
@@ -24,9 +28,10 @@ export default function Tools() {
         lede="Every family-facing tool here is free, and stays free. None of them diagnose — they help you show up documented, specific, and hard to wave off."
       />
       <section className="btd-container pt-14 pb-20 grid gap-[22px]">
+        {!child && (
         <article className="btd-card p-[30px] grid gap-5 items-start md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <div>
-            <h2 className="text-28 font-extrabold">AI Advocacy Assistant</h2>
+            <h2 className="text-28 font-extrabold">AI Advocate</h2>
             <p className="my-4 max-w-[36em] text-base leading-[1.7] text-body">
               Education and advocacy support only — it never diagnoses, never recommends
               medication, and always defers to your provider's care plan. Ask it how to
@@ -51,6 +56,7 @@ export default function Tools() {
             ))}
           </div>
         </article>
+        )}
 
         <article className="btd-card p-[30px]">
           <span className="btd-tag bg-butter">Always free</span>
