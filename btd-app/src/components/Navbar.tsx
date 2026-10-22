@@ -30,10 +30,21 @@ const tools: { to: string; label: string; icon: IconName; end?: boolean }[] = [
 
 type ToolLink = { to: string; label: string; icon: IconName; end?: boolean };
 
+function useNavFor(): { tools: ToolLink[]; links: typeof links; self: boolean; showCta: boolean } {
+  const nav = useToolsFor();
+  // Everyone signed in can reach the Voiced team from the tools row, not only
+  // from the account menu. Admins answer from the inbox instead.
+  const { user, isAdmin } = useAuth();
+  if (user && !isAdmin) {
+    return { ...nav, tools: [...nav.tools, { to: "/messages", label: "Message the Voiced team", icon: "talk" }] };
+  }
+  return nav;
+}
+
 /** The tools for whoever is here: a parent's tools for the person they
  *  manage, or a self-advocate's own, bigger and with nothing meant only for
  *  parents. Everyone else gets every tool. */
-function useNavFor(): { tools: ToolLink[]; links: typeof links; self: boolean; showCta: boolean } {
+function useToolsFor(): { tools: ToolLink[]; links: typeof links; self: boolean; showCta: boolean } {
   const { view, mode, forName } = useAccountMode();
   if (view === "self") {
     return {
@@ -45,6 +56,7 @@ function useNavFor(): { tools: ToolLink[]; links: typeof links; self: boolean; s
         { to: "/calendar", label: "My Calendar", icon: "calendar" },
         { to: "/me", label: "Me", icon: "star" },
         { to: "/my-voice/practice", label: "Get ready for the doctor", icon: "hub-visit" },
+        { to: "/assistant", label: "AI Advocate", icon: "chat" },
       ],
     };
   }
