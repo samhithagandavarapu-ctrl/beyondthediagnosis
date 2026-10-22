@@ -39,9 +39,11 @@ export default function ModeBanner() {
   if (mode === "parent" && !managed) {
     return (
       <div role="region" aria-label="Account" className="btd-dark border-b-[3px] border-sky">
-        <div className="btd-container py-3 text-15 font-semibold text-mist">
-          <span aria-hidden="true">👪 </span>
-          <span className="font-bold">Parent account</span> — add your child to get started
+        <div className="btd-container flex items-center gap-2 py-3 text-15 font-semibold text-mist">
+          <Icon name="family" size={20} className="shrink-0" />
+          <span>
+            <span className="font-bold">Parent account</span> — add your child to get started
+          </span>
         </div>
       </div>
     );
@@ -53,9 +55,11 @@ export default function ModeBanner() {
       <div role="region" aria-label="Account" className="btd-dark border-b-[3px] border-sky">
         <div className="btd-container flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-15 font-semibold text-mist">
-            <span>
-              <span aria-hidden="true">👪 </span>
-              <span className="font-bold">Parent account</span> — you're managing
+            <span className="inline-flex items-center gap-2">
+              <Icon name="family" size={20} className="shrink-0" />
+              <span>
+                <span className="font-bold">Parent account</span> — you're managing
+              </span>
             </span>
             {managedList.length > 1 ? (
               <label className="inline-flex items-center">
@@ -95,8 +99,8 @@ export default function ModeBanner() {
   return (
     <div role="region" aria-label="Account" className="border-b-[3px] border-butter bg-sky">
       <div className="btd-container flex items-center gap-3 py-3">
-        <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-butter text-lg">
-          ⭐
+        <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-butter text-navy">
+          <Icon name="star-filled" size={20} />
         </span>
         <p className="font-display text-17 font-extrabold text-navy sm:text-21">
           Hi {myName || "there"}! This is your space.
