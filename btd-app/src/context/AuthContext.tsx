@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase, authEnabled, cameFromPasswordResetLink } from "../lib/supabaseClient";
 import { API_BASE } from "../lib/api";
+import { termsAgreement } from "../lib/consent";
 
 type AuthState = {
   user: User | null;
@@ -130,7 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: emailRedirectTo("/profile") },
+        // The sign-up form only sends once the terms box is ticked; this keeps
+        // the record with the account even if the confirmation link is opened
+        // on another device.
+        options: { emailRedirectTo: emailRedirectTo("/profile"), data: { terms: termsAgreement() } },
       });
       // A session straight away means the project doesn't require email
       // confirmation, so there is no email to wait for.

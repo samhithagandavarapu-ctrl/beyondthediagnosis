@@ -10,7 +10,11 @@ export default function Privacy() {
         <strong>Plain-language note:</strong> Voiced is an early-stage platform built by a
         student founder. This page explains what we collect and why, in plain terms. It
         is not formal legal advice, and it will be reviewed by a lawyer before Voiced
-        handles data at a larger scale.
+        handles data at a larger scale. Making an account means agreeing to this policy and our{" "}
+        <a href="/terms" className="text-gold-dark font-semibold hover:underline">
+          Terms of Use
+        </a>
+        .
       </div>
 
       <section className="mb-8">
@@ -28,7 +32,8 @@ export default function Privacy() {
             the calendar — how you feel, what hurts and where, periods, skin, mood,
             tummy and bathroom notes, medications, and your own notes — and the
             check-ins you make in My Voice. This is health information, so we treat it
-            that way. If you're signed in it's saved to your account; if not, it stays
+            that way: before any of it is saved to your account, we ask for your
+            separate okay, and record when you gave it. If you're signed in it's saved to your account; if not, it stays
             in your own browser on this device, and signing in moves it into your
             account. Period and cycle predictions are worked out on your device and
             never stored. Nobody else on Voiced can see your calendar — not other
@@ -56,7 +61,9 @@ export default function Privacy() {
             Appointment Prep page, and deleting your account deletes your drafts.
           </li>
           <li>
-            <strong>AI Assistant conversations:</strong> messages you send to the AI
+            <strong>AI Assistant conversations:</strong> the AI Advocate isn't
+            available on a child's username login, so nothing a child under 13 types is
+            sent to an AI company. Messages you send to the AI
             Advocacy Assistant are sent to Anthropic (the company behind Claude, the AI
             model we use) to generate a response. Your chats are saved so you can come
             back to them: if you're signed in, they're saved to your account so you can
@@ -135,10 +142,27 @@ export default function Privacy() {
           </li>
           <li>
             <strong>Children under 13:</strong> a child under 13 can only save
-            information to Voiced with a parent's consent. That consent is given when
-            the parent adds the child, or gives them a code meant for a child under 13.
-            A child 12 or under signs in with a username and password their parent
-            makes. We don't collect an email address for them, and we never email them.
+            information to Voiced with a parent's consent. Before a parent makes a login
+            for a child 12 or under, we show them what we'll collect from the child and
+            ask them to agree; we keep a record of who agreed, when, and to which version.
+            The child signs in with a username and password their parent makes. We don't
+            collect an email address for them, and we never email them.
+          </li>
+          <li>
+            <strong>What we collect from a child, and why:</strong> what they add to
+            their own calendar, check-ins, and Me board, only to show it back to them and
+            their grown-ups and to help get ready for appointments. Children's logins
+            can't use the AI features or send stories or messages. We never use a
+            child's information for ads, and we don't share it with anyone except the
+            providers that store and host Voiced.
+          </li>
+          <li>
+            <strong>Parents' rights:</strong> a parent or guardian can see their
+            child's information, change the child's password, or remove the child's
+            profile, which deletes their information and stops any more collection. To
+            see or delete anything a parent can't reach in Voiced (such as entries the
+            child marked "Just for me"), or to take back consent, email us and we'll do
+            it after checking you're the parent.
           </li>
           <li>
             Teens 13 and older can get their own email sign-in from an invite code
@@ -149,6 +173,52 @@ export default function Privacy() {
             person deletes their account, the people they were linked with are told too.
           </li>
         </ul>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-display font-semibold mb-2">How long we keep things</h2>
+        <ul className="space-y-2 text-sm text-ink list-disc list-inside">
+          <li>
+            <strong>Your account and everything saved to it</strong> (profile, calendar,
+            check-ins, Me board, drafts, chats, messages, notifications, and your
+            agreements): kept while you have an account, so you can use it. Anything you
+            delete is deleted right away, and deleting your account deletes it all.
+          </li>
+          <li>
+            <strong>Accounts nobody uses:</strong> once a year we delete accounts and
+            children's profiles that nobody has signed in to for 2 years. Where we have
+            an email address, we'll write first so you can keep it.
+          </li>
+          <li>
+            <strong>Stories:</strong> published stories stay up until you ask us to take
+            them down. Stories we decide not to publish are deleted at that same yearly
+            review.
+          </li>
+          <li>
+            <strong>Backups:</strong> our database provider keeps short-term backups for
+            recovery. Deleted information leaves them as they expire, within a few weeks.
+          </li>
+          <li>
+            <strong>On your device:</strong> anything kept only in your browser stays
+            until you delete it there or clear your browser's data.
+          </li>
+          <li>
+            <strong>AI messages:</strong> Anthropic doesn't use what's sent through
+            Voiced to train its AI, and keeps it only for a limited time under its own
+            policies.
+          </li>
+        </ul>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-display font-semibold mb-2">Keeping it safe</h2>
+        <p className="text-sm text-ink leading-relaxed">
+          We follow a written security program: rules in the database decide who can see
+          each piece of information, only the people who need access have it, and we
+          review it every year. If someone ever gets to information they shouldn't, we'll
+          tell the people affected (and the parents of any children affected) as soon as
+          we can and within 60 days, and tell regulators where the law requires it.
+        </p>
       </section>
 
       <section className="mb-8">
@@ -207,7 +277,8 @@ export default function Privacy() {
           other grown-up linked. A child who signs in with a username can't
           delete their own account. Their grown-up can do that for them. For anything else —
           like taking down a story you sent in — reach out using the contact info below
-          and we'll take care of it.
+          and we'll take care of it. You can also take back your okay to keep health
+          information in your account at any time: email us, and we'll delete it.
         </p>
       </section>
 

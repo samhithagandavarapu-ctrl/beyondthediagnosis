@@ -3,6 +3,7 @@ import { useAuth } from "./AuthContext";
 import { useAccountMode } from "./AccountModeContext";
 import { fetchProfile, saveReadingLevel } from "../lib/profile";
 import { usePracticeMode } from "./PracticeModeContext";
+import { hasHealthConsent } from "../lib/consent";
 import { CheckInStore, deleteCheckInFrom, listCheckIns, saveCheckInTo } from "../lib/checkIns";
 import { speak, speechSupported } from "../lib/speech";
 import { BoardStore, MeBoard, deleteBoard, loadBoard, saveBoard } from "../lib/meBoard";
@@ -80,7 +81,10 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
   const { practice } = usePracticeMode();
   // Whose profile: a parent's tools work on the child they're managing.
   const { subjectId } = useAccountMode();
-  const userId = user?.id ?? null;
+  // Check-ins and the Me board are health information: until someone has said
+  // yes to keeping it in their account, they stay on this device, as if signed
+  // out. Saying yes changes `user`, which loads again and moves them in.
+  const userId = user && hasHealthConsent(user) ? user.id : null;
   const ownerId = userId ? subjectId : null;
   // Signed in, but nobody to show yet (a parent who hasn't added a child).
   const noOne = Boolean(userId && !ownerId);
@@ -232,7 +236,7 @@ export function MyVoiceProvider({ children }: { children: React.ReactNode }) {
   function deleteCheckIn(id: string) {
     const checkIn = checkIns.find((c) => c.id === id);
     setCheckIns((prev) => prev.filter((c) => c.id !== id));
-    if (checkIn) deleteCheckInFrom(user?.id ?? null, checkIn);
+    if (checkIn) deleteCheckInFrom(userId, checkIn);
   }
 
 

@@ -9,6 +9,7 @@ import { possessive, useAccountMode } from "../context/AccountModeContext";
 import { openCalmingScreen } from "./CalmingScreen";
 import { ModeBadge } from "./ModeBanner";
 import { usernameOf } from "../lib/family";
+import { isChildLogin } from "../lib/consent";
 
 const links = [
   { to: "/understanding-overshadowing", label: "The Problem" },
@@ -32,13 +33,16 @@ type ToolLink = { to: string; label: string; icon: IconName; end?: boolean };
 
 function useNavFor(): { tools: ToolLink[]; links: typeof links; self: boolean; showCta: boolean } {
   const nav = useToolsFor();
+  const { user, isAdmin } = useAuth();
+  // A child's username login doesn't get the AI, or messages to the team: their
+  // words stay in their own profile.
+  const tools = isChildLogin(user) ? nav.tools.filter((t) => t.to !== "/assistant") : nav.tools;
   // Everyone signed in can reach the Voiced team from the tools row, not only
   // from the account menu. Admins answer from the inbox instead.
-  const { user, isAdmin } = useAuth();
-  if (user && !isAdmin) {
-    return { ...nav, tools: [...nav.tools, { to: "/messages", label: "Message the Voiced team", icon: "talk" }] };
+  if (user && !isAdmin && !isChildLogin(user)) {
+    return { ...nav, tools: [...tools, { to: "/messages", label: "Message the Voiced team", icon: "talk" }] };
   }
-  return nav;
+  return { ...nav, tools };
 }
 
 /** The tools for whoever is here: a parent's tools for the person they
@@ -111,6 +115,7 @@ function AccountMenu({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const child = isChildLogin(useAuth().user);
   const { pathname } = useLocation();
 
   // Close on navigation, on a click anywhere else, and on Escape.
@@ -169,7 +174,7 @@ function AccountMenu({
             My Me page
           </Link>
           {/* Admins answer from the inbox instead. */}
-          {!isAdmin && (
+          {!isAdmin && !child && (
             <Link to="/messages" className={menuItemClass}>
               Messages
             </Link>

@@ -1,3 +1,5 @@
+import { assertNotChildLogin } from "./consent";
+
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -56,6 +58,7 @@ export type RefinedAppointmentForm = {
 };
 
 export async function refineAppointmentForm(form: unknown): Promise<RefinedAppointmentForm> {
+  await assertNotChildLogin();
   const res = await fetch(`${API_BASE}/api/refine-appointment`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -73,6 +76,7 @@ export type PrepNotes = {
 
 /** Asks the assistant to pull appointment-prep notes out of a chat. */
 export async function prepNotesFromChat(messages: ChatMessage[]): Promise<PrepNotes> {
+  await assertNotChildLogin();
   const res = await fetch(`${API_BASE}/api/prep-from-chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -91,6 +95,7 @@ export async function sendChatMessage(
   onText?: (soFar: string) => void,
   signal?: AbortSignal
 ): Promise<string> {
+  await assertNotChildLogin();
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     signal,

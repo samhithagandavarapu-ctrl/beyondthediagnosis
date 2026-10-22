@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import PageHero from "../components/PageHero";
 import StoryPanel from "../components/StoryPanel";
 import { useAuth } from "../context/AuthContext";
+import { isChildLogin } from "../lib/consent";
 import { fetchProfile } from "../lib/profile";
 import { fetchApprovedStories, storyCredit, StoryRow } from "../lib/stories";
 
@@ -172,7 +173,7 @@ export default function Stories() {
 
         {/* After the stories, so people read others' before writing their own. */}
         <div className="mt-14 max-w-[720px]">
-          {user ? (
+          {isChildLogin(user) ? null : user ? (
             <StoryPanel defaultName={submitterName} firstName={firstName} />
           ) : (
             !authLoading && (
