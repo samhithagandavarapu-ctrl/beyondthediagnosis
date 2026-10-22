@@ -6,7 +6,7 @@ import Icon from "./icons/Icon";
 // no close button on purpose: the whole point is that it's always there.
 
 export default function ModeBanner() {
-  const { mode, previewing, endPreview, startPreview, managed, managedList, setManagedKey, myName } = useAccountMode();
+  const { mode, previewing, endPreview, startPreview, managed, managedList, setManagedKey, myName, roleLabel } = useAccountMode();
   const navigate = useNavigate();
 
   if (mode === "none") return null;
@@ -29,7 +29,7 @@ export default function ModeBanner() {
             className="btd-btn min-h-[48px] gap-2 bg-navy px-6 text-15 text-mist hover:bg-navy/90"
           >
             <Icon name="chevron-right" size={18} className="rotate-180" />
-            Back to parent account
+            Back to my account
           </button>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default function ModeBanner() {
         <div className="btd-container flex items-center gap-2 py-3 text-15 font-semibold text-mist">
           <Icon name="family" size={20} className="shrink-0" />
           <span>
-            <span className="font-bold">Parent account</span> — add your child to get started
+            <span className="font-bold">Parent or caregiver account</span> — add the person you look after to get started
           </span>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default function ModeBanner() {
             <span className="inline-flex items-center gap-2">
               <Icon name="family" size={20} className="shrink-0" />
               <span>
-                <span className="font-bold">Parent account</span> — you're managing
+                <span className="font-bold">{roleLabel} account</span> — you're managing
               </span>
             </span>
             {managedList.length > 1 ? (
@@ -127,9 +127,10 @@ export function ForLabel({ className = "" }: { className?: string }) {
   );
 }
 
-/** "Parent" or "Self-advocate", next to My account. */
+/** "Parent", "Support worker" (whatever they are to the person they look
+ *  after) or "Self-advocate", next to My account. */
 export function ModeBadge() {
-  const { mode } = useAccountMode();
+  const { mode, roleLabel } = useAccountMode();
   if (mode === "none") return null;
   return (
     <span
@@ -137,7 +138,7 @@ export function ModeBadge() {
         mode === "parent" ? "bg-navy text-mist" : "border border-navy/20 bg-sky text-navy"
       }`}
     >
-      {mode === "parent" ? "Parent" : "Self-advocate"}
+      {mode === "parent" ? roleLabel : "Self-advocate"}
     </span>
   );
 }

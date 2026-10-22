@@ -52,6 +52,10 @@ type AccountModeState = {
 
   /** Who I'm linked with: my children and my grown-ups. */
   family: ReturnType<typeof useFamilyLoader>;
+
+  /** What a grown-up is to the person they look after, for the badge and
+   *  banner: "Parent", "Support worker", "Sibling" or "Caregiver". */
+  roleLabel: string;
 };
 
 const AccountModeContext = createContext<AccountModeState | undefined>(undefined);
@@ -62,6 +66,13 @@ const PREVIEW_KEY = "voiced:previewing";
 export const managedKey = (m: Managed) => m.personId;
 
 const firstWord = (s: string) => s.trim().split(/\s+/)[0] ?? "";
+
+/** The relation picked when adding a child, as a label for the grown-up. */
+export function roleFor(relation: string | null | undefined): string {
+  if (relation === "Mom" || relation === "Dad") return "Parent";
+  if (relation === "Support worker" || relation === "Sibling") return relation;
+  return "Caregiver";
+}
 
 export function AccountModeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -147,6 +158,9 @@ export function AccountModeProvider({ children }: { children: React.ReactNode })
     subjectId,
     forOther: Boolean(user && subjectId && subjectId !== user.id),
     family,
+    roleLabel: roleFor(
+      (family.children.find((c) => c.personId === managed?.personId) ?? family.children[0])?.relation
+    ),
   };
   return <AccountModeContext.Provider value={value}>{children}</AccountModeContext.Provider>;
 }

@@ -82,7 +82,7 @@ import {
 import { inkLastWord } from "../components/Scribble";
 import { ForLabel } from "../components/ModeBanner";
 import NeedsChild from "../components/family/NeedsChild";
-import { useAccountMode, useWhose } from "../context/AccountModeContext";
+import { possessive, useAccountMode, useWhose } from "../context/AccountModeContext";
 
 export default function AppointmentPrep() {
   const { checkIns, checkInsLoaded, importCheckIns, meBoard, meBoardLoaded } = useMyVoice();
@@ -98,6 +98,7 @@ export default function AppointmentPrep() {
   const whose = useWhose();
   const self = view === "self";
   const parentFor = mode === "parent" && !self ? forName : null;
+  const calendarLabel = parentFor ? `${possessive(parentFor)} calendar` : "my calendar";
 
   // Drafts: the one open now, and the rest. They live in the account when
   // signed in and on this device otherwise (see lib/drafts.ts).
@@ -615,7 +616,25 @@ export default function AppointmentPrep() {
         onDelete={removeDraft}
       />
 
-      <div className="mb-8 grid gap-3">
+      <BroughtIn
+        parentFor={parentFor}
+        calendarLabel={calendarLabel}
+        aboutMe={form.aboutMe}
+        boardReady={meBoardLoaded}
+        boardHasNotes={boardHasContent(meBoard)}
+        onBoardUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
+        checkInsLoaded={checkInsLoaded}
+        checkInCount={checkIns.length}
+        pickedCount={pickedCheckIns.length}
+        calendarCount={form.calendarPage?.entryIds.length ?? 0}
+        onCalendar={() => {
+          setImportNote(null);
+          setImporting(true);
+          document.getElementById("calendar-import")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+      />
+
+      <div id="calendar-import" className="mb-8 grid scroll-mt-28 gap-3">
         {importing && family.children.length > 0 && mode !== "parent" && (
           <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Whose calendar?</span>
@@ -658,7 +677,7 @@ export default function AppointmentPrep() {
             className="btd-btn-sky min-h-[48px] justify-self-start gap-2 px-5 py-3 text-sm"
           >
             <Icon name="calendar" size={18} />
-            Bring in from my calendar
+            Bring in from {calendarLabel}
           </button>
         )}
         {importNote && (
@@ -832,7 +851,7 @@ export default function AppointmentPrep() {
               {s.calendar && (
                 <p className="flex flex-wrap items-center gap-2 text-xs text-slate">
                   <Icon name="calendar" size={14} />
-                  From my calendar · {s.calendar.entryIds.length}{" "}
+                  From the calendar · {s.calendar.entryIds.length}{" "}
                   {s.calendar.entryIds.length === 1 ? "entry" : "entries"} · not sent to Refine with AI
                   {s.calendar.entryIds.length > 1 && (
                     <button
@@ -854,13 +873,15 @@ export default function AppointmentPrep() {
           onChange={(t: Timeline) => setForm((f) => ({ ...f, timeline: t }))}
         />
 
-        <MyVoiceSection
-          checkIns={checkIns}
-          loaded={checkInsLoaded}
-          pickedIds={pickedIds}
-          onToggle={togglePicked}
-          onAdded={(id) => setPicked([...pickedIds.filter((x) => x !== id), id])}
-        />
+        <div id="my-voice" className="scroll-mt-28">
+          <MyVoiceSection
+            checkIns={checkIns}
+            loaded={checkInsLoaded}
+            pickedIds={pickedIds}
+            onToggle={togglePicked}
+            onAdded={(id) => setPicked([...pickedIds.filter((x) => x !== id), id])}
+          />
+        </div>
 
 
         <ListSection
@@ -1605,6 +1626,119 @@ function MyVoiceSection({
   );
 }
 
+/** At the top of the form: what's come in from the Me board, My Voice and
+ *  the calendar, with one button each to bring it in or go and look. So
+ *  nobody has to hunt down the page to check it's all there. */
+function BroughtIn({
+  parentFor,
+  calendarLabel,
+  aboutMe,
+  boardReady,
+  boardHasNotes,
+  onBoardUpdate,
+  checkInsLoaded,
+  checkInCount,
+  pickedCount,
+  calendarCount,
+  onCalendar,
+}: {
+  parentFor: string | null;
+  calendarLabel: string;
+  aboutMe: AboutMeCopy | undefined;
+  boardReady: boolean;
+  boardHasNotes: boolean;
+  onBoardUpdate: () => void;
+  checkInsLoaded: boolean;
+  checkInCount: number;
+  pickedCount: number;
+  calendarCount: number;
+  onCalendar: () => void;
+}) {
+  const notes = aboutMe?.notes.filter((n) => n.lines.length && !aboutMe.off.includes(n.id)).length ?? 0;
+  const board = parentFor ? "the Me board" : "my Me page";
+  const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+  const rows: { icon: "person" | "hub-feelings" | "calendar"; title: string; status: string; done: boolean; action: React.ReactNode }[] = [
+    {
+      icon: "person",
+      title: parentFor ? "Me board" : "About me",
+      done: notes > 0,
+      status: notes
+        ? `${plural(notes, "note")} from ${board}, first on the summary.`
+        : boardReady && boardHasNotes
+          ? `${board[0].toUpperCase()}${board.slice(1)} has notes that aren't on this draft yet.`
+          : `Nothing on ${board} yet.`,
+      action: notes ? (
+        <button type="button" onClick={() => go("about-me")} className="font-semibold text-link hover:underline">
+          See them
+        </button>
+      ) : boardReady && boardHasNotes ? (
+        <button type="button" onClick={onBoardUpdate} className="font-semibold text-link hover:underline">
+          Bring them in
+        </button>
+      ) : (
+        <Link to="/me" className="font-semibold text-link hover:underline">
+          Fill it in
+        </Link>
+      ),
+    },
+    {
+      icon: "hub-feelings",
+      title: "My Voice check-ins",
+      done: pickedCount > 0,
+      status: !checkInsLoaded
+        ? "Loading…"
+        : pickedCount
+          ? `${plural(pickedCount, "check-in")} on the summary, in their own words.`
+          : checkInCount
+            ? `${plural(checkInCount, "check-in")} saved, none picked for this visit.`
+            : "No check-ins yet. You can add one below.",
+      action: (
+        <button type="button" onClick={() => go("my-voice")} className="font-semibold text-link hover:underline">
+          {checkInCount ? "Choose" : "Add one"}
+        </button>
+      ),
+    },
+    {
+      icon: "calendar",
+      title: "Calendar",
+      done: calendarCount > 0,
+      status: calendarCount
+        ? `${plural(calendarCount, "entry", "entries")} brought in from ${calendarLabel}.`
+        : `Nothing from ${calendarLabel} yet.`,
+      action: (
+        <button type="button" onClick={onCalendar} className="font-semibold text-link hover:underline">
+          {calendarCount ? "Bring in more" : "Bring it in"}
+        </button>
+      ),
+    },
+  ];
+
+  return (
+    <section aria-labelledby="brought-in-heading" className="btd-card mb-6 p-5">
+      <h2 id="brought-in-heading" className="text-17 font-extrabold text-navy">
+        What's coming into this visit
+      </h2>
+      <ul className="mt-3 grid gap-2">
+        {rows.map((r) => (
+          <li key={r.title} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-tile bg-mist px-3 py-2.5">
+            <span
+              className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${r.done ? "bg-navy text-mist" : "bg-white text-navy"}`}
+            >
+              <Icon name={r.done ? "check" : r.icon} size={16} />
+            </span>
+            <span className="min-w-0 flex-1 basis-[220px] text-sm text-ink">
+              <strong className="font-semibold">{r.title}:</strong> {r.status}
+            </span>
+            <span className="text-sm">{r.action}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** "About me (from my Me page)": this draft's copy of the Me board. Each
  *  note can be left off this draft; the board itself is never changed here. */
 function AboutMeSection({
@@ -1627,7 +1761,7 @@ function AboutMeSection({
 }) {
   const notes = copy?.notes.filter((n) => n.lines.length) ?? [];
   return (
-    <section aria-labelledby="about-me-heading" className="rounded-tile border-2 border-butter bg-butter/20 p-4">
+    <section id="about-me" aria-labelledby="about-me-heading" className="scroll-mt-28 rounded-tile border-2 border-butter bg-butter/20 p-4">
       <h2 id="about-me-heading" className="text-sm font-semibold text-ink">
         {title}
       </h2>
