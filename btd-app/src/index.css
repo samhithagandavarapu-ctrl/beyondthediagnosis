@@ -460,3 +460,21 @@ button.btd-sticky:focus-visible {
 .a11y-high-contrast .btd-sticky::before {
   display: none;
 }
+
+/* Admin editing the site's words (components/SiteEditor.tsx): show what can
+   be clicked. */
+body.voiced-editing main :is(h1, h2, h3, h4, p, li, a, button, label, span, strong, em, blockquote):hover {
+  outline: 2px dashed #f2a08a;
+  outline-offset: 2px;
+  cursor: text;
+}
+body.voiced-editing header :is(a, button, span):hover,
+body.voiced-editing footer :is(a, p, span):hover {
+  outline: 2px dashed #f2a08a;
+  outline-offset: 2px;
+  cursor: text;
+}
+body.voiced-editing [data-no-edit] :hover {
+  outline: none;
+  cursor: auto;
+}

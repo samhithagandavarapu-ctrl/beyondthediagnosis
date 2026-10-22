@@ -5,6 +5,7 @@ import { authEnabled } from "../lib/supabaseClient";
 import Icon from "../components/icons/Icon";
 import PageHero from "../components/PageHero";
 import PageLoading from "../components/PageLoading";
+import { isExternalLink } from "../lib/siteSettings";
 
 function longDate(iso: string) {
   const d = new Date(iso);
@@ -103,7 +104,9 @@ export default function Notifications() {
                 >
                   <Icon
                     name={
-                      n.kind === "message"
+                      n.kind === "broadcast"
+                        ? "bell"
+                        : n.kind === "message"
                         ? "chat"
                         : n.kind === "story-rejected"
                           ? "talk"
@@ -121,16 +124,35 @@ export default function Notifications() {
                   </p>
                   <p className="mt-0.5 text-15 leading-[1.6] text-body">{n.body}</p>
                   <p className="mt-1 text-12 text-muted">
-                    {n.kind === "message" ? "Sent" : n.kind.startsWith("family") ? "" : "Story sent in"} {longDate(n.at)}
+                    {n.kind === "broadcast"
+                      ? "From the Voiced team ·"
+                      : n.kind === "message"
+                        ? "Sent"
+                        : n.kind.startsWith("family")
+                          ? ""
+                          : "Story sent in"}{" "}
+                    {longDate(n.at)}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-4">
-                    <Link
-                      to={n.href}
-                      onClick={() => markRead(n.id)}
-                      className="btd-btn-sky px-[16px] py-[9px] text-sm"
-                    >
-                      {n.action}
-                    </Link>
+                    {n.href && isExternalLink(n.href) ? (
+                      <a
+                        href={n.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => markRead(n.id)}
+                        className="btd-btn-sky px-[16px] py-[9px] text-sm"
+                      >
+                        {n.action}
+                      </a>
+                    ) : n.href ? (
+                      <Link
+                        to={n.href}
+                        onClick={() => markRead(n.id)}
+                        className="btd-btn-sky px-[16px] py-[9px] text-sm"
+                      >
+                        {n.action}
+                      </Link>
+                    ) : null}
                     {!n.read && (
                       <button
                         type="button"

@@ -50,7 +50,7 @@ export default function AdminHome({
   error: string | null;
   unread: number;
 }) {
-  const { survey, announcement } = useSiteSettings().settings;
+  const { survey, banners } = useSiteSettings().settings;
   const stories = overview?.pendingStories ?? 0;
   const october = new Date().getMonth() === 9;
 
@@ -110,13 +110,20 @@ export default function AdminHome({
           cta="Open cleanup"
         />
         <Card
+          to="/admin/broadcasts"
+          icon="send"
+          title="Broadcasts"
+          status="Send a message to everyone's notifications, or a pop-up for every visitor."
+          cta="Send a broadcast"
+        />
+        <Card
           to="/admin/site"
           icon="bell"
-          title="Site banners"
-          status={`Survey banner is ${survey.on ? "on" : "off"}. Announcement is ${
-            announcement.on && announcement.text ? "on" : "off"
+          title="Site & banners"
+          status={`Change any words on the site. ${plural(banners.filter((b) => b.on && b.text).length, "banner")} showing; survey banner ${
+            survey.on ? "on" : "off"
           }.`}
-          cta="Change banners"
+          cta="Edit the site"
         />
       </div>
 

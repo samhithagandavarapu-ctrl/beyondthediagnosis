@@ -11,6 +11,7 @@ import { NotificationsProvider } from "./context/NotificationsContext";
 import { SetupProvider } from "./context/SetupContext";
 import { AccountModeProvider } from "./context/AccountModeContext";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext";
+import { SiteContentProvider } from "./context/SiteContentContext";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -27,7 +28,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                   <MyVoiceProvider>
                     <NotificationsProvider>
                       <SiteSettingsProvider>
-                        <App />
+                        <SiteContentProvider>
+                          <App />
+                        </SiteContentProvider>
                       </SiteSettingsProvider>
                     </NotificationsProvider>
                   </MyVoiceProvider>

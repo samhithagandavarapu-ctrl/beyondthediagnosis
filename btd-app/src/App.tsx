@@ -38,6 +38,9 @@ import { GrownUpsOnly, HealthConsentGate, TermsGate } from "./components/Consent
 import { hasAcceptedTerms } from "./lib/consent";
 import AdminShell from "./pages/admin/AdminShell";
 import AnnouncementBar from "./components/AnnouncementBar";
+import SiteEditor from "./components/SiteEditor";
+import BroadcastPopup from "./components/BroadcastPopup";
+import { useSiteContent } from "./context/SiteContentContext";
 import Icon from "./components/icons/Icon";
 
 // The browser tab's title for each page, so tabs, bookmarks and screen
@@ -70,7 +73,8 @@ const TITLES: Record<string, string> = {
   "/admin/stories": "Admin · Stories",
   "/admin/accounts": "Admin · Accounts",
   "/admin/cleanup": "Admin · Yearly cleanup",
-  "/admin/site": "Admin · Site banners",
+  "/admin/site": "Admin · Site & banners",
+  "/admin/broadcasts": "Admin · Broadcasts",
 };
 
 // Sign-in steps that work the same for everyone, admins included.
@@ -120,7 +124,7 @@ export default function App() {
       return false;
     }
   });
-  function viewSite(on: boolean) {
+  function viewSite(on: boolean, go = true) {
     setViewingSite(on);
     try {
       if (on) sessionStorage.setItem(VIEW_SITE_KEY, "1");
@@ -128,13 +132,15 @@ export default function App() {
     } catch {
       // Without storage it just lasts until the page reloads.
     }
-    navigate(on ? "/" : "/admin");
+    if (go) navigate(on ? "/" : "/admin");
   }
   useEffect(() => {
-    if (isAdmin && viewingSite && pathname.startsWith("/admin")) viewSite(false);
+    // Already on an admin page: stay on it.
+    if (isAdmin && viewingSite && pathname.startsWith("/admin")) viewSite(false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, viewingSite, pathname]);
   const adminMode = isAdmin && !viewingSite && !AUTH_STEPS.includes(pathname);
+  const { editing, setEditing } = useSiteContent();
 
   useEffect(() => {
     if (!user || isAdmin || !setupLoaded || setup.status || passwordRecoveryMode) return;
@@ -143,18 +149,40 @@ export default function App() {
     navigate(`/welcome?next=${encodeURIComponent(pathname + search)}`, { replace: true });
   }, [user, isAdmin, setupLoaded, setup.status, passwordRecoveryMode, pathname, search, navigate]);
 
-  if (adminMode) return <AdminShell onViewSite={() => viewSite(true)} />;
+  if (adminMode)
+    return (
+      <AdminShell
+        onViewSite={() => viewSite(true)}
+        onEditSite={() => {
+          setEditing(true);
+          viewSite(true);
+        }}
+      />
+    );
 
   return (
     <div className="min-h-screen flex flex-col">
       {isAdmin && (
-        <div className="bg-butter">
+        <div className="bg-butter" data-no-edit>
           <div className="btd-container flex flex-wrap items-center justify-between gap-2 py-2 text-sm font-semibold text-navy">
-            You're looking at the site as everyone else sees it.
-            <button type="button" onClick={() => viewSite(false)} className="inline-flex items-center gap-1.5 font-bold underline">
-              <Icon name="chevron-right" size={16} className="rotate-180" />
-              Back to admin
-            </button>
+            {editing ? "Editing the site. Click any words to change them." : "You're looking at the site as everyone else sees it."}
+            <span className="flex flex-wrap items-center gap-4">
+              <button type="button" onClick={() => setEditing(!editing)} className="inline-flex items-center gap-1.5 font-bold underline">
+                <Icon name={editing ? "check" : "refine"} size={16} />
+                {editing ? "Done editing" : "Edit words"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  viewSite(false);
+                }}
+                className="inline-flex items-center gap-1.5 font-bold underline"
+              >
+                <Icon name="chevron-right" size={16} className="rotate-180" />
+                Back to admin
+              </button>
+            </span>
           </div>
         </div>
       )}
@@ -206,6 +234,8 @@ export default function App() {
       <Footer />
       {/* App-wide, not part of /my-voice: reachable mid-chat, mid-form, anywhere. */}
       <CalmingScreen />
+      <SiteEditor />
+      <BroadcastPopup />
     </div>
   );
 }
