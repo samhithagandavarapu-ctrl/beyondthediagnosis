@@ -70,6 +70,7 @@ export type IconName =
   | "tooth"
   | "ear"
   | "person-plus"
+  | "family"
   | "cuff"
   | "needle"
   | "bandage"
@@ -607,6 +608,15 @@ const PATHS: Record<IconName, JSX.Element> = {
       <circle cx="10" cy="8.2" r="3.8" />
       <path d="M2.8 20.2 a7.2 7.2 0 0 1 12.6 -4.8" />
       <path d="M18.4 13.4 v6.4M15.2 16.6 h6.4" />
+    </>
+  ),
+  // A grown-up and a child side by side, for the parent account.
+  family: (
+    <>
+      <circle cx="8.6" cy="7.2" r="3.4" />
+      <path d="M2.4 20.2 a6.2 6.2 0 0 1 12.4 0" />
+      <circle cx="17.2" cy="11" r="2.4" />
+      <path d="M13.6 20.2 a3.8 3.8 0 0 1 7.6 -1.2" />
     </>
   ),
   // A blood pressure cuff around an arm, with its bulb.
