@@ -195,7 +195,7 @@ export default function AdminSite({ onEditSite }: { onEditSite: () => void }) {
         <Field label="Heading" value={survey.title} onChange={(title) => setSurvey({ ...survey, title })} />
         <Field label="Text" long value={survey.text} onChange={(text) => setSurvey({ ...survey, text })} />
         <Field label="Button words" value={survey.button} onChange={(button) => setSurvey({ ...survey, button })} />
-        <Field label="Survey address" value={survey.url} onChange={(url) => setSurvey({ ...survey, url })} hint="The full https:// link to the survey." />
+        <Field label="Survey address" value={survey.url} onChange={(url) => setSurvey({ ...survey, url })} hint="/feedback is Voiced's own survey (answers show under Feedback). Or a full https:// link to another survey." />
         <SaveRow onSave={() => save("survey", survey, setSurveyStatus)} status={surveyStatus} />
       </section>
 

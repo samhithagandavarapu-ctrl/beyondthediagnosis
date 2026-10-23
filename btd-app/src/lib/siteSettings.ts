@@ -1,5 +1,5 @@
 import { supabase, authEnabled } from "./supabaseClient";
-import { SURVEY_URL } from "../data/site";
+import { OLD_SURVEY_URL, SURVEY_URL } from "../data/site";
 
 // Things on the site an admin changes from /admin/site, kept in the
 // site_settings table (supabase/migrations/20261028_site_settings.sql). Until
@@ -47,8 +47,10 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
   if (error || !data) return DEFAULT_SETTINGS;
   const saved = Object.fromEntries(data.map((r: { key: string; value: unknown }) => [r.key, r.value]));
   const announcement = { ...DEFAULT_SETTINGS.announcement, ...(saved.announcement ?? {}) };
+  const survey = { ...DEFAULT_SETTINGS.survey, ...(saved.survey ?? {}) };
+  if (!survey.url.trim() || survey.url.includes(new URL(OLD_SURVEY_URL).search)) survey.url = SURVEY_URL;
   return {
-    survey: { ...DEFAULT_SETTINGS.survey, ...(saved.survey ?? {}) },
+    survey,
     announcement,
     // Until the banner list is first saved, an old announcement is its one banner.
     banners: Array.isArray(saved.banners)

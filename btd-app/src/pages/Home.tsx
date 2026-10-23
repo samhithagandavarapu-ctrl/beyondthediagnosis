@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { CTA_LABEL } from "../data/site";
 import { useSiteSettings } from "../context/SiteSettingsContext";
+import { isExternalLink } from "../lib/siteSettings";
 import Reveal from "../components/Reveal";
 import Scribble from "../components/Scribble";
 import { useAccountMode } from "../context/AccountModeContext";
@@ -216,14 +217,20 @@ export default function Home() {
             <p className="font-display text-21 font-extrabold leading-tight text-navy">{survey.title}</p>
             <p className="mt-1 text-15 leading-[1.6] text-butter-ink">{survey.text}</p>
           </div>
-          <a
-            href={survey.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
-          >
-            {survey.button} →
-          </a>
+          {isExternalLink(survey.url) ? (
+            <a
+              href={survey.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90"
+            >
+              {survey.button} →
+            </a>
+          ) : (
+            <Link to={survey.url} className="btd-btn min-h-[52px] bg-navy px-7 py-3.5 text-17 text-mist hover:bg-navy/90">
+              {survey.button} →
+            </Link>
+          )}
         </div>
       </section>
       )}
