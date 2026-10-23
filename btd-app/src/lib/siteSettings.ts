@@ -1,5 +1,5 @@
 import { supabase, authEnabled } from "./supabaseClient";
-import { SURVEY_URL } from "../data/site";
+import { OLD_SURVEY_URL, SURVEY_URL } from "../data/site";
 
 // Things on the site an admin changes from /admin/site, kept in the
 // site_settings table (supabase/migrations/20261028_site_settings.sql). Until
@@ -22,9 +22,9 @@ export type SiteSettings = {
 export const DEFAULT_SETTINGS: SiteSettings = {
   survey: {
     on: true,
-    title: "Met us at an event? Help shape Voiced.",
-    text: "Tell us what would help you, your family, or your patients. It's a short survey and takes just a few minutes.",
-    button: "Take the survey",
+    title: "Trying out Voiced? Tell us how it went.",
+    text: "A few quick questions about what worked and what didn't. It takes about 3 minutes.",
+    button: "Give us feedback",
     url: SURVEY_URL,
   },
   announcement: { on: false, text: "", linkLabel: "", url: "" },
@@ -47,8 +47,10 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
   if (error || !data) return DEFAULT_SETTINGS;
   const saved = Object.fromEntries(data.map((r: { key: string; value: unknown }) => [r.key, r.value]));
   const announcement = { ...DEFAULT_SETTINGS.announcement, ...(saved.announcement ?? {}) };
+  const survey = { ...DEFAULT_SETTINGS.survey, ...(saved.survey ?? {}) };
+  if (!survey.url.trim() || survey.url.includes(new URL(OLD_SURVEY_URL).search)) survey.url = SURVEY_URL;
   return {
-    survey: { ...DEFAULT_SETTINGS.survey, ...(saved.survey ?? {}) },
+    survey,
     announcement,
     // Until the banner list is first saved, an old announcement is its one banner.
     banners: Array.isArray(saved.banners)
