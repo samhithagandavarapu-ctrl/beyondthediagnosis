@@ -268,6 +268,19 @@ export default function Navbar() {
           aria-label="Tools"
           className="btd-container flex items-center gap-2 overflow-x-auto py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
+          {/* While families are testing Voiced: first and biggest, so it's
+              easy to find. */}
+          <NavLink
+            to="/feedback"
+            className={({ isActive }) =>
+              `mr-2 inline-flex min-h-[48px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full border-2 border-navy px-5 text-15 font-extrabold text-navy transition-colors ${
+                isActive ? "bg-navy text-mist" : "bg-coral hover:bg-coral-hover"
+              }`
+            }
+          >
+            <Icon name="star" size={22} />
+            Give us feedback
+          </NavLink>
           <NavLink
             to="/tools"
             end

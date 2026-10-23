@@ -190,7 +190,7 @@ export default function AdminSite({ onEditSite }: { onEditSite: () => void }) {
 
       <section className="btd-card mt-8 grid gap-4 p-6">
         <h2 className="text-21 font-extrabold text-navy">Survey banner (home page)</h2>
-        <p className="text-15 text-body">The yellow box on the home page. The footer's "Take our survey" link uses the same address.</p>
+        <p className="text-15 text-body">The yellow box on the home page.</p>
         <Toggle label="Survey banner" on={survey.on} onChange={(on) => setSurvey({ ...survey, on })} />
         <Field label="Heading" value={survey.title} onChange={(title) => setSurvey({ ...survey, title })} />
         <Field label="Text" long value={survey.text} onChange={(text) => setSurvey({ ...survey, text })} />

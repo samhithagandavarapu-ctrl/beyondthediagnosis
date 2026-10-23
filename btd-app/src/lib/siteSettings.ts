@@ -22,9 +22,9 @@ export type SiteSettings = {
 export const DEFAULT_SETTINGS: SiteSettings = {
   survey: {
     on: true,
-    title: "Met us at an event? Help shape Voiced.",
-    text: "Tell us what would help you, your family, or your patients. It's a short survey and takes just a few minutes.",
-    button: "Take the survey",
+    title: "Trying out Voiced? Tell us how it went.",
+    text: "A few quick questions about what worked and what didn't. It takes about 3 minutes.",
+    button: "Give us feedback",
     url: SURVEY_URL,
   },
   announcement: { on: false, text: "", linkLabel: "", url: "" },
