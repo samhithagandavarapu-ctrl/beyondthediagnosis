@@ -11,6 +11,7 @@ import AdminAccounts from "./AdminAccounts";
 import AdminCleanup from "./AdminCleanup";
 import AdminSite from "./AdminSite";
 import AdminBroadcasts from "./AdminBroadcasts";
+import AdminFeedback from "./AdminFeedback";
 
 // What an admin sees instead of the site: one plain menu, no setup questions,
 // no parent or self-advocate banners. "View site" switches to the public site
@@ -20,6 +21,7 @@ const tabs: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/admin", label: "Home", icon: "star", end: true },
   { to: "/admin/messages", label: "Messages", icon: "chat" },
   { to: "/admin/stories", label: "Stories", icon: "book" },
+  { to: "/admin/feedback", label: "Feedback", icon: "clipboard" },
   { to: "/admin/accounts", label: "Accounts", icon: "person" },
   { to: "/admin/cleanup", label: "Yearly cleanup", icon: "trash" },
   { to: "/admin/broadcasts", label: "Broadcasts", icon: "send" },
@@ -119,6 +121,7 @@ export default function AdminShell({ onViewSite, onEditSite }: { onViewSite: () 
           <Route path="/admin" element={<AdminHome overview={overview} error={overviewError} unread={unreadCount} />} />
           <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/admin/stories" element={<AdminStories />} />
+          <Route path="/admin/feedback" element={<AdminFeedback />} />
           <Route path="/admin/accounts" element={<AdminAccounts />} />
           <Route path="/admin/cleanup" element={<AdminCleanup />} />
           <Route path="/admin/broadcasts" element={<AdminBroadcasts />} />

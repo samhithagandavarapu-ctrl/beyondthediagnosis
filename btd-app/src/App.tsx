@@ -31,6 +31,8 @@ import Calendar from "./pages/Calendar";
 import Me from "./pages/Me";
 import Welcome from "./pages/Welcome";
 import Join from "./pages/Join";
+import Feedback from "./pages/Feedback";
+import { sendWaitingFeedback } from "./lib/feedback";
 import { useSetup } from "./context/SetupContext";
 import ModeBanner from "./components/ModeBanner";
 import Terms from "./pages/Terms";
@@ -68,6 +70,7 @@ const TITLES: Record<string, string> = {
   "/mission": "Our mission",
   "/privacy": "Privacy Policy",
   "/terms": "Terms of Use",
+  "/feedback": "Feedback",
   "/admin": "Admin",
   "/admin/messages": "Admin · Messages",
   "/admin/stories": "Admin · Stories",
@@ -75,6 +78,7 @@ const TITLES: Record<string, string> = {
   "/admin/cleanup": "Admin · Yearly cleanup",
   "/admin/site": "Admin · Site & banners",
   "/admin/broadcasts": "Admin · Broadcasts",
+  "/admin/feedback": "Admin · Feedback",
 };
 
 // Sign-in steps that work the same for everyone, admins included.
@@ -82,10 +86,14 @@ const AUTH_STEPS = ["/auth/callback", "/reset-password"];
 const VIEW_SITE_KEY = "voiced:admin-viewing-site";
 
 // Pages someone who hasn't agreed to the terms can still open.
-const TERMS_FREE = ["/terms", "/privacy", "/auth/callback", "/reset-password"];
+const TERMS_FREE = ["/terms", "/privacy", "/feedback", "/auth/callback", "/reset-password"];
 
 export default function App() {
   const { pathname } = useLocation();
+  // Feedback that couldn't be sent last time goes now.
+  useEffect(() => {
+    sendWaitingFeedback();
+  }, []);
   // Block body on purpose: newer browsers return a Promise from scrollTo, and
   // React would call any returned value as a cleanup function and crash.
   useEffect(() => {
@@ -225,6 +233,7 @@ export default function App() {
           <Route path="/mission" element={<Mission />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/feedback" element={<Feedback />} />
           {/* Anything unrecognised — including a provider redirect that lands
               somewhere unexpected — gets a real page, never an empty one. */}
           <Route path="*" element={<NotFound />} />
