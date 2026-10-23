@@ -39,6 +39,9 @@ export default function Footer() {
           >
             Take our survey
           </a>
+          <Link to="/feedback" className="text-sky hover:underline">
+            Give feedback
+          </Link>
           <Link to="/privacy" className="text-sky hover:underline">
             Privacy Policy
           </Link>

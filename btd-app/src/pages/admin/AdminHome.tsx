@@ -87,6 +87,13 @@ export default function AdminHome({
           cta="Review stories"
         />
         <Card
+          to="/admin/feedback"
+          icon="clipboard"
+          title="Feedback"
+          status="Read what testing families said, and download it all as a spreadsheet."
+          cta="See feedback"
+        />
+        <Card
           to="/admin/accounts"
           icon="person"
           title="Accounts"
