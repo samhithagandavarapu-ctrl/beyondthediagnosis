@@ -26,6 +26,17 @@ export default function Footer() {
               @withvoiced
             </a>
           </p>
+          <p>
+            Facebook:{" "}
+            <a
+              href="https://www.facebook.com/profile.php?id=61593947626911"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky hover:underline"
+            >
+              Voiced
+            </a>
+          </p>
           <p>© 2026 Voiced</p>
         </div>
         <div className="flex flex-wrap items-center gap-5 text-sm">
