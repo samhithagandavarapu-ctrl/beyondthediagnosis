@@ -6,7 +6,8 @@
 --
 -- Anyone can send feedback, signed in or not; only Voiced admins can read it
 -- (at /admin/feedback, where it downloads as a spreadsheet). Nobody can
--- change or delete an answer from the site, so nothing sent gets lost.
+-- change an answer from the site; only admins can delete one
+-- (20261031_feedback_delete.sql).
 --
 -- The app makes each answer's id itself, so if a send is retried (say the
 -- connection dropped after it arrived) the second copy is refused as a
