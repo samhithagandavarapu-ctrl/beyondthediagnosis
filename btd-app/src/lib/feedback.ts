@@ -182,6 +182,15 @@ export async function listFeedback(): Promise<{ data: FeedbackRow[]; error: stri
   };
 }
 
+/** Deletes one answer for good. Admins only. */
+export async function deleteFeedback(id: string): Promise<string | null> {
+  const { data, error } = await supabase.from("feedback").delete().eq("id", id).select("id");
+  if (error) return error.message;
+  // The database quietly deletes nothing when deleting isn't allowed yet.
+  if (!data?.length) return "Couldn't delete it. Run supabase/migrations/20261031_feedback_delete.sql in Supabase first.";
+  return null;
+}
+
 export const roleLabel = (id: Feedback["role"]) => ROLES.find((r) => r.id === id)?.label ?? "";
 
 const COLUMNS: [string, (r: FeedbackRow) => string | number | null][] = [

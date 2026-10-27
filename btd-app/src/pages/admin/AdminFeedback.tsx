@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import Icon from "../../components/icons/Icon";
 import { shortDate } from "../../lib/adminApi";
-import { FEATURES, FeedbackRow, feedbackCsv, listFeedback, roleLabel } from "../../lib/feedback";
+import { FEATURES, FeedbackRow, deleteFeedback, feedbackCsv, listFeedback, roleLabel } from "../../lib/feedback";
 
 // Every answer families sent from /feedback, newest first, with the totals at
-// the top and a download of the whole lot as a spreadsheet. Nothing here can
-// be changed or deleted, so nothing gets lost.
+// the top and a download of the whole lot as a spreadsheet. An admin can
+// delete an answer (spam, a test, or someone asking); it asks first, and
+// that's the only way an answer ever goes.
 
 const pct = (n: number, of: number) => (of ? `${Math.round((n / of) * 100)}%` : "–");
 
@@ -32,6 +33,18 @@ function Line({ label, value }: { label: string; value: string }) {
 export default function AdminFeedback() {
   const [rows, setRows] = useState<FeedbackRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  async function remove(r: FeedbackRow) {
+    const what = `${roleLabel(r.role) || "Someone"}'s answers from ${shortDate(r.createdAt)}`;
+    if (!window.confirm(`Delete ${what} for good? This can't be undone. Download the spreadsheet first if you want a copy.`)) return;
+    setDeleting(r.id);
+    const err = await deleteFeedback(r.id);
+    setDeleting(null);
+    if (err) return setError(err);
+    setError(null);
+    setRows((list) => (list ?? []).filter((x) => x.id !== r.id));
+  }
 
   useEffect(() => {
     listFeedback().then(({ data, error }) => {
@@ -135,6 +148,15 @@ export default function AdminFeedback() {
                 <Line label="Confusing or felt wrong" value={r.confusing} />
                 <Line label="Wish it did" value={r.wish} />
                 {r.contactOk && <Line label="OK to contact" value={r.contact || "Yes, but left no contact"} />}
+                <button
+                  type="button"
+                  onClick={() => remove(r)}
+                  disabled={deleting === r.id}
+                  className="inline-flex items-center gap-1.5 justify-self-start text-sm font-bold text-coral-ink hover:underline disabled:opacity-50"
+                >
+                  <Icon name="trash" size={16} />
+                  {deleting === r.id ? "Deleting…" : "Delete"}
+                </button>
               </li>
             ))}
           </ul>
