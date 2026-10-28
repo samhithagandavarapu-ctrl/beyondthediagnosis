@@ -1,5 +1,5 @@
-// Label for the primary coral call-to-action (header, hero, principle band).
-export const CTA_LABEL = "Try the AI advocate";
+// Label for the one coral call-to-action (header; also used on Mission and the home page).
+export const CTA_LABEL = "Get help with a visit";
 
 // Feedback survey: Voiced's own page, where answers go to the admin
 // dashboard (/admin/feedback).

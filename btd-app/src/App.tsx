@@ -3,7 +3,6 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import AccessibilityBar from "./components/AccessibilityBar";
 import CalmingScreen from "./components/CalmingScreen";
 import Home from "./pages/Home";
 import Tools from "./pages/Tools";
@@ -195,7 +194,6 @@ export default function App() {
         </div>
       )}
       <AnnouncementBar />
-      <AccessibilityBar />
       <Navbar />
       <ModeBanner />
       <main className="flex-1">

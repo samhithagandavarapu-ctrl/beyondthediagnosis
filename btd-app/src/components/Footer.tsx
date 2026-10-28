@@ -40,7 +40,7 @@ export default function Footer() {
           <p>© 2026 Voiced</p>
         </div>
         <div className="flex flex-wrap items-center gap-5 text-sm">
-          <Link to="/feedback" className="font-bold text-butter hover:underline">
+          <Link to="/feedback" className="text-sky hover:underline">
             Give us feedback
           </Link>
           <Link to="/privacy" className="text-sky hover:underline">
@@ -49,7 +49,7 @@ export default function Footer() {
           <Link to="/terms" className="text-sky hover:underline">
             Terms of Use
           </Link>
-          <span className="font-bold text-butter">Emergency? Call 911 now.</span>
+          <span className="text-mist/75">Emergency? Call 911.</span>
         </div>
       </div>
     </footer>
