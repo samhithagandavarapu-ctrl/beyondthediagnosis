@@ -80,7 +80,7 @@ export default function Home() {
     <div>
       {/* Hero */}
       <section className="btd-grain bg-gradient-to-b from-mist to-sky-tint border-b border-navy/[0.08]">
-        <div className="btd-container pt-10 pb-[76px]">
+        <div className="mx-auto w-full max-w-[1200px] px-6 pt-10 pb-[76px]">
           <div>
             <h1 className="btd-hero-h1 max-w-[18em] !text-[clamp(2.125rem,4.4vw,3.5rem)] !leading-[1.06]">
               {headline.map((w, i) => (
@@ -109,25 +109,24 @@ export default function Home() {
             <h2 className="mt-10 font-display text-23 font-extrabold text-navy">
               Who is Voiced for today?
             </h2>
+            {/* 60/40 on wider screens, both columns the same height; one
+                column on phones. */}
             <div className="mt-4 grid gap-4 md:grid-cols-[3fr_2fr] md:gap-8">
+              {/* A real photo of a self-advocate could go in this block later. */}
               <Link
                 to="/my-voice"
-                className="btd-dark btd-lift grid overflow-hidden rounded-card"
+                className="btd-dark btd-lift flex min-h-[180px] items-center rounded-card p-6 sm:p-8"
               >
-                {/* PHOTO PLACEHOLDER: put a real photo of a self-advocate here
-                    later (an <img> with object-cover filling this box, and
-                    alt text describing the person). No stock photos. */}
-                <div aria-hidden="true" className="h-40 bg-mist/[0.08] sm:h-52" />
-                <span className="p-6 font-display text-[clamp(1.75rem,3vw,2.375rem)] font-extrabold leading-tight sm:p-8">
+                <span className="font-display text-[clamp(1.75rem,3vw,2.375rem)] font-extrabold leading-tight">
                   I'm here for me <span className="btd-arrow">→</span>
                 </span>
               </Link>
-              <ul className="grid self-center divide-y divide-navy/12 border-y border-navy/12">
+              <ul className="grid grid-rows-2 divide-y divide-navy/12 border-y border-navy/12">
                 {otherAudiences.map((a) => (
-                  <li key={a.to}>
+                  <li key={a.to} className="flex">
                     <Link
                       to={a.to}
-                      className="group flex min-h-[64px] items-center justify-between gap-3 py-4 text-21 font-bold text-navy hover:text-link"
+                      className="group flex min-h-[64px] flex-1 items-center justify-between gap-3 py-4 text-21 font-bold text-navy hover:text-link"
                     >
                       {a.title}
                       <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
@@ -147,7 +146,7 @@ export default function Home() {
       </section>
 
       {/* The tools */}
-      <section className="btd-container pt-[76px] pb-6">
+      <section className="mx-auto w-full max-w-[1200px] px-6 pt-[76px] pb-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="btd-section-h2">
@@ -181,7 +180,7 @@ export default function Home() {
       </section>
 
       {/* Community line */}
-      <section className="btd-container pt-[52px] text-center">
+      <section className="mx-auto w-full max-w-[1200px] px-6 pt-[52px] text-center">
         <p className="text-17 leading-[1.6] text-body">
           Shaped by families we met at the 2026 NCDSA Buddy Walk.{" "}
           <Link
@@ -195,7 +194,7 @@ export default function Home() {
 
       {/* Event survey banner (admins change it at /admin/site) */}
       {survey.on && (
-      <section className="btd-container pt-8">
+      <section className="mx-auto w-full max-w-[1200px] px-6 pt-8">
         <div className="btd-event-banner flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-navy bg-butter px-6 py-5">
           <div className="max-w-[40em]">
             <p className="font-display text-21 font-extrabold leading-tight text-navy">{survey.title}</p>
@@ -221,7 +220,7 @@ export default function Home() {
 
       {/* The problem */}
       <section className="btd-dark mt-[76px]">
-        <div className="btd-container py-[76px]">
+        <div className="mx-auto w-full max-w-[1200px] px-6 py-[76px]">
           <div className="grid gap-10 items-start md:grid-cols-2">
             <div>
               <h2 className="btd-section-h2">

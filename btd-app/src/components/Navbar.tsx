@@ -286,7 +286,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-navy/10 bg-mist/[0.92] backdrop-blur-[10px]">
-      <div className="btd-container flex items-center gap-2 py-3 sm:gap-4">
+      <div className="mx-auto flex w-full max-w-[1200px] items-center gap-2 px-6 py-3 sm:gap-4">
         <NavLink to="/" className="flex items-center gap-2.5 shrink-0">
           <img src="/logo.svg" alt="" className="h-[34px] w-[34px]" />
           <span className="font-display text-[1.375rem] font-extrabold tracking-[-0.03em]">
