@@ -244,31 +244,27 @@ export default function AppointmentPrep() {
   const timeline = form.timeline ?? emptyTimeline();
 
   // "More you can add" starts folded. It opens by itself when something typed
-  // into it is already there (an opened draft), when the calendar is being
-  // brought in, or when My Voice sent a check-in here, so nothing is hidden.
+  // into it is already there (an opened draft), so nothing is hidden.
   const typedOptional =
     timeline.usualSelf.trim() !== "" ||
     timeline.entries.length > 0 ||
     form.ruledOut.some((r) => r.description.trim() || r.when.trim()) ||
     form.accommodations.trim() !== "";
-  const [moreOpen, setMoreOpen] = useState(() => importing || Boolean(linkedCheckIn));
+  const [moreOpen, setMoreOpen] = useState(false);
   useEffect(() => {
-    if (typedOptional || importing) setMoreOpen(true);
-  }, [typedOptional, importing]);
+    if (typedOptional) setMoreOpen(true);
+  }, [typedOptional]);
   // What's in there and going on the summary, shown on the folded header.
   const aboutMeOn =
     form.aboutMe?.notes.filter((n) => n.lines.length && !form.aboutMe?.off.includes(n.id)).length ?? 0;
-  const calendarCount = form.calendarPage?.entryIds.length ?? 0;
   const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
   const included = [
     aboutMeOn && plural(aboutMeOn, parentFor ? "note from the Me board" : "note from my Me page", parentFor ? "notes from the Me board" : "notes from my Me page"),
-    pickedCheckIns.length && plural(pickedCheckIns.length, "My Voice check-in"),
-    calendarCount && plural(calendarCount, "calendar entry", "calendar entries"),
     timeline.entries.length && plural(timeline.entries.length, "timeline entry", "timeline entries"),
   ].filter(Boolean);
   const moreSummary = included.length
     ? `On the summary: ${included.join(" · ")}`
-    : "Me page, My Voice check-ins, calendar, timeline, and more";
+    : "Me page, symptom timeline, what's been ruled out, and communication needs";
   const refinableEntries = filledEntries(timeline);
 
   async function handleRefine() {
@@ -641,6 +637,86 @@ export default function AppointmentPrep() {
         onDelete={removeDraft}
       />
 
+      <BroughtIn
+        parentFor={parentFor}
+        calendarLabel={calendarLabel}
+        aboutMe={form.aboutMe}
+        boardReady={meBoardLoaded}
+        boardHasNotes={boardHasContent(meBoard)}
+        onBoardUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
+        checkInsLoaded={checkInsLoaded}
+        checkInCount={checkIns.length}
+        pickedCount={pickedCheckIns.length}
+        calendarCount={form.calendarPage?.entryIds.length ?? 0}
+        onShowAboutMe={() => {
+          setMoreOpen(true);
+          requestAnimationFrame(() =>
+            document.getElementById("about-me")?.scrollIntoView({ behavior: "smooth", block: "start" })
+          );
+        }}
+        onCalendar={() => {
+          setImportNote(null);
+          setImporting(true);
+          document.getElementById("calendar-import")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+      />
+
+      {/* Opened from the Calendar row above. */}
+      <div id="calendar-import" className="mb-8 grid scroll-mt-28 gap-3 empty:hidden">
+        {importing && family.children.length > 0 && mode !== "parent" && (
+          <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Whose calendar?</span>
+            {[{ id: null as string | null, name: "Mine" }, ...family.children.map((c) => ({ id: c.personId as string | null, name: c.name }))].map(
+              (o) => (
+                <button
+                  key={o.id ?? "mine"}
+                  type="button"
+                  aria-pressed={importFrom === o.id}
+                  onClick={() => setImportFrom(o.id)}
+                  className={`min-h-[40px] rounded-full border px-4 py-2 text-sm ${
+                    importFrom === o.id ? "border-navy bg-navy font-bold text-mist" : "border-navy/15 bg-white font-medium text-navy"
+                  }`}
+                >
+                  {o.name}
+                </button>
+              )
+            )}
+          </div>
+        )}
+        {importing && (!calLoaded || (importFrom && !childCals[importFrom])) ? (
+          <p className="text-sm text-slate">Loading the calendar…</p>
+        ) : importing ? (
+          <CalendarImport
+            key={importFrom ?? "mine"}
+            entries={importFrom ? childCals[importFrom].entries : calEntries}
+            customs={importFrom ? childCals[importFrom].customs : calCustoms}
+            lastVisit={history[0]?.savedAt ?? null}
+            alreadyIn={importedIds}
+            onImport={importFromCalendar}
+            onClose={() => setImporting(false)}
+            whose={calendarLabel}
+          />
+        ) : null}
+        {importNote && (
+          <p role="status" className="rounded-tile border border-sky bg-sky-tint px-4 py-3 text-sm text-navy">
+            {importNote}
+          </p>
+        )}
+        {form.calendarPage && (
+          <label className="flex items-center gap-2 text-sm font-medium text-ink">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={form.calendarPage.include}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, calendarPage: f.calendarPage && { ...f.calendarPage, include: e.target.checked } }))
+              }
+            />
+            Add a page "From my symptom calendar" to the PDF
+          </label>
+        )}
+      </div>
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -794,6 +870,16 @@ export default function AppointmentPrep() {
           ))}
         </ListSection>
 
+        <div id="my-voice" className="scroll-mt-28">
+          <MyVoiceSection
+            checkIns={checkIns}
+            loaded={checkInsLoaded}
+            pickedIds={pickedIds}
+            onToggle={togglePicked}
+            onAdded={(id) => setPicked([...pickedIds.filter((x) => x !== id), id])}
+          />
+        </div>
+
         <ListSection
           step={3}
           label={whose("medications", "Current medications")}
@@ -862,80 +948,6 @@ export default function AppointmentPrep() {
         </ListSection>
 
         <MoreToAdd open={moreOpen} onToggle={() => setMoreOpen((v) => !v)} summary={moreSummary}>
-          <BroughtIn
-            parentFor={parentFor}
-            calendarLabel={calendarLabel}
-            aboutMe={form.aboutMe}
-            boardReady={meBoardLoaded}
-            boardHasNotes={boardHasContent(meBoard)}
-            onBoardUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
-            checkInsLoaded={checkInsLoaded}
-            checkInCount={checkIns.length}
-            pickedCount={pickedCheckIns.length}
-            calendarCount={form.calendarPage?.entryIds.length ?? 0}
-            onCalendar={() => {
-              setImportNote(null);
-              setImporting(true);
-              document.getElementById("calendar-import")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-          />
-
-          {/* Opened from the Calendar row above. */}
-          <div id="calendar-import" className="grid scroll-mt-28 gap-3 empty:hidden">
-            {importing && family.children.length > 0 && mode !== "parent" && (
-              <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Whose calendar?</span>
-                {[{ id: null as string | null, name: "Mine" }, ...family.children.map((c) => ({ id: c.personId as string | null, name: c.name }))].map(
-                  (o) => (
-                    <button
-                      key={o.id ?? "mine"}
-                      type="button"
-                      aria-pressed={importFrom === o.id}
-                      onClick={() => setImportFrom(o.id)}
-                      className={`min-h-[40px] rounded-full border px-4 py-2 text-sm ${
-                        importFrom === o.id ? "border-navy bg-navy font-bold text-mist" : "border-navy/15 bg-white font-medium text-navy"
-                      }`}
-                    >
-                      {o.name}
-                    </button>
-                  )
-                )}
-              </div>
-            )}
-            {importing && (!calLoaded || (importFrom && !childCals[importFrom])) ? (
-              <p className="text-sm text-slate">Loading the calendar…</p>
-            ) : importing ? (
-              <CalendarImport
-                key={importFrom ?? "mine"}
-                entries={importFrom ? childCals[importFrom].entries : calEntries}
-                customs={importFrom ? childCals[importFrom].customs : calCustoms}
-                lastVisit={history[0]?.savedAt ?? null}
-                alreadyIn={importedIds}
-                onImport={importFromCalendar}
-                onClose={() => setImporting(false)}
-                whose={calendarLabel}
-              />
-            ) : null}
-            {importNote && (
-              <p role="status" className="rounded-tile border border-sky bg-sky-tint px-4 py-3 text-sm text-navy">
-                {importNote}
-              </p>
-            )}
-            {form.calendarPage && (
-              <label className="flex items-center gap-2 text-sm font-medium text-ink">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={form.calendarPage.include}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, calendarPage: f.calendarPage && { ...f.calendarPage, include: e.target.checked } }))
-                  }
-                />
-                Add a page "From my symptom calendar" to the PDF
-              </label>
-            )}
-          </div>
-
           <AboutMeSection
             title={parentFor ? `About ${parentFor} (from the Me board)` : "About me (from my Me page)"}
             parentFor={parentFor}
@@ -957,16 +969,6 @@ export default function AppointmentPrep() {
             }
             onUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
           />
-
-          <div id="my-voice" className="scroll-mt-28">
-            <MyVoiceSection
-              checkIns={checkIns}
-              loaded={checkInsLoaded}
-              pickedIds={pickedIds}
-              onToggle={togglePicked}
-              onAdded={(id) => setPicked([...pickedIds.filter((x) => x !== id), id])}
-            />
-          </div>
 
           <SymptomTimeline
             value={timeline}
@@ -1768,6 +1770,7 @@ function BroughtIn({
   checkInCount,
   pickedCount,
   calendarCount,
+  onShowAboutMe,
   onCalendar,
 }: {
   parentFor: string | null;
@@ -1780,6 +1783,8 @@ function BroughtIn({
   checkInCount: number;
   pickedCount: number;
   calendarCount: number;
+  /** About me sits in the fold-out: open it, then go there. */
+  onShowAboutMe: () => void;
   onCalendar: () => void;
 }) {
   const notes = aboutMe?.notes.filter((n) => n.lines.length && !aboutMe.off.includes(n.id)).length ?? 0;
@@ -1798,7 +1803,7 @@ function BroughtIn({
           ? `${board[0].toUpperCase()}${board.slice(1)} has notes that aren't on this draft yet.`
           : `Nothing on ${board} yet.`,
       action: notes ? (
-        <button type="button" onClick={() => go("about-me")} className="font-semibold text-link hover:underline">
+        <button type="button" onClick={onShowAboutMe} className="font-semibold text-link hover:underline">
           See them
         </button>
       ) : boardReady && boardHasNotes ? (
