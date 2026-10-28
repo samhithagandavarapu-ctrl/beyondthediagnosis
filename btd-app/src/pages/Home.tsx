@@ -7,25 +7,10 @@ import Scribble from "../components/Scribble";
 import { useAccountMode } from "../context/AccountModeContext";
 import { FamilyDashboard, SelfHome } from "../components/home/AccountHomes";
 
-const audiences = [
-  {
-    to: "/my-voice",
-    title: "I'm here for me",
-    desc: "Say how you feel, practice your visit, and tell your doctor in your own words.",
-    cta: "Open My Voice",
-  },
-  {
-    to: "/appointment-prep",
-    title: "I'm a parent or caregiver",
-    desc: "Get ready for appointments, track symptoms, and speak up when something gets brushed off.",
-    cta: "Prep for an appointment",
-  },
-  {
-    to: "/provider-education",
-    title: "I'm a provider",
-    desc: "Learn how diagnostic overshadowing shows up in practice, and help us shape provider training.",
-    cta: "For providers",
-  },
+// The two smaller doors next to "I'm here for me".
+const otherAudiences = [
+  { to: "/appointment-prep", title: "I'm a parent or caregiver" },
+  { to: "/provider-education", title: "I'm a provider" },
 ];
 
 const toolGroups = [
@@ -77,7 +62,7 @@ const toolGroups = [
   },
 ];
 
-// The headline sets down a word at a time; "label." gets underlined last.
+// The headline sets down a word at a time.
 const RISE_STEP = 70; // ms between words
 const headline = "Every symptom deserves a real look,".split(" ");
 const headlineTurn = "not a shrug and a".split(" ");
@@ -114,43 +99,42 @@ export default function Home() {
                   </span>
                 ))}
                 <span className="btd-rise" style={{ animationDelay: `${labelDelay}ms` }}>
-                  <Scribble delay={labelDelay + 450} className="text-link [&_svg]:text-sky">
-                    label.
-                  </Scribble>
+                  label.
                 </span>
               </span>
             </h1>
-            <p className="mt-8 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
-              Voiced helps people with Down syndrome, their families, and their
-              clinicians catch what diagnostic overshadowing hides: when a real,
-              treatable symptom gets waved off as{" "}
-              <Scribble kind="circle" delay={labelDelay + 1300} className="[&_svg]:text-coral/70">
-                "just Down syndrome."
-              </Scribble>
+            <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
+              Tools to help people with Down syndrome get their symptoms taken seriously.
             </p>
             <h2 className="mt-10 font-display text-23 font-extrabold text-navy">
               Who is Voiced for today?
             </h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-3">
-              {audiences.map((a, i) => (
-                <Link
-                  key={a.to}
-                  to={a.to}
-                  className={`btd-card btd-lift ${
-                    i === 0
-                      ? "btd-lift-butter border-2 border-navy bg-coral"
-                      : `btd-lift-${["sky", "coral", "butter"][i % 3]}`
-                  } grid min-h-[44px] content-start gap-2.5 p-6`}
-                >
-                  <h3 className="text-23 font-bold">{a.title}</h3>
-                  <p className={`text-15 leading-[1.65] ${i === 0 ? "text-coral-ink" : "text-body"}`}>
-                    {a.desc}
-                  </p>
-                  <span className={`text-sm font-bold ${i === 0 ? "text-navy underline underline-offset-[3px]" : "text-link"}`}>
-                    {a.cta} <span className="btd-arrow">→</span>
-                  </span>
-                </Link>
-              ))}
+            <div className="mt-4 grid gap-4 md:grid-cols-[3fr_2fr] md:gap-8">
+              <Link
+                to="/my-voice"
+                className="btd-dark btd-lift grid overflow-hidden rounded-card"
+              >
+                {/* PHOTO PLACEHOLDER: put a real photo of a self-advocate here
+                    later (an <img> with object-cover filling this box, and
+                    alt text describing the person). No stock photos. */}
+                <div aria-hidden="true" className="h-40 bg-mist/[0.08] sm:h-52" />
+                <span className="p-6 font-display text-[clamp(1.75rem,3vw,2.375rem)] font-extrabold leading-tight sm:p-8">
+                  I'm here for me <span className="btd-arrow">→</span>
+                </span>
+              </Link>
+              <ul className="grid self-center divide-y divide-navy/12 border-y border-navy/12">
+                {otherAudiences.map((a) => (
+                  <li key={a.to}>
+                    <Link
+                      to={a.to}
+                      className="group flex min-h-[64px] items-center justify-between gap-3 py-4 text-21 font-bold text-navy hover:text-link"
+                    >
+                      {a.title}
+                      <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
             <Link
               to="/understanding-overshadowing"
@@ -178,11 +162,11 @@ export default function Home() {
           <div key={g.label}>
             <h3 className="mt-[34px] btd-eyebrow">{g.label}</h3>
             <div className="grid gap-5 mt-4 md:grid-cols-3">
-              {g.tools.map((t, i) => (
+              {g.tools.map((t) => (
                 <Link
                   key={t.to}
                   to={t.to}
-                  className={`btd-card btd-lift btd-lift-${["sky", "coral", "butter"][i % 3]} p-[26px] grid gap-2.5 content-start`}
+                  className="btd-card btd-lift p-[26px] grid gap-2.5 content-start"
                 >
                   <h4 className="text-23 font-bold">{t.title}</h4>
                   <p className="text-15 leading-[1.65] text-body">{t.desc}</p>
@@ -252,7 +236,7 @@ export default function Home() {
               </p>
               <Link
                 to="/understanding-overshadowing"
-                className="btd-btn-coral mt-[26px] min-h-[50px] px-[26px] py-[15px] text-base"
+                className="btd-btn btd-accent mt-[26px] min-h-[50px] border-2 border-mist px-[26px] py-[15px] text-base text-mist hover:bg-mist hover:text-navy"
               >
                 Read the full breakdown →
               </Link>
@@ -300,7 +284,7 @@ export default function Home() {
             Built by listening directly to self-advocates and families first — not
             assumptions made on their behalf.
           </p>
-          <Link to="/assistant" className="btd-btn-coral mt-[30px] min-h-[52px] px-[30px] py-4 text-17">
+          <Link to="/assistant" className="btd-btn btd-accent mt-[30px] min-h-[52px] bg-navy px-[30px] py-4 text-17 text-mist hover:bg-navy/90">
             {CTA_LABEL}
           </Link>
         </Reveal>
