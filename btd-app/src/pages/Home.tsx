@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { CTA_LABEL } from "../data/site";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 import { isExternalLink } from "../lib/siteSettings";
-import Reveal from "../components/Reveal";
 import Scribble from "../components/Scribble";
 import { useAccountMode } from "../context/AccountModeContext";
 import { FamilyDashboard, SelfHome } from "../components/home/AccountHomes";
@@ -62,13 +61,6 @@ const toolGroups = [
   },
 ];
 
-// The headline sets down a word at a time.
-const RISE_STEP = 70; // ms between words
-const headline = "Every symptom deserves a real look,".split(" ");
-const headlineTurn = "not a shrug and a".split(" ");
-const turnDelay = (i: number) => (headline.length + i) * RISE_STEP + 250;
-const labelDelay = turnDelay(headlineTurn.length);
-
 export default function Home() {
   // Signed in as a parent or a self-advocate: their own home. Everyone else
   // gets the page about Voiced.
@@ -83,25 +75,8 @@ export default function Home() {
         <div className="mx-auto w-full max-w-[1200px] px-6 pt-10 pb-[76px]">
           <div>
             <h1 className="btd-hero-h1 max-w-[18em] !text-[clamp(2.125rem,4.4vw,3.5rem)] !leading-[1.06]">
-              {headline.map((w, i) => (
-                <span key={i}>
-                  <span className="btd-rise" style={{ animationDelay: `${i * RISE_STEP}ms` }}>
-                    {w}
-                  </span>{" "}
-                </span>
-              ))}
-              <span className="text-link">
-                {headlineTurn.map((w, i) => (
-                  <span key={i}>
-                    <span className="btd-rise" style={{ animationDelay: `${turnDelay(i)}ms` }}>
-                      {w}
-                    </span>{" "}
-                  </span>
-                ))}
-                <span className="btd-rise" style={{ animationDelay: `${labelDelay}ms` }}>
-                  label.
-                </span>
-              </span>
+              Every symptom deserves a real look,{" "}
+              <span className="text-link">not a shrug and a label.</span>
             </h1>
             <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
               Tools to help people with Down syndrome get their symptoms taken seriously.
@@ -261,23 +236,13 @@ export default function Home() {
 
       {/* Principle band */}
       <section className="btd-grain bg-sky">
-        <Reveal className="mx-auto max-w-[900px] px-6 py-[72px] text-center">
+        <div className="mx-auto max-w-[900px] px-6 py-[72px] text-center">
           <p className="text-12 font-bold uppercase tracking-[0.14em] text-sky-ink">
             Our guiding principle
           </p>
           <blockquote className="mt-[18px] font-display text-[clamp(1.75rem,4vw,2.875rem)] leading-[1.2] tracking-[-0.02em]">
-            {["\"Nothing", "for", "me,"].map((w, i) => (
-              <span key={i}>
-                <span className="btd-quote-word" style={{ transitionDelay: `${200 + i * 150}ms` }}>
-                  {w}
-                </span>{" "}
-              </span>
-            ))}
-            <span className="btd-quote-word" style={{ transitionDelay: "650ms" }}>
-              <Scribble onReveal delay={1000} className="[&_svg]:text-white">
-                without me."
-              </Scribble>
-            </span>
+            "Nothing for me,{" "}
+            <Scribble className="[&_svg]:text-white">without me."</Scribble>
           </blockquote>
           <p className="mx-auto mt-[18px] max-w-[46em] text-base leading-[1.7] text-sky-ink">
             Built by listening directly to self-advocates and families first — not
@@ -286,7 +251,7 @@ export default function Home() {
           <Link to="/assistant" className="btd-btn btd-accent mt-[30px] min-h-[52px] bg-navy px-[30px] py-4 text-17 text-mist hover:bg-navy/90">
             {CTA_LABEL}
           </Link>
-        </Reveal>
+        </div>
       </section>
     </div>
   );

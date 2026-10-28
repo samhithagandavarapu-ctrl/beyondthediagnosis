@@ -51,7 +51,7 @@ export default function Mission() {
         <blockquote className="border-y-2 border-coral py-10 text-center">
           <p className="font-display text-[clamp(1.75rem,4.5vw,2.25rem)] font-extrabold leading-[1.2] text-navy">
             Nothing for me,{" "}
-            <Scribble delay={600} className="[&_svg]:text-coral/70">
+            <Scribble className="[&_svg]:text-coral/70">
               without me.
             </Scribble>
           </p>

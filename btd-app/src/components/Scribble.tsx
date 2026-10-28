@@ -1,8 +1,7 @@
 import { ReactNode } from "react";
 
-// Pen strokes drawn by hand (deliberately a little uneven) that ink
-// themselves in over the words they mark. Decoration only — screen readers
-// get the words alone.
+// Pen strokes drawn by hand (deliberately a little uneven) over the words
+// they mark. Decoration only — screen readers get the words alone.
 const strokes = {
   underline: {
     viewBox: "0 0 200 24",
@@ -19,14 +18,10 @@ const strokes = {
 type Props = {
   children: ReactNode;
   kind?: keyof typeof strokes;
-  /** Milliseconds before the pen starts. */
-  delay?: number;
-  /** Draw when an ancestor gains .is-shown instead of on page load. */
-  onReveal?: boolean;
   className?: string;
 };
 
-export default function Scribble({ children, kind = "underline", delay = 0, onReveal, className = "" }: Props) {
+export default function Scribble({ children, kind = "underline", className = "" }: Props) {
   const s = strokes[kind];
   return (
     <span className={`relative inline-block whitespace-nowrap ${className}`}>
@@ -47,8 +42,6 @@ export default function Scribble({ children, kind = "underline", delay = 0, onRe
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
-            className={`btd-ink ${onReveal ? "btd-ink-on-reveal" : ""}`}
-            style={{ animationDelay: `${delay}ms` }}
           />
         </svg>
       </span>
@@ -58,15 +51,15 @@ export default function Scribble({ children, kind = "underline", delay = 0, onRe
 
 /** A page title with its last word underlined by hand — the same pen stroke
  *  the home headline uses, so every page opens the same way. */
-export function inkLastWord(text: string, delay = 350): ReactNode {
+export function inkLastWord(text: string): ReactNode {
   let cut = text.trimEnd().lastIndexOf(" ");
   // A pen stroke under "it" is a squiggle; take the word before it too.
   if (cut > 0 && text.length - cut <= 3) cut = text.lastIndexOf(" ", cut - 1);
-  if (cut < 0) return <Scribble delay={delay} className="[&_svg]:text-sky">{text}</Scribble>;
+  if (cut < 0) return <Scribble className="[&_svg]:text-sky">{text}</Scribble>;
   return (
     <>
       {text.slice(0, cut)}{" "}
-      <Scribble delay={delay} className="[&_svg]:text-sky">
+      <Scribble className="[&_svg]:text-sky">
         {text.slice(cut + 1)}
       </Scribble>
     </>
