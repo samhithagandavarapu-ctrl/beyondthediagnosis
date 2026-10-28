@@ -3,7 +3,6 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
 import Icon, { type IconName } from "./icons/Icon";
-import { CTA_LABEL } from "../data/site";
 import { possessive, useAccountMode } from "../context/AccountModeContext";
 import { openCalmingScreen } from "./CalmingScreen";
 import { ModeBadge } from "./ModeBanner";
@@ -13,6 +12,9 @@ import DisplayMenu from "./DisplayMenu";
 import { Chevron, menuRowClass, panelClass, useDropdown } from "./NavDropdown";
 
 type PageLink = { to: string; label: string };
+
+// The one coral button in the bar.
+const MAIN_BUTTON = { to: "/my-voice", label: "Start practicing" };
 
 const links: PageLink[] = [
   { to: "/stories", label: "Stories" },
@@ -173,8 +175,8 @@ function MobileMenu({ nav, signedIn }: { nav: Nav; signedIn: boolean }) {
       {open && (
         <div className={`absolute inset-x-4 top-full max-h-[calc(100vh-6rem)] overflow-y-auto ${panelClass}`}>
           {nav.showCta && (
-            <Link to="/assistant" className="btd-btn-coral mx-1.5 mb-2 mt-1 flex min-h-[52px] px-5 text-base md:hidden">
-              {CTA_LABEL}
+            <Link to={MAIN_BUTTON.to} className="btd-btn-coral mx-1.5 mb-2 mt-1 flex min-h-[52px] px-5 text-base md:hidden">
+              {MAIN_BUTTON.label}
             </Link>
           )}
           <p className={groupLabelClass}>Tools</p>
@@ -322,10 +324,10 @@ export default function Navbar() {
           <DisplayMenu />
           {showCta && (
             <Link
-              to="/assistant"
+              to={MAIN_BUTTON.to}
               className="btd-btn-coral hidden whitespace-nowrap px-5 text-sm md:inline-flex"
             >
-              {CTA_LABEL}
+              {MAIN_BUTTON.label}
             </Link>
           )}
           {user ? (

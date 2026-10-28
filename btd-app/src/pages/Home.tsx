@@ -5,6 +5,18 @@ import { isExternalLink } from "../lib/siteSettings";
 import Scribble from "../components/Scribble";
 import { useAccountMode } from "../context/AccountModeContext";
 import { FamilyDashboard, SelfHome } from "../components/home/AccountHomes";
+import Icon, { type IconName } from "../components/icons/Icon";
+
+// A peek at the My Voice check-in on the "I'm here for me" card.
+const previewFaces: IconName[] = ["face-great", "face-good", "face-okay", "face-bad"];
+
+// "What's inside": the main tools, by name only.
+const insideTools: { to: string; label: string; icon: IconName }[] = [
+  { to: "/my-voice", label: "My Voice", icon: "hub-feelings" },
+  { to: "/appointment-prep", label: "Appointment Prep", icon: "clipboard" },
+  { to: "/calendar", label: "My Calendar", icon: "calendar" },
+  { to: "/assistant", label: "AI Advocate", icon: "chat" },
+];
 
 // The two smaller doors next to "I'm here for me".
 const otherAudiences = [
@@ -87,13 +99,20 @@ export default function Home() {
             {/* 60/40 on wider screens, both columns the same height; one
                 column on phones. */}
             <div className="mt-4 grid gap-4 md:grid-cols-[3fr_2fr] md:gap-8">
-              {/* A real photo of a self-advocate could go in this block later. */}
               <Link
                 to="/my-voice"
-                className="btd-dark btd-lift flex min-h-[180px] items-center rounded-card p-6 sm:p-8"
+                className="btd-lift flex min-h-[180px] flex-col justify-center gap-4 rounded-card border border-navy/12 bg-butter p-6 text-navy sm:p-8"
               >
                 <span className="font-display text-[clamp(1.75rem,3vw,2.375rem)] font-extrabold leading-tight">
                   I'm here for me <span className="btd-arrow">→</span>
+                </span>
+                {/* Decoration only: the link reads as "I'm here for me". */}
+                <span aria-hidden="true" className="flex gap-2.5">
+                  {previewFaces.map((face) => (
+                    <span key={face} className="grid h-12 w-12 place-items-center rounded-full bg-white">
+                      <Icon name={face} size={30} />
+                    </span>
+                  ))}
                 </span>
               </Link>
               <ul className="grid grid-rows-2 divide-y divide-navy/12 border-y border-navy/12">
@@ -110,9 +129,25 @@ export default function Home() {
                 ))}
               </ul>
             </div>
+            <h2 id="inside-heading" className="mt-12 font-display text-23 font-extrabold text-navy">
+              What's inside
+            </h2>
+            <ul aria-labelledby="inside-heading" className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+              {insideTools.map((t) => (
+                <li key={t.to}>
+                  <Link
+                    to={t.to}
+                    className="flex h-full min-h-[64px] items-center gap-3 rounded-tile border border-sky bg-white px-4 py-3 text-15 font-bold text-navy transition-colors hover:bg-sky-tint"
+                  >
+                    <Icon name={t.icon} size={24} className="shrink-0" />
+                    {t.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
             <Link
               to="/understanding-overshadowing"
-              className="mt-[26px] inline-block text-15 font-bold text-link underline underline-offset-[3px] hover:text-navy"
+              className="mt-8 inline-block text-15 font-bold text-link underline underline-offset-[3px] hover:text-navy"
             >
               What is diagnostic overshadowing, exactly? →
             </Link>
@@ -122,13 +157,13 @@ export default function Home() {
 
       {/* Workshops announcement. Take this out (or change it) once dates are set. */}
       <section aria-labelledby="workshops-heading" className="mx-auto w-full max-w-[1200px] px-6 pt-[52px]">
-        <div className="btd-card flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-2 border-navy px-6 py-6 sm:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-card border-2 border-navy bg-sky px-6 py-6 sm:px-8">
           <div className="max-w-[44em]">
-            <p className="btd-eyebrow">Big news</p>
+            <p className="text-12 font-bold uppercase tracking-[0.14em] text-sky-ink">Big news</p>
             <h2 id="workshops-heading" className="mt-1.5 font-display text-23 font-extrabold text-navy">
               Voiced workshops are coming soon!
             </h2>
-            <p className="mt-2 text-17 leading-[1.6] text-body">
+            <p className="mt-2 text-17 leading-[1.6] text-sky-ink">
               We're planning hands-on sessions where kids practice speaking up about how they
               feel, plus parent sessions on getting ready for doctor visits.
             </p>
@@ -137,7 +172,7 @@ export default function Home() {
             href="https://www.instagram.com/withvoiced/"
             target="_blank"
             rel="noopener noreferrer"
-            className="btd-btn-outline min-h-[48px] w-full shrink-0 px-6 text-center text-15 sm:w-auto"
+            className="btd-btn-outline min-h-[48px] w-full shrink-0 bg-white px-6 text-center text-15 sm:w-auto"
           >
             Follow along for dates and locations →
             <span className="sr-only"> (opens Instagram in a new tab)</span>
