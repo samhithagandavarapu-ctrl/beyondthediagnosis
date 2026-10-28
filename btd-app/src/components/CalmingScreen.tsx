@@ -77,7 +77,7 @@ export default function CalmingScreen() {
           type="button"
           onClick={() => setOpen(true)}
           style={{ bottom }}
-          className="fixed right-5 z-40 flex min-h-[48px] items-center gap-1.5 rounded-full bg-sky px-4 py-2.5 font-bold text-navy shadow-[0_6px_20px_rgba(33,50,68,0.25)] transition-colors hover:bg-sky-hover print:hidden"
+          className="fixed right-[max(1.5rem,env(safe-area-inset-right))] z-40 flex min-h-[48px] items-center gap-1.5 rounded-full bg-sky px-4 py-2.5 font-bold text-navy shadow-[0_6px_20px_rgba(33,50,68,0.25)] transition-colors hover:bg-sky-hover print:hidden"
         >
           <Icon name="breath" size={19} />
           <span className="text-sm">Calm</span>
