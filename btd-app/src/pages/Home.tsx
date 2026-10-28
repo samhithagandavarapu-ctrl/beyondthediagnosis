@@ -120,6 +120,31 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Workshops announcement. Take this out (or change it) once dates are set. */}
+      <section aria-labelledby="workshops-heading" className="mx-auto w-full max-w-[1200px] px-6 pt-[52px]">
+        <div className="btd-card flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-2 border-navy px-6 py-6 sm:px-8">
+          <div className="max-w-[44em]">
+            <p className="btd-eyebrow">Big news</p>
+            <h2 id="workshops-heading" className="mt-1.5 font-display text-23 font-extrabold text-navy">
+              Voiced workshops are coming soon!
+            </h2>
+            <p className="mt-2 text-17 leading-[1.6] text-body">
+              We're planning hands-on sessions where kids practice speaking up about how they
+              feel, plus parent sessions on getting ready for doctor visits.
+            </p>
+          </div>
+          <a
+            href="https://www.instagram.com/withvoiced/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btd-btn-outline min-h-[48px] w-full shrink-0 px-6 text-center text-15 sm:w-auto"
+          >
+            Follow along for dates and locations →
+            <span className="sr-only"> (opens Instagram in a new tab)</span>
+          </a>
+        </div>
+      </section>
+
       {/* The tools */}
       <section className="mx-auto w-full max-w-[1200px] px-6 pt-[76px] pb-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
