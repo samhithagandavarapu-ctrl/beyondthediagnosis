@@ -242,6 +242,33 @@ export default function AppointmentPrep() {
 
   // Drafts saved before the timeline existed have none; treat that as empty.
   const timeline = form.timeline ?? emptyTimeline();
+
+  // "More you can add" starts folded. It opens by itself when something typed
+  // into it is already there (an opened draft), when the calendar is being
+  // brought in, or when My Voice sent a check-in here, so nothing is hidden.
+  const typedOptional =
+    timeline.usualSelf.trim() !== "" ||
+    timeline.entries.length > 0 ||
+    form.ruledOut.some((r) => r.description.trim() || r.when.trim()) ||
+    form.accommodations.trim() !== "";
+  const [moreOpen, setMoreOpen] = useState(() => importing || Boolean(linkedCheckIn));
+  useEffect(() => {
+    if (typedOptional || importing) setMoreOpen(true);
+  }, [typedOptional, importing]);
+  // What's in there and going on the summary, shown on the folded header.
+  const aboutMeOn =
+    form.aboutMe?.notes.filter((n) => n.lines.length && !form.aboutMe?.off.includes(n.id)).length ?? 0;
+  const calendarCount = form.calendarPage?.entryIds.length ?? 0;
+  const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+  const included = [
+    aboutMeOn && plural(aboutMeOn, parentFor ? "note from the Me board" : "note from my Me page", parentFor ? "notes from the Me board" : "notes from my Me page"),
+    pickedCheckIns.length && plural(pickedCheckIns.length, "My Voice check-in"),
+    calendarCount && plural(calendarCount, "calendar entry", "calendar entries"),
+    timeline.entries.length && plural(timeline.entries.length, "timeline entry", "timeline entries"),
+  ].filter(Boolean);
+  const moreSummary = included.length
+    ? `On the summary: ${included.join(" · ")}`
+    : "Me page, My Voice check-ins, calendar, timeline, and more";
   const refinableEntries = filledEntries(timeline);
 
   async function handleRefine() {
@@ -592,10 +619,8 @@ export default function AppointmentPrep() {
       <h1 className="text-3xl font-display font-semibold mb-2">
         {inkLastWord(self ? "Get ready for my visit" : parentFor ? `Appointment Prep for ${parentFor}` : "Appointment Prep Tool")}
       </h1>
-      <p className="text-slate mb-4">
-        Fill this out before your visit. It generates a clean, downloadable one-page
-        summary you can bring straight to your provider — so nothing gets lost in a
-        rushed appointment.
+      <p className="text-slate mb-6">
+        Fill this in before the visit. You'll get a one-page summary to bring to the doctor.
       </p>
       <DraftsPanel
         practice={practice}
@@ -616,134 +641,42 @@ export default function AppointmentPrep() {
         onDelete={removeDraft}
       />
 
-      <BroughtIn
-        parentFor={parentFor}
-        calendarLabel={calendarLabel}
-        aboutMe={form.aboutMe}
-        boardReady={meBoardLoaded}
-        boardHasNotes={boardHasContent(meBoard)}
-        onBoardUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
-        checkInsLoaded={checkInsLoaded}
-        checkInCount={checkIns.length}
-        pickedCount={pickedCheckIns.length}
-        calendarCount={form.calendarPage?.entryIds.length ?? 0}
-        onCalendar={() => {
-          setImportNote(null);
-          setImporting(true);
-          document.getElementById("calendar-import")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }}
-      />
-
-      {/* Opened from the Calendar row above. */}
-      <div id="calendar-import" className="mb-8 grid scroll-mt-28 gap-3 empty:hidden">
-        {importing && family.children.length > 0 && mode !== "parent" && (
-          <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Whose calendar?</span>
-            {[{ id: null as string | null, name: "Mine" }, ...family.children.map((c) => ({ id: c.personId as string | null, name: c.name }))].map(
-              (o) => (
-                <button
-                  key={o.id ?? "mine"}
-                  type="button"
-                  aria-pressed={importFrom === o.id}
-                  onClick={() => setImportFrom(o.id)}
-                  className={`min-h-[40px] rounded-full border px-4 py-2 text-sm ${
-                    importFrom === o.id ? "border-navy bg-navy font-bold text-mist" : "border-navy/15 bg-white font-medium text-navy"
-                  }`}
-                >
-                  {o.name}
-                </button>
-              )
-            )}
-          </div>
-        )}
-        {importing && (!calLoaded || (importFrom && !childCals[importFrom])) ? (
-          <p className="text-sm text-slate">Loading the calendar…</p>
-        ) : importing ? (
-          <CalendarImport
-            key={importFrom ?? "mine"}
-            entries={importFrom ? childCals[importFrom].entries : calEntries}
-            customs={importFrom ? childCals[importFrom].customs : calCustoms}
-            lastVisit={history[0]?.savedAt ?? null}
-            alreadyIn={importedIds}
-            onImport={importFromCalendar}
-            onClose={() => setImporting(false)}
-            whose={calendarLabel}
-          />
-        ) : null}
-        {importNote && (
-          <p role="status" className="rounded-tile border border-sky bg-sky-tint px-4 py-3 text-sm text-navy">
-            {importNote}
-          </p>
-        )}
-        {form.calendarPage && (
-          <label className="flex items-center gap-2 text-sm font-medium text-ink">
-            <input
-              type="checkbox"
-              className="h-4 w-4"
-              checked={form.calendarPage.include}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, calendarPage: f.calendarPage && { ...f.calendarPage, include: e.target.checked } }))
-              }
-            />
-            Add a page "From my symptom calendar" to the PDF
-          </label>
-        )}
-      </div>
-
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (!practice && !formIsEmpty(form)) setHistory(addToHistory(form, pickedCheckIns));
           setShowSummary(true);
         }}
-        className="space-y-8"
+        className="space-y-10"
       >
-        <Field label={self ? "My name" : parentFor ? "Who this visit is for" : "Patient name"}>
-          <input
-            className="btd-input"
-            value={form.patientName}
-            onChange={(e) => setForm({ ...form, patientName: e.target.value })}
-            placeholder="Who is this visit for?"
-          />
-        </Field>
+        <section aria-labelledby="step-1" className="space-y-5">
+          <StepHeading step={1} id="step-1">Who and why</StepHeading>
+          <Field label={self ? "My name" : parentFor ? "Who this visit is for" : "Patient name"}>
+            <input
+              className="btd-input"
+              value={form.patientName}
+              onChange={(e) => setForm({ ...form, patientName: e.target.value })}
+              placeholder="Who is this visit for?"
+            />
+          </Field>
 
-        <Field label={self ? "Why I'm going" : parentFor ? `Why ${parentFor} is going` : "Reason for visit"}>
-          <textarea
-            className="btd-input min-h-[80px]"
-            value={form.reasonForVisit}
-            onChange={(e) => setForm({ ...form, reasonForVisit: e.target.value })}
-            placeholder="One or two sentences on why you're coming in"
-          />
-          <DictateButton
-            value={form.reasonForVisit}
-            onChange={(v) => setForm((f) => ({ ...f, reasonForVisit: v }))}
-            label="Reason for visit"
-          />
-        </Field>
-
-        <AboutMeSection
-          title={parentFor ? `About ${parentFor} (from the Me board)` : "About me (from my Me page)"}
-          parentFor={parentFor}
-          copy={form.aboutMe}
-          boardReady={meBoardLoaded}
-          boardHasNotes={boardHasContent(meBoard)}
-          onToggle={(id) =>
-            setForm((f) =>
-              f.aboutMe
-                ? {
-                    ...f,
-                    aboutMe: {
-                      ...f.aboutMe,
-                      off: f.aboutMe.off.includes(id) ? f.aboutMe.off.filter((x) => x !== id) : [...f.aboutMe.off, id],
-                    },
-                  }
-                : f
-            )
-          }
-          onUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
-        />
+          <Field label={self ? "Why I'm going" : parentFor ? `Why ${parentFor} is going` : "Reason for visit"}>
+            <textarea
+              className="btd-input min-h-[80px]"
+              value={form.reasonForVisit}
+              onChange={(e) => setForm({ ...form, reasonForVisit: e.target.value })}
+              placeholder="One or two sentences on why you're coming in"
+            />
+            <DictateButton
+              value={form.reasonForVisit}
+              onChange={(v) => setForm((f) => ({ ...f, reasonForVisit: v }))}
+              label="Reason for visit"
+            />
+          </Field>
+        </section>
 
         <ListSection
+          step={2}
           label={whose("symptoms", "Symptoms")}
           addLabel="+ Add another symptom"
           onAdd={() => addItem("symptoms", emptySymptom)}
@@ -762,6 +695,27 @@ export default function AppointmentPrep() {
                 onChange={(e) => updateItem("symptoms", s.id, { description: e.target.value })}
               />
               <div className="grid sm:grid-cols-2 gap-3">
+                <input
+                  className="btd-input"
+                  placeholder="When did it start? (onset / duration)"
+                  value={s.onset}
+                  onChange={(e) => updateItem("symptoms", s.id, { onset: e.target.value })}
+                />
+                <select
+                  className="btd-input"
+                  aria-label="New or usual"
+                  value={s.baselineOrNew}
+                  onChange={(e) =>
+                    updateItem("symptoms", s.id, {
+                      baselineOrNew: e.target.value as Symptom["baselineOrNew"],
+                    })
+                  }
+                >
+                  <option value="new">New — not typical for this person</option>
+                  <option value="baseline">Baseline — part of how they usually are</option>
+                </select>
+              </div>
+              <SymptomDetails symptom={s}>
                 <select
                   className="btd-input"
                   aria-label="Where on the body"
@@ -774,24 +728,6 @@ export default function AppointmentPrep() {
                       {a}
                     </option>
                   ))}
-                </select>
-                <input
-                  className="btd-input"
-                  placeholder="When did it start? (onset / duration)"
-                  value={s.onset}
-                  onChange={(e) => updateItem("symptoms", s.id, { onset: e.target.value })}
-                />
-                <select
-                  className="btd-input sm:col-span-2"
-                  value={s.baselineOrNew}
-                  onChange={(e) =>
-                    updateItem("symptoms", s.id, {
-                      baselineOrNew: e.target.value as Symptom["baselineOrNew"],
-                    })
-                  }
-                >
-                  <option value="new">New — not typical for this person</option>
-                  <option value="baseline">Baseline — part of how they usually are</option>
                 </select>
                 <input
                   className="btd-input"
@@ -837,7 +773,7 @@ export default function AppointmentPrep() {
                   value={s.notes ?? ""}
                   onChange={(e) => updateItem("symptoms", s.id, { notes: e.target.value || undefined })}
                 />
-              </div>
+              </SymptomDetails>
               {s.calendar && (
                 <p className="flex flex-wrap items-center gap-2 text-xs text-slate">
                   <Icon name="calendar" size={14} />
@@ -858,23 +794,8 @@ export default function AppointmentPrep() {
           ))}
         </ListSection>
 
-        <SymptomTimeline
-          value={timeline}
-          onChange={(t: Timeline) => setForm((f) => ({ ...f, timeline: t }))}
-        />
-
-        <div id="my-voice" className="scroll-mt-28">
-          <MyVoiceSection
-            checkIns={checkIns}
-            loaded={checkInsLoaded}
-            pickedIds={pickedIds}
-            onToggle={togglePicked}
-            onAdded={(id) => setPicked([...pickedIds.filter((x) => x !== id), id])}
-          />
-        </div>
-
-
         <ListSection
+          step={3}
           label={whose("medications", "Current medications")}
           addLabel="+ Add another medication"
           onAdd={() => addItem("medications", emptyMedication)}
@@ -913,48 +834,7 @@ export default function AppointmentPrep() {
         </ListSection>
 
         <ListSection
-          label="Already ruled out"
-          addLabel="+ Add another"
-          onAdd={() => addItem("ruledOut", emptyRuledOut)}
-        >
-          {form.ruledOut.map((r, i) => (
-            <EntryCard
-              key={r.id}
-              index={i}
-              label="Ruled out"
-              onRemove={form.ruledOut.length > 1 ? () => removeItem("ruledOut", r.id) : undefined}
-            >
-              <input
-                className="btd-input"
-                placeholder="Test, condition, or explanation already checked"
-                value={r.description}
-                onChange={(e) => updateItem("ruledOut", r.id, { description: e.target.value })}
-              />
-              <input
-                className="btd-input"
-                placeholder="When was it checked? (optional)"
-                value={r.when}
-                onChange={(e) => updateItem("ruledOut", r.id, { when: e.target.value })}
-              />
-            </EntryCard>
-          ))}
-        </ListSection>
-
-        <Field label="Communication or accommodation needs">
-          <textarea
-            className="btd-input min-h-[70px]"
-            value={form.accommodations}
-            onChange={(e) => setForm({ ...form, accommodations: e.target.value })}
-            placeholder="e.g. extra time to answer, picture-based options, speak directly to the patient first"
-          />
-          <DictateButton
-            value={form.accommodations}
-            onChange={(v) => setForm((f) => ({ ...f, accommodations: v }))}
-            label="Communication or accommodation needs"
-          />
-        </Field>
-
-        <ListSection
+          step={4}
           label={self ? "My questions for the doctor" : "Prioritized questions"}
           addLabel="+ Add another question"
           onAdd={() => addItem("questions", emptyQuestion)}
@@ -981,46 +861,201 @@ export default function AppointmentPrep() {
           ))}
         </ListSection>
 
+        <MoreToAdd open={moreOpen} onToggle={() => setMoreOpen((v) => !v)} summary={moreSummary}>
+          <BroughtIn
+            parentFor={parentFor}
+            calendarLabel={calendarLabel}
+            aboutMe={form.aboutMe}
+            boardReady={meBoardLoaded}
+            boardHasNotes={boardHasContent(meBoard)}
+            onBoardUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
+            checkInsLoaded={checkInsLoaded}
+            checkInCount={checkIns.length}
+            pickedCount={pickedCheckIns.length}
+            calendarCount={form.calendarPage?.entryIds.length ?? 0}
+            onCalendar={() => {
+              setImportNote(null);
+              setImporting(true);
+              document.getElementById("calendar-import")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
+
+          {/* Opened from the Calendar row above. */}
+          <div id="calendar-import" className="grid scroll-mt-28 gap-3 empty:hidden">
+            {importing && family.children.length > 0 && mode !== "parent" && (
+              <div role="group" aria-label="Whose calendar?" className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Whose calendar?</span>
+                {[{ id: null as string | null, name: "Mine" }, ...family.children.map((c) => ({ id: c.personId as string | null, name: c.name }))].map(
+                  (o) => (
+                    <button
+                      key={o.id ?? "mine"}
+                      type="button"
+                      aria-pressed={importFrom === o.id}
+                      onClick={() => setImportFrom(o.id)}
+                      className={`min-h-[40px] rounded-full border px-4 py-2 text-sm ${
+                        importFrom === o.id ? "border-navy bg-navy font-bold text-mist" : "border-navy/15 bg-white font-medium text-navy"
+                      }`}
+                    >
+                      {o.name}
+                    </button>
+                  )
+                )}
+              </div>
+            )}
+            {importing && (!calLoaded || (importFrom && !childCals[importFrom])) ? (
+              <p className="text-sm text-slate">Loading the calendar…</p>
+            ) : importing ? (
+              <CalendarImport
+                key={importFrom ?? "mine"}
+                entries={importFrom ? childCals[importFrom].entries : calEntries}
+                customs={importFrom ? childCals[importFrom].customs : calCustoms}
+                lastVisit={history[0]?.savedAt ?? null}
+                alreadyIn={importedIds}
+                onImport={importFromCalendar}
+                onClose={() => setImporting(false)}
+                whose={calendarLabel}
+              />
+            ) : null}
+            {importNote && (
+              <p role="status" className="rounded-tile border border-sky bg-sky-tint px-4 py-3 text-sm text-navy">
+                {importNote}
+              </p>
+            )}
+            {form.calendarPage && (
+              <label className="flex items-center gap-2 text-sm font-medium text-ink">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={form.calendarPage.include}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, calendarPage: f.calendarPage && { ...f.calendarPage, include: e.target.checked } }))
+                  }
+                />
+                Add a page "From my symptom calendar" to the PDF
+              </label>
+            )}
+          </div>
+
+          <AboutMeSection
+            title={parentFor ? `About ${parentFor} (from the Me board)` : "About me (from my Me page)"}
+            parentFor={parentFor}
+            copy={form.aboutMe}
+            boardReady={meBoardLoaded}
+            boardHasNotes={boardHasContent(meBoard)}
+            onToggle={(id) =>
+              setForm((f) =>
+                f.aboutMe
+                  ? {
+                      ...f,
+                      aboutMe: {
+                        ...f.aboutMe,
+                        off: f.aboutMe.off.includes(id) ? f.aboutMe.off.filter((x) => x !== id) : [...f.aboutMe.off, id],
+                      },
+                    }
+                  : f
+              )
+            }
+            onUpdate={() => setForm((f) => ({ ...f, aboutMe: { ...copyBoard(meBoard), off: f.aboutMe?.off ?? [] } }))}
+          />
+
+          <div id="my-voice" className="scroll-mt-28">
+            <MyVoiceSection
+              checkIns={checkIns}
+              loaded={checkInsLoaded}
+              pickedIds={pickedIds}
+              onToggle={togglePicked}
+              onAdded={(id) => setPicked([...pickedIds.filter((x) => x !== id), id])}
+            />
+          </div>
+
+          <SymptomTimeline
+            value={timeline}
+            onChange={(t: Timeline) => setForm((f) => ({ ...f, timeline: t }))}
+          />
+
+          <ListSection
+            label="Already ruled out"
+            addLabel="+ Add another"
+            onAdd={() => addItem("ruledOut", emptyRuledOut)}
+          >
+            {form.ruledOut.map((r, i) => (
+              <EntryCard
+                key={r.id}
+                index={i}
+                label="Ruled out"
+                onRemove={form.ruledOut.length > 1 ? () => removeItem("ruledOut", r.id) : undefined}
+              >
+                <input
+                  className="btd-input"
+                  placeholder="Test, condition, or explanation already checked"
+                  value={r.description}
+                  onChange={(e) => updateItem("ruledOut", r.id, { description: e.target.value })}
+                />
+                <input
+                  className="btd-input"
+                  placeholder="When was it checked? (optional)"
+                  value={r.when}
+                  onChange={(e) => updateItem("ruledOut", r.id, { when: e.target.value })}
+                />
+              </EntryCard>
+            ))}
+          </ListSection>
+
+          <Field label="Communication or accommodation needs">
+            <textarea
+              className="btd-input min-h-[70px]"
+              value={form.accommodations}
+              onChange={(e) => setForm({ ...form, accommodations: e.target.value })}
+              placeholder="e.g. extra time to answer, picture-based options, speak directly to the patient first"
+            />
+            <DictateButton
+              value={form.accommodations}
+              onChange={(v) => setForm((f) => ({ ...f, accommodations: v }))}
+              label="Communication or accommodation needs"
+            />
+          </Field>
+        </MoreToAdd>
+
         {refineError && (
           <p className="text-sm text-clay bg-clay/10 border border-clay/30 rounded px-4 py-3">
             {refineError}
           </p>
         )}
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            className="btd-btn btd-accent min-h-[52px] bg-navy px-7 text-base text-mist hover:bg-navy/90"
+          >
+            Generate summary
+          </button>
           <button
             type="button"
             onClick={handleRefine}
             disabled={refining}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded border border-gold text-gold-dark font-semibold hover:bg-gold/10 transition-colors disabled:opacity-50"
+            className="btd-btn-outline min-h-[44px] gap-2 px-5 text-sm disabled:opacity-50"
           >
             <Icon name="refine" size={18} />
             {refining ? "Refining…" : "Refine with AI"}
           </button>
-          <button
-            type="submit"
-            className="px-5 py-3 rounded bg-ink text-paper font-semibold hover:bg-slate transition-colors"
-          >
-            Generate summary
-          </button>
+          <SaveToDrafts
+            practice={practice}
+            empty={formIsEmpty(form)}
+            suggestedName={
+              draftName.trim() ||
+              `${form.patientName.trim() || "Visit"} – ${new Date().toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })}`
+            }
+            onSave={saveToDrafts}
+          />
         </div>
-
-        <SaveToDrafts
-          practice={practice}
-          empty={formIsEmpty(form)}
-          suggestedName={
-            draftName.trim() ||
-            `${form.patientName.trim() || "Visit"} – ${new Date().toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-            })}`
-          }
-          onSave={saveToDrafts}
-        />
       </form>
 
       <HistorySection
         entries={history}
+        startOpen={hash === "#history"}
         onView={setViewing}
         onReuse={reuseEntry}
         onDelete={deleteEntry}
@@ -1031,15 +1066,20 @@ export default function AppointmentPrep() {
 
 function HistorySection({
   entries,
+  startOpen,
   onView,
   onReuse,
   onDelete,
 }: {
   entries: HistoryEntry[];
+  /** Linked to directly (/appointment-prep#history): show every one. */
+  startOpen: boolean;
   onView: (entry: HistoryEntry) => void;
   onReuse: (entry: HistoryEntry) => void;
   onDelete: (entry: HistoryEntry) => void;
 }) {
+  const [showAll, setShowAll] = useState(startOpen);
+  const shown = showAll ? entries : entries.slice(0, 3);
   return (
     <section id="history" className="mt-14 scroll-mt-24">
       <h2 className="text-23 font-extrabold text-navy">Appointment history</h2>
@@ -1054,7 +1094,7 @@ function HistorySection({
         </p>
       ) : (
         <ul className="mt-4 space-y-3">
-          {entries.map((entry) => (
+          {shown.map((entry) => (
             <li key={entry.id} className="btd-card p-4">
               <p className="text-xs uppercase tracking-wide text-slate-light font-semibold">
                 {new Date(entry.savedAt).toLocaleDateString(undefined, {
@@ -1090,6 +1130,15 @@ function HistorySection({
             </li>
           ))}
         </ul>
+      )}
+      {entries.length > 3 && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-3 min-h-[36px] text-sm font-semibold text-link hover:underline"
+        >
+          {showAll ? "Show fewer" : `Show all ${entries.length}`}
+        </button>
       )}
     </section>
   );
@@ -1133,30 +1182,121 @@ function EntryCard({
 }
 
 function ListSection({
+  step,
   label,
   addLabel,
   onAdd,
   children,
 }: {
+  /** One of the four main steps: a numbered heading. */
+  step?: number;
   label: string;
   addLabel: string;
   onAdd: () => void;
   children: React.ReactNode;
 }) {
+  const addButton = (
+    <button type="button" onClick={onAdd} className="min-h-[36px] text-sm font-semibold text-link hover:underline">
+      {addLabel}
+    </button>
+  );
+  if (step) {
+    const id = `step-${step}`;
+    return (
+      <section aria-labelledby={id} className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <StepHeading step={step} id={id}>
+            {label}
+          </StepHeading>
+          {addButton}
+        </div>
+        {children}
+      </section>
+    );
+  }
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <span className="font-semibold text-sm text-ink">{label}</span>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="text-xs font-semibold text-gold-dark hover:underline"
-        >
-          {addLabel}
-        </button>
+        {addButton}
       </div>
       <div className="space-y-3">{children}</div>
     </div>
+  );
+}
+
+function StepHeading({ step, id, children }: { step: number; id: string; children: React.ReactNode }) {
+  return (
+    <h2 id={id} className="flex items-center gap-3 text-21 font-extrabold text-navy">
+      <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-tint text-15 text-navy">
+        {step}
+      </span>
+      {children}
+    </h2>
+  );
+}
+
+/** The extra symptom fields, folded until wanted (or already filled in). */
+function SymptomDetails({ symptom: s, children }: { symptom: Symptom; children: React.ReactNode }) {
+  const [open, setOpen] = useState(
+    () => Boolean(s.area || s.pattern || s.reportedBy || s.trajectory || s.notes)
+  );
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="min-h-[36px] text-sm font-semibold text-link hover:underline"
+      >
+        {open ? "Hide extra detail" : "+ Add more detail"}
+      </button>
+      {/* Hidden by class, not the hidden attribute: "grid" would override it. */}
+      <div className={`mt-2 gap-3 sm:grid-cols-2 ${open ? "grid" : "hidden"}`}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Everything optional, in one fold-out. Hidden rather than removed when
+ *  closed, so a check-in or timeline in progress isn't lost. */
+function MoreToAdd({
+  open,
+  onToggle,
+  summary,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  summary: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section aria-labelledby="more-heading" className="rounded-card border border-navy/12 bg-white">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls="more-to-add"
+        className="flex min-h-[64px] w-full items-center justify-between gap-3 rounded-card px-5 py-4 text-left hover:bg-sky/10"
+      >
+        <span>
+          <span id="more-heading" className="block text-17 font-extrabold text-navy">
+            More you can add (optional)
+          </span>
+          <span className="mt-0.5 block text-13 text-body">{summary}</span>
+        </span>
+        <Icon
+          name="chevron-right"
+          size={20}
+          className={`shrink-0 text-navy transition-transform ${open ? "-rotate-90" : "rotate-90"}`}
+        />
+      </button>
+      <div id="more-to-add" className={`space-y-8 border-t border-navy/10 px-5 pb-6 pt-5 ${open ? "block" : "hidden"}`}>
+        {children}
+      </div>
+    </section>
   );
 }
 
@@ -1203,13 +1343,13 @@ function DraftsPanel({
 
   let where: string;
   if (practice) {
-    where = "Practice mode: nothing you type here is saved, and it won't go in your history.";
+    where = "Practice mode: nothing here is saved.";
   } else if (store === "account") {
-    where = "Saved to your account as you type, so it's here on any device you sign in on.";
+    where = "Saves to your account as you type.";
   } else if (signedIn && accountMissing) {
-    where = "Saved on this device as you type. Saving to your account isn't switched on yet.";
+    where = "Saves on this device as you type.";
   } else {
-    where = "Saved on this device as you type, and never uploaded. Sign in to keep your drafts on any device.";
+    where = "Saves on this device as you type, never uploaded.";
   }
 
   const status = practice
@@ -1227,38 +1367,51 @@ function DraftsPanel({
     : null;
 
   return (
-    <section aria-labelledby="drafts-heading" className="btd-card mb-8 p-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <label id="drafts-heading" htmlFor="draft-name" className="block text-sm font-bold text-navy">
-            This draft
-          </label>
-          <input
-            id="draft-name"
-            className="btd-input mt-1.5"
-            value={name}
-            onChange={(e) => onNameChange(e.target.value)}
-            placeholder={placeholder}
-            aria-describedby="draft-where"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {current && (
-            <button
-              type="button"
-              onClick={() => onDelete(current)}
-              className="btd-btn min-h-[40px] px-4 text-sm font-semibold text-clay hover:underline"
-            >
-              Delete
-            </button>
-          )}
-          <button type="button" onClick={onNew} className="btd-btn-sky min-h-[40px] px-4 text-sm">
-            + New draft
+    // One slim line: the name, a new draft, and the list when wanted.
+    <section aria-labelledby="drafts-heading" className="mb-10 rounded-tile border border-navy/12 bg-white px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <label id="drafts-heading" htmlFor="draft-name" className="text-sm font-bold text-navy">
+          Draft
+        </label>
+        <input
+          id="draft-name"
+          className="btd-input min-h-[40px] min-w-0 flex-1 basis-[160px]"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          placeholder={placeholder}
+          aria-describedby="draft-where"
+        />
+        <button type="button" onClick={onNew} className="btd-btn-sky min-h-[40px] px-4 text-sm">
+          + New draft
+        </button>
+        {drafts.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setListOpen((v) => !v)}
+            aria-expanded={listOpen}
+            aria-controls="drafts-grid"
+            className="inline-flex min-h-[40px] items-center gap-1 text-sm font-bold text-navy hover:text-link"
+          >
+            My drafts ({drafts.length})
+            <Icon
+              name="chevron-right"
+              size={16}
+              className={`transition-transform ${listOpen ? "-rotate-90" : "rotate-90"}`}
+            />
           </button>
-        </div>
+        )}
+        {current && (
+          <button
+            type="button"
+            onClick={() => onDelete(current)}
+            className="min-h-[40px] text-sm font-semibold text-clay hover:underline"
+          >
+            Delete
+          </button>
+        )}
       </div>
 
-      <p id="draft-where" className="mt-3 text-13 text-sky-ink">
+      <p id="draft-where" className="mt-1.5 text-12 text-muted">
         {where}
         {status && (
           <span className="ml-1 font-semibold text-navy" aria-live="polite">
@@ -1267,24 +1420,9 @@ function DraftsPanel({
         )}
       </p>
 
-      {drafts.length > 0 && (
-        <div className="mt-5 border-t border-navy/[0.08] pt-4">
-          <button
-            type="button"
-            onClick={() => setListOpen((v) => !v)}
-            aria-expanded={listOpen}
-            aria-controls="drafts-grid"
-            className="flex w-full items-center justify-between gap-2 rounded-tile text-left text-sm font-bold text-navy hover:text-link"
-          >
-            <span>Your drafts ({drafts.length})</span>
-            <Icon
-              name="chevron-right"
-              size={18}
-              className={`transition-transform ${listOpen ? "-rotate-90" : "rotate-90"}`}
-            />
-          </button>
-          {listOpen && (
-          <ul id="drafts-grid" className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {listOpen && drafts.length > 0 && (
+        <div className="mt-3 border-t border-navy/[0.08] pt-3">
+          <ul id="drafts-grid" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {shown.map((d) => (
               <DraftCard
                 key={d.id}
@@ -1299,8 +1437,7 @@ function DraftsPanel({
               />
             ))}
           </ul>
-          )}
-          {listOpen && drafts.length > 6 && (
+          {drafts.length > 6 && (
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
@@ -1441,27 +1578,23 @@ function SaveToDrafts({
   }
 
   return (
-    <div className="rounded-tile border border-navy/16 bg-mist p-4">
+    <>
       {!naming ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            disabled={empty}
-            onClick={() => {
-              setName(suggestedName);
-              setDone(null);
-              setNaming(true);
-            }}
-            className="btd-btn-sky min-h-[44px] px-5 text-sm disabled:opacity-40"
-          >
-            Save to my drafts
-          </button>
-          <p className="text-sm text-slate" role="status">
-            {done ?? (empty ? "Fill in the form first, then save it here." : "Give it a name so it's easy to find later.")}
-          </p>
-        </div>
+        <button
+          type="button"
+          disabled={empty}
+          title={empty ? "Fill in the form first, then save it." : undefined}
+          onClick={() => {
+            setName(suggestedName);
+            setDone(null);
+            setNaming(true);
+          }}
+          className="btd-btn-sky min-h-[44px] px-5 text-sm disabled:opacity-40"
+        >
+          Save to my drafts
+        </button>
       ) : (
-        <div>
+        <div className="basis-full">
           <label htmlFor="save-draft-name" className="block text-sm font-bold text-navy">
             Name this draft
           </label>
@@ -1498,7 +1631,12 @@ function SaveToDrafts({
           </div>
         </div>
       )}
-    </div>
+      {done && (
+        <p role="status" className="basis-full text-sm text-slate">
+          {done}
+        </p>
+      )}
+    </>
   );
 }
 

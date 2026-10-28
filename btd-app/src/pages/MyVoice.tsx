@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import PageHero from "../components/PageHero";
 import HelperMessage, { forLevel } from "../components/HelperMessage";
-import PracticeModeToggle from "../components/PracticeModeToggle";
 import SayCards from "../components/myvoice/SayCards";
 import Scenarios from "../components/myvoice/Scenarios";
 import VoiceMemo from "../components/myvoice/VoiceMemo";
@@ -67,7 +66,7 @@ export default function MyVoice() {
       <PageHero
         eyebrow="My Voice"
         title="Say how you feel, in your own way"
-        lede="This part of Voiced is for you — not for the grown-up who brought you. Check in to say how you feel, get ready for the doctor, and tell them in your own words."
+        lede="Check in and get ready for the doctor."
       />
 
       <section className="btd-container pt-10 pb-20 grid gap-8">
@@ -161,11 +160,14 @@ function SettingsStrip() {
   const { readingLevel, setReadingLevel, readAloud, toggleReadAloud, canSpeak, say } = useMyVoice();
   const { practice } = usePracticeMode();
 
+  // One quiet row. Practice mode lives in the Display menu at the top.
   return (
-    <div className="btd-card p-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="btd-eyebrow">How much reading?</span>
-        <div className="flex flex-wrap gap-2">
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span id="reading-label" className="text-sm font-bold text-navy">
+          Reading:
+        </span>
+        <div role="group" aria-labelledby="reading-label" className="flex flex-wrap gap-2">
           {READING_LEVELS.map((level) => (
             <button
               key={level.id}
@@ -176,7 +178,7 @@ function SettingsStrip() {
                 setReadingLevel(level.id);
                 say(level.label);
               }}
-              className={`min-h-[40px] rounded-full border-2 px-4 py-2 text-sm font-bold transition-colors ${
+              className={`min-h-[44px] rounded-full border-2 px-4 py-2 text-sm font-bold transition-colors ${
                 readingLevel === level.id
                   ? "border-navy bg-sky text-navy"
                   : "border-navy/15 bg-white text-body hover:border-sky"
@@ -186,35 +188,24 @@ function SettingsStrip() {
             </button>
           ))}
         </div>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {canSpeak && (
-            <button
-              type="button"
-              onClick={toggleReadAloud}
-              aria-pressed={readAloud}
-              className={`min-h-[40px] rounded-full border-2 px-4 py-2 text-sm font-bold transition-colors ${
-                readAloud ? "border-navy bg-butter text-navy" : "border-navy/15 bg-white text-body"
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Icon name={readAloud ? "speaker" : "speaker-off"} size={16} />
-                {readAloud ? "Read aloud on" : "Read aloud off"}
-              </span>
-            </button>
-          )}
-          <PracticeModeToggle tone="light" />
-        </div>
+        {canSpeak && (
+          <button
+            type="button"
+            onClick={toggleReadAloud}
+            aria-pressed={readAloud}
+            className={`min-h-[44px] rounded-full border-2 px-4 py-2 text-sm font-bold transition-colors sm:ml-auto ${
+              readAloud ? "border-navy bg-butter text-navy" : "border-navy/15 bg-white text-body"
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Icon name={readAloud ? "speaker" : "speaker-off"} size={16} />
+              {readAloud ? "Read aloud on" : "Read aloud off"}
+            </span>
+          </button>
+        )}
       </div>
-      <p className="mt-3 text-13 text-muted">
-        {READING_LEVELS.find((l) => l.id === readingLevel)?.description} This one setting
-        changes every part of My Voice.{" "}
-        <Link to="/profile" className="font-semibold text-link hover:underline">
-          It saves to your profile.
-        </Link>
-      </p>
       {practice && (
-        <p className="mt-2 rounded-tile border border-butter bg-butter/30 px-4 py-2 text-13 font-semibold text-navy">
+        <p className="rounded-tile border border-butter bg-butter/30 px-4 py-2 text-13 font-semibold text-navy">
           Practice mode is on. Nothing you do here is saved, downloaded, or added to a real
           appointment — it's just for rehearsing.
         </p>
@@ -231,15 +222,20 @@ type Tile =
   | { kind: "section"; id: Section; icon: IconName; copy: Copy }
   | { kind: "link"; to: string; icon: IconName; copy: Copy };
 
-const GROUPS: { title: Copy; practiceCard?: boolean; tiles: Tile[] }[] = [
+const GROUPS: { title: Copy; tiles: Tile[] }[] = [
   {
     title: { icon: "Get ready", short: "Get ready for the doctor", full: "Get ready for the doctor" },
-    practiceCard: true,
     tiles: [
+      {
+        kind: "link",
+        to: "/my-voice/practice",
+        icon: "hub-visit",
+        copy: { icon: "Practice my visit", short: "Practice my visit", full: "Practice my visit before I go" },
+      },
       {
         kind: "section",
         id: "visit",
-        icon: "hub-visit",
+        icon: "doctor",
         copy: {
           icon: "What happens",
           short: "What happens at a visit",
@@ -297,10 +293,14 @@ const GROUPS: { title: Copy; practiceCard?: boolean; tiles: Tile[] }[] = [
 ];
 
 const tileClass =
-  "btd-card btd-card-hover flex min-h-[150px] flex-col items-center justify-center gap-3 p-5 text-center";
+  "btd-card btd-card-hover flex min-h-[120px] flex-col items-center justify-center gap-2.5 p-4 text-center";
 
 function Home({ onPick, onCheckIn }: { onPick: (s: Section) => void; onCheckIn: () => void }) {
   const { readingLevel, say } = useMyVoice();
+  // With a visit date set, the practice tile says how long is left.
+  const plan = readJson<PlannedVisit | null>(PRACTICE_KEYS.plan, null);
+  const days = plan ? daysUntil(plan.date) : null;
+  const countdown = days !== null && days >= 0 ? countdownText(days) : null;
 
   return (
     <div className="grid gap-10">
@@ -314,16 +314,18 @@ function Home({ onPick, onCheckIn }: { onPick: (s: Section) => void; onCheckIn: 
               <h2 className="text-23 font-display font-extrabold text-navy">{title}</h2>
               <SpeakButton text={title} />
             </div>
-            {group.practiceCard && <PracticeVisitCard />}
-            <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))]">
+            <div className="grid gap-3 sm:gap-4 grid-cols-[repeat(auto-fit,minmax(min(100%,140px),1fr))]">
               {group.tiles.map((tile) => {
                 const label = forLevel(readingLevel, tile.copy);
                 const inner = (
                   <>
-                    <span className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-sky-tint text-navy">
-                      <Icon name={tile.icon} size={34} />
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-sky-tint text-navy">
+                      <Icon name={tile.icon} size={30} />
                     </span>
                     <span className="text-17 font-display font-extrabold text-navy">{label}</span>
+                    {tile.kind === "link" && tile.to === "/my-voice/practice" && countdown && readingLevel !== "icon" && (
+                      <span className="text-13 text-body">{countdown}</span>
+                    )}
                   </>
                 );
                 return tile.kind === "link" ? (
@@ -405,43 +407,6 @@ function CheckInStart({ onCheckIn, onHistory }: { onCheckIn: () => void; onHisto
         )}
       </div>
     </div>
-  );
-}
-
-/** The way into Practice My Visit, with the countdown as a reminder to
- *  practice when a visit date has been set. */
-function PracticeVisitCard() {
-  const { readingLevel, say } = useMyVoice();
-  const plan = readJson<PlannedVisit | null>(PRACTICE_KEYS.plan, null);
-  const days = plan ? daysUntil(plan.date) : null;
-  const upcoming = days !== null && days >= 0;
-  const label = forLevel(readingLevel, {
-    icon: "Practice my visit",
-    short: "Practice my visit",
-    full: "Practice my visit before I go",
-  });
-
-  return (
-    <Link
-      to="/my-voice/practice"
-      onClick={() => say(label)}
-      className="btd-card btd-card-hover flex flex-wrap items-center gap-4 border-2 border-coral p-5"
-    >
-      <span className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full bg-coral/30 text-navy">
-        <Icon name="hub-visit" size={32} />
-      </span>
-      <span className="min-w-0 flex-1 basis-[180px]">
-        <span className="block text-21 font-display font-extrabold text-navy">{label}</span>
-        {readingLevel !== "icon" && (
-          <span className="mt-0.5 block text-15 text-body">
-            {upcoming
-              ? `${countdownText(days as number)}. Want to practice?`
-              : "Go through the visit step by step, and practice what I will say."}
-          </span>
-        )}
-      </span>
-      <span className="btd-btn-coral min-h-[48px] px-5 text-sm">Start →</span>
-    </Link>
   );
 }
 
