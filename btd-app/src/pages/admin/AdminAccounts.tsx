@@ -43,7 +43,8 @@ export default function AdminAccounts() {
     <div className="btd-container max-w-4xl py-10 pb-20">
       <h1 className="font-display text-30 font-extrabold text-navy">Accounts</h1>
       <p className="mt-2 text-17 text-body">
-        Find someone by name, email, phone or username. You only see sign-in details here, never
+        Everyone with an account is listed below. Search to find someone by name, email, phone or
+        username. You only see sign-in details here, never
         anyone's health information.
       </p>
 
@@ -71,9 +72,12 @@ export default function AdminAccounts() {
       </form>
 
       {error && (
-        <p role="alert" className="mt-5 rounded border border-coral bg-coral/20 px-3 py-2 text-sm text-coral-ink">
-          {error}
-        </p>
+        <div role="alert" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded border border-coral bg-coral/20 px-3 py-2 text-sm text-coral-ink">
+          <span>{error}</span>
+          <button type="button" onClick={() => search()} disabled={busy} className="font-bold underline disabled:opacity-50">
+            Try again
+          </button>
+        </div>
       )}
       {notice && (
         <p role="status" className="mt-5 rounded border border-sky bg-sky-tint px-3 py-2 text-sm text-sky-ink">
@@ -84,9 +88,13 @@ export default function AdminAccounts() {
       {people && (
         <>
           <p className="mt-6 text-13 font-semibold text-muted">
-            {query.trim() ? `${people.length} found` : `Newest first · ${total} accounts in all`}
-            {people.length === 100 ? " (showing the first 100; search to narrow it down)" : ""}
+            {query.trim()
+              ? `${people.length} of ${total} account${total === 1 ? "" : "s"} match`
+              : `All ${total} account${total === 1 ? "" : "s"} · newest first`}
           </p>
+          {people.length === 0 && (
+            <p className="mt-3 text-15 text-body">{query.trim() ? "No one matches that search." : "No accounts yet."}</p>
+          )}
           <ul className="mt-3 grid gap-3">
             {people.map((p) => (
               <li key={p.id} className="btd-card flex flex-wrap items-start justify-between gap-4 p-5">
