@@ -96,8 +96,7 @@ async function search(admin, body) {
   const rows = users
     .map((u) => describe(u, names, links))
     .filter((p) => !q || [p.name, p.login].some((v) => v?.toLowerCase().includes(q)))
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 100);
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return { status: 200, data: { people: rows, total: users.length } };
 }
 

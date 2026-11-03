@@ -19,24 +19,42 @@ export type AdminPerson = {
 export type AdminOverview = { people: number; children: number; newThisWeek: number; pendingStories: number };
 export type CleanupList = { people: AdminPerson[]; stories: { id: string; title: string; created_at: string }[]; cutoff: string };
 
+const SESSION_TIMEOUT_MS = 10_000;
+const REQUEST_TIMEOUT_MS = 45_000;
+
 export async function adminApi<T>(
   action: "overview" | "search" | "delete-user" | "cleanup-preview" | "cleanup-run",
   body: Record<string, unknown> = {}
 ): Promise<{ data: T | null; error: string | null }> {
   if (!authEnabled) return { data: null, error: "Accounts aren't connected on this site." };
-  const { data: session } = await supabase.auth.getSession();
-  const token = session?.session?.access_token;
+  // Never leave the page stuck on "Searching…": give up after a while and say so.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
+    const session = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("session")), SESSION_TIMEOUT_MS)),
+    ]);
+    const token = session?.data?.session?.access_token;
     const res = await fetch(`${API_BASE}/api/admin`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ action, ...body }),
+      signal: controller.signal,
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) return { data: null, error: json.error || "Something went wrong. Please try again." };
     return { data: json as T, error: null };
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "session") {
+      return { data: null, error: "Couldn't read your sign-in. Refresh the page, or sign out and back in." };
+    }
+    if (controller.signal.aborted) {
+      return { data: null, error: "The server took too long to answer. Please try again." };
+    }
     return { data: null, error: "We couldn't reach the server. Check your connection and try again." };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
