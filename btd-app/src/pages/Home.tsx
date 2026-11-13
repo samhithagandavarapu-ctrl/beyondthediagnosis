@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CTA_LABEL } from "../data/site";
 import { useSiteSettings } from "../context/SiteSettingsContext";
 import { isExternalLink } from "../lib/siteSettings";
@@ -18,11 +18,14 @@ const insideTools: { to: string; label: string; icon: IconName }[] = [
   { to: "/assistant", label: "AI Advocate", icon: "chat" },
 ];
 
-// The two smaller doors next to "I'm here for me".
+// The two smaller doors next to "I'm here for me". On phones all three doors
+// are the same size; the parent one gets a light blue fill.
 const otherAudiences = [
-  { to: "/appointment-prep", title: "I'm a parent or caregiver" },
-  { to: "/provider-education", title: "I'm a provider" },
+  { to: "/appointment-prep", title: "I'm a parent or caregiver", phone: "border-sky bg-sky-tint" },
+  { to: "/provider-education", title: "I'm a provider", phone: "border-navy/12" },
 ];
+// ?for=parents (the parents ad) makes the parent door stand out.
+const parentHighlight = "!rounded-card !border-[3px] !border-link !bg-sky/50 md:px-4";
 
 const toolGroups = [
   {
@@ -78,6 +81,7 @@ export default function Home() {
   // gets the page about Voiced.
   const { view, mode } = useAccountMode();
   const { survey } = useSiteSettings().settings;
+  const forParents = useSearchParams()[0].get("for") === "parents";
   if (view === "self") return <SelfHome />;
   if (mode === "parent") return <FamilyDashboard />;
   return (
@@ -91,7 +95,7 @@ export default function Home() {
               <span className="text-link">not a shrug and a label.</span>
             </h1>
             <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
-              Tools to help people with Down syndrome get their symptoms taken seriously.
+              Free tools to help people with Down syndrome get their symptoms taken seriously.
             </p>
             <h2 className="mt-10 font-display text-23 font-extrabold text-navy">
               Who is Voiced for today?
@@ -101,13 +105,21 @@ export default function Home() {
             <div className="mt-4 grid gap-4 md:grid-cols-[3fr_2fr] md:gap-8">
               <Link
                 to="/my-voice"
-                className="btd-lift flex min-h-[180px] flex-col justify-center gap-4 rounded-card border border-navy/12 bg-butter p-6 text-navy sm:p-8"
+                data-calm-avoid
+                className="btd-lift flex min-h-[70px] items-center justify-between gap-3 rounded-card border border-navy/12 bg-butter px-5 py-3 text-navy md:min-h-[180px] md:flex-col md:items-stretch md:justify-center md:gap-4 md:p-8"
               >
-                <span className="font-display text-[clamp(1.75rem,3vw,2.375rem)] font-extrabold leading-tight">
-                  I'm here for me <span className="btd-arrow">→</span>
+                <span className="font-display text-21 font-extrabold leading-tight md:text-[clamp(1.75rem,3vw,2.375rem)]">
+                  I'm here for me
+                  <span className="hidden md:inline">
+                    {" "}<span className="btd-arrow">→</span>
+                  </span>
+                </span>
+                {/* Phones: the arrow sits on the right, like the other doors. */}
+                <span aria-hidden="true" className="text-21 font-bold md:hidden">
+                  <span className="btd-arrow">→</span>
                 </span>
                 {/* Decoration only: the link reads as "I'm here for me". */}
-                <span aria-hidden="true" className="flex gap-2.5">
+                <span aria-hidden="true" className="hidden gap-2.5 md:flex">
                   {previewFaces.map((face) => (
                     <span key={face} className="grid h-12 w-12 place-items-center rounded-full bg-white">
                       <Icon name={face} size={30} />
@@ -115,12 +127,15 @@ export default function Home() {
                   ))}
                 </span>
               </Link>
-              <ul className="grid grid-rows-2 divide-y divide-navy/12 border-y border-navy/12">
+              <ul className="grid gap-4 md:grid-rows-2 md:gap-0 md:divide-y md:divide-navy/12 md:border-y md:border-navy/12">
                 {otherAudiences.map((a) => (
                   <li key={a.to} className="flex">
                     <Link
                       to={a.to}
-                      className="group flex min-h-[64px] flex-1 items-center justify-between gap-3 py-4 text-21 font-bold text-navy hover:text-link"
+                      data-calm-avoid
+                      className={`group flex min-h-[70px] flex-1 items-center justify-between gap-3 rounded-card border px-5 py-3 text-21 font-bold text-navy hover:text-link md:min-h-[64px] md:rounded-none md:border-0 md:bg-transparent md:px-0 md:py-4 ${a.phone} ${
+                        forParents && a.to === "/appointment-prep" ? parentHighlight : ""
+                      }`}
                     >
                       {a.title}
                       <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>

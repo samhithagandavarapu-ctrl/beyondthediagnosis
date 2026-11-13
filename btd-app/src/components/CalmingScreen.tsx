@@ -41,7 +41,13 @@ export default function CalmingScreen() {
   const [bottom, setBottom] = useState(BUTTON_GAP);
   // Practice My Visit has its own "I need a break" button on every screen, and
   // the floating one would sit on top of that page's main action on a phone.
-  const hideButton = useLocation().pathname.startsWith("/my-voice/practice");
+  const { pathname } = useLocation();
+  const hideButton = pathname.startsWith("/my-voice/practice");
+  // Homepage on phones: just the icon in a 48px circle, and it steps aside
+  // while it would cover one of the "Who is Voiced for today?" choices
+  // (anything marked data-calm-avoid).
+  const compactOnPhones = pathname === "/";
+  const [covering, setCovering] = useState(false);
 
   useEffect(() => {
     const open = () => setOpen(true);
@@ -55,7 +61,21 @@ export default function CalmingScreen() {
     function place() {
       const footer = document.querySelector("footer");
       const overlap = footer ? Math.max(0, window.innerHeight - footer.getBoundingClientRect().top) : 0;
-      setBottom(BUTTON_GAP + overlap);
+      const nextBottom = BUTTON_GAP + overlap;
+      setBottom(nextBottom);
+      // Where the 48px phone button would sit: 1.5rem from the right edge.
+      const phone = window.innerWidth < 768;
+      const btnBottom = window.innerHeight - nextBottom;
+      const btnTop = btnBottom - 48;
+      const btnRight = window.innerWidth - 24;
+      const btnLeft = btnRight - 48;
+      setCovering(
+        phone &&
+          [...document.querySelectorAll("[data-calm-avoid]")].some((el) => {
+            const r = el.getBoundingClientRect();
+            return r.top < btnBottom && r.bottom > btnTop && r.left < btnRight && r.right > btnLeft;
+          }),
+      );
     }
     place();
     window.addEventListener("scroll", place, { passive: true });
@@ -77,10 +97,16 @@ export default function CalmingScreen() {
           type="button"
           onClick={() => setOpen(true)}
           style={{ bottom }}
-          className="fixed right-[max(1.5rem,env(safe-area-inset-right))] z-40 flex min-h-[48px] items-center gap-1.5 rounded-full bg-sky px-4 py-2.5 font-bold text-navy shadow-[0_6px_20px_rgba(33,50,68,0.25)] transition-colors hover:bg-sky-hover print:hidden"
+          aria-hidden={compactOnPhones && covering ? true : undefined}
+          tabIndex={compactOnPhones && covering ? -1 : undefined}
+          className={`fixed right-[max(1.5rem,env(safe-area-inset-right))] z-40 flex min-h-[48px] items-center gap-1.5 rounded-full bg-sky px-4 py-2.5 font-bold text-navy shadow-[0_6px_20px_rgba(33,50,68,0.25)] transition-[background-color,opacity] hover:bg-sky-hover print:hidden ${
+            compactOnPhones
+              ? `max-md:h-12 max-md:w-12 max-md:justify-center max-md:p-0 ${covering ? "max-md:pointer-events-none max-md:opacity-0" : ""}`
+              : ""
+          }`}
         >
           <Icon name="breath" size={19} />
-          <span className="text-sm">Calm</span>
+          <span className={compactOnPhones ? "text-sm max-md:sr-only" : "text-sm"}>Calm</span>
         </button>
       )}
       {open && <CalmOverlay onClose={() => setOpen(false)} />}
