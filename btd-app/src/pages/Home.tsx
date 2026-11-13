@@ -174,23 +174,25 @@ export default function Home() {
       <section aria-labelledby="workshops-heading" className="mx-auto w-full max-w-[1200px] px-6 pt-[52px]">
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-card border-2 border-navy bg-sky px-6 py-6 sm:px-8">
           <div className="max-w-[44em]">
-            <p className="text-12 font-bold uppercase tracking-[0.14em] text-sky-ink">Big news</p>
+            <p className="text-12 font-bold uppercase tracking-[0.14em] text-sky-ink">First workshop</p>
             <h2 id="workshops-heading" className="mt-1.5 font-display text-23 font-extrabold text-navy">
-              Voiced workshops are coming soon!
+              My Body, My Voice: Black Friday Shop &amp; Play Camp
             </h2>
             <p className="mt-2 text-17 leading-[1.6] text-sky-ink">
-              We're planning hands-on sessions where kids practice speaking up about how they
-              feel, plus parent sessions on getting ready for doctor visits.
+              A drop-off camp where kids build body awareness, healthy habits, and
+              self-advocacy through play. Friday, Nov. 27 at We Rock the Spectrum Kid's Gym,
+              Durham. Morning (9–12) $45 · Extended (9–2) $65 · All day (9–4) $85. Co-hosted
+              with HabitSprouts.
             </p>
           </div>
           <a
-            href="https://www.instagram.com/withvoiced/"
+            href="https://ecom.roller.app/werockthespectrumdurham/camps/en-us/product/2150603?date=2026-11-27"
             target="_blank"
             rel="noopener noreferrer"
-            className="btd-btn-outline min-h-[48px] w-full shrink-0 bg-white px-6 text-center text-15 sm:w-auto"
+            className="btd-btn-outline min-h-[48px] w-full shrink-0 bg-white px-6 text-center text-15 md:w-auto"
           >
-            Follow along for dates and locations →
-            <span className="sr-only"> (opens Instagram in a new tab)</span>
+            Reserve a spot →
+            <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </div>
       </section>
