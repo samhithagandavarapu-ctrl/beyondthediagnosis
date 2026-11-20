@@ -89,14 +89,35 @@ export default function Home() {
       {/* Hero */}
       <section className="btd-grain bg-gradient-to-b from-mist to-sky-tint border-b border-navy/[0.08]">
         <div className="mx-auto w-full max-w-[1200px] px-6 pt-10 pb-[76px]">
+          {/* Headline next to a real photo from camp. On phones the photo
+              sits right under the headline. */}
+          <div className="grid items-center gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-14">
+            <div>
+              <h1 className="btd-hero-h1 max-w-[18em] !text-[clamp(2.125rem,4.4vw,3.5rem)] !leading-[1.06]">
+                Every symptom deserves a real look,{" "}
+                <span className="text-link">not a shrug and a label.</span>
+              </h1>
+              <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
+                Free tools to help people with Down syndrome get their symptoms taken seriously.
+              </p>
+            </div>
+            <figure className="btd-snapshot btd-card mx-auto w-full max-w-[300px] bg-white md:mt-2 md:max-w-[420px]">
+              <div className="relative aspect-square overflow-hidden rounded-lg md:aspect-[4/5]">
+                <img
+                  src="/images/samhitha-camp-floor.jpg"
+                  alt="Samhitha sitting on a gym floor next to a smiling young camper in glasses and a blue shirt, with kids playing with a rainbow parachute behind them"
+                  width={1200}
+                  height={1500}
+                  fetchPriority="high"
+                  className="absolute inset-0 h-full w-full object-cover object-[center_80%]"
+                />
+              </div>
+              <figcaption className="px-4 py-3 text-sm text-body">
+                Samhitha with a camper at summer camp
+              </figcaption>
+            </figure>
+          </div>
           <div>
-            <h1 className="btd-hero-h1 max-w-[18em] !text-[clamp(2.125rem,4.4vw,3.5rem)] !leading-[1.06]">
-              Every symptom deserves a real look,{" "}
-              <span className="text-link">not a shrug and a label.</span>
-            </h1>
-            <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
-              Free tools to help people with Down syndrome get their symptoms taken seriously.
-            </p>
             <h2 className="mt-10 font-display text-23 font-extrabold text-navy">
               Who is Voiced for today?
             </h2>
