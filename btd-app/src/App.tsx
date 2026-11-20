@@ -62,7 +62,7 @@ const TITLES: Record<string, string> = {
   "/stories": "Community Stories",
   "/login": "Sign in",
   "/reset-password": "Reset password",
-  "/understanding-overshadowing": "Diagnostic overshadowing",
+  "/understanding-overshadowing": "Diagnostic overshadowing in Down syndrome",
   "/profile": "My profile",
   "/notifications": "Notifications",
   "/messages": "Messages",
@@ -98,7 +98,11 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
     const page = TITLES[pathname] ?? (pathname.startsWith("/join/") ? TITLES["/join"] : null);
-    document.title = page ? `${page} · Voiced` : "Voiced";
+    document.title = page
+      ? `${page} · Voiced`
+      : pathname === "/"
+        ? "Voiced: Free health advocacy tools for people with Down syndrome"
+        : "Voiced";
   }, [pathname]);
 
   // A password reset link signs you in so the password can be changed — it

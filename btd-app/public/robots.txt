@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /admin
+Disallow: /api/
+Disallow: /auth/
+Disallow: /reset-password
+
+Sitemap: https://withvoiced.org/sitemap.xml
