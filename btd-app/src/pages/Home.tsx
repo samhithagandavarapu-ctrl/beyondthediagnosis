@@ -101,20 +101,17 @@ export default function Home() {
                 Free tools to help people with Down syndrome get their symptoms taken seriously.
               </p>
             </div>
-            <figure className="btd-snapshot btd-card mx-auto w-full max-w-[300px] bg-white md:mt-2 md:max-w-[420px]">
+            <figure className="btd-snapshot btd-card mx-auto w-full max-w-[300px] bg-white !pb-[22px] md:mt-2 md:max-w-[420px]">
               <div className="relative aspect-square overflow-hidden rounded-lg md:aspect-[4/5]">
                 <img
                   src="/images/samhitha-camp-floor.jpg"
-                  alt="Samhitha sitting on a gym floor next to a smiling young camper in glasses and a blue shirt, with kids playing with a rainbow parachute behind them"
+                  alt="Samhitha sitting on a gym floor next to a young camper in a blue shirt, with kids playing with a rainbow parachute behind them"
                   width={1200}
                   height={1500}
                   fetchPriority="high"
                   className="absolute inset-0 h-full w-full object-cover object-[center_80%]"
                 />
               </div>
-              <figcaption className="px-4 py-3 text-sm text-body">
-                Samhitha with a camper at summer camp
-              </figcaption>
             </figure>
           </div>
           <div>
