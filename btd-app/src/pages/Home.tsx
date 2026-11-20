@@ -93,12 +93,12 @@ export default function Home() {
               sits right under the headline. */}
           <div className="grid items-center gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-14">
             <div>
-              <h1 className="btd-hero-h1 max-w-[18em] !text-[clamp(2.125rem,4.4vw,3.5rem)] !leading-[1.06]">
-                Every symptom deserves a real look,{" "}
-                <span className="text-link">not a shrug and a label.</span>
+              <h1 className="btd-hero-h1 max-w-[16em] !text-[clamp(2rem,3.7vw,3.125rem)] !leading-[1.1]">
+                Free tools that help people with Down syndrome get their symptoms{" "}
+                <span className="text-link">taken seriously.</span>
               </h1>
-              <p className="mt-6 max-w-[34em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
-                Free tools to help people with Down syndrome get their symptoms taken seriously.
+              <p className="mt-5 max-w-[32em] text-[clamp(1.0625rem,1.5vw,1.3125rem)] leading-[1.6] text-body">
+                Every symptom deserves a real look, not a shrug and a label.
               </p>
             </div>
             <figure className="btd-snapshot btd-card mx-auto w-full max-w-[300px] bg-white !pb-[22px] md:mt-2 md:max-w-[420px]">
