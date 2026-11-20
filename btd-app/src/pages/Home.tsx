@@ -76,6 +76,10 @@ const toolGroups = [
   },
 ];
 
+// Midnight at the start of Friday, Nov. 27, 2026 (the visitor's own time):
+// from then on the camp announcement is gone.
+const CAMP_DAY = new Date(2026, 10, 27).getTime();
+
 export default function Home() {
   // Signed in as a parent or a self-advocate: their own home. Everyone else
   // gets the page about Voiced.
@@ -188,7 +192,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Workshops announcement. Take this out (or change it) once dates are set. */}
+      {/* Workshops announcement. Hides itself on the day of the camp, Friday
+          Nov. 27, so nobody is asked to reserve a spot that's already started. */}
+      {Date.now() < CAMP_DAY && (
       <section aria-labelledby="workshops-heading" className="mx-auto w-full max-w-[1200px] px-6 pt-[52px]">
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-card border-2 border-navy bg-sky px-6 py-6 sm:px-8">
           <div className="max-w-[44em]">
@@ -214,6 +220,7 @@ export default function Home() {
           </a>
         </div>
       </section>
+      )}
 
       {/* The tools */}
       <section className="mx-auto w-full max-w-[1200px] px-6 pt-[76px] pb-6">
