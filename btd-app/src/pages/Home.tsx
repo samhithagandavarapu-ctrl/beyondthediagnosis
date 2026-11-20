@@ -91,9 +91,9 @@ export default function Home() {
         <div className="mx-auto w-full max-w-[1200px] px-6 pt-10 pb-[76px]">
           {/* Headline next to a real photo from camp. On phones the photo
               sits right under the headline. */}
-          <div className="grid items-center gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-14">
+          <div className="grid items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,380px)] md:gap-14">
             <div>
-              <h1 className="btd-hero-h1 max-w-[16em] !text-[clamp(2rem,3.7vw,3.125rem)] !leading-[1.1]">
+              <h1 className="btd-hero-h1 max-w-[15em] !text-[clamp(2rem,4.2vw,3.5rem)] !leading-[1.08]">
                 Free tools that help people with Down syndrome get their symptoms{" "}
                 <span className="text-link">taken seriously.</span>
               </h1>
@@ -101,8 +101,8 @@ export default function Home() {
                 Every symptom deserves a real look, not a shrug and a label.
               </p>
             </div>
-            <figure className="btd-snapshot btd-card mx-auto w-full max-w-[300px] bg-white !pb-[22px] md:mt-2 md:max-w-[420px]">
-              <div className="relative aspect-square overflow-hidden rounded-lg md:aspect-[4/5]">
+            <figure className="btd-snapshot btd-card mx-auto w-full max-w-[300px] bg-white !pb-[22px] md:max-w-[380px]">
+              <div className="relative aspect-square overflow-hidden rounded-lg">
                 <img
                   src="/images/samhitha-camp-floor.jpg"
                   alt="Samhitha sitting on a gym floor next to a young camper in a blue shirt, with kids playing with a rainbow parachute behind them"
